@@ -90,6 +90,7 @@
   .leaflet-control-attribution a { color: #ddd !important; }
 
   /* ---- limite ---- */
+  .leaflet-interactive:focus { outline: none; }
   .limite { filter: drop-shadow(0 0 6px rgba(255,255,255,.55)); }
   .limite-halo { filter: blur(6px); }
 
@@ -342,7 +343,7 @@ function icone(el, filho) {
   return L.divIcon({ className: 'mk' + (filho ? ' filho' : ''), html: `<div class="mk-circ" style="--c:${cor}"></div>`, iconSize: [s, s], iconAnchor: [s / 2, s / 2] });
 }
 function marcador(el, pos, filho) {
-  const m = L.marker(pos, { icon: icone(el, filho), riseOnHover: true, keyboard: false });
+  const m = L.marker(pos, { icon: icone(el, filho), riseOnHover: true, keyboard: false, bubblingMouseEvents: false });
   m.bindTooltip(el.nome, { direction: 'top', offset: [0, -12], className: 'rotulo', opacity: 1 });
   m.on('click', () => selecionar(el, false));
   return m;
@@ -362,13 +363,13 @@ function construirElemento(el) {
   } else if (el.tipo === 'grupo') {
     for (const p of el.pontos) { const m = marcador(el, p, false).addTo(map); v.marcadores.push(m); v.camadas.push(m); }
   } else if (el.tipo === 'rua') {
-    const halo = L.polyline(el.linhas, { pane: 'ruas', color: COR.rua, weight: 16, opacity: .18, lineCap: 'round' }).addTo(map);
-    const linha = L.polyline(el.linhas, { pane: 'ruas', color: COR.rua, weight: 4, opacity: .85, lineCap: 'round' }).addTo(map);
+    const halo = L.polyline(el.linhas, { pane: 'ruas', color: COR.rua, weight: 16, opacity: .18, lineCap: 'round', bubblingMouseEvents: false }).addTo(map);
+    const linha = L.polyline(el.linhas, { pane: 'ruas', color: COR.rua, weight: 4, opacity: .85, lineCap: 'round', bubblingMouseEvents: false }).addTo(map);
     halo.bindTooltip(el.nome, { sticky: true, className: 'rotulo', opacity: 1 });
     linha.on('click', () => selecionar(el, false)); halo.on('click', () => selecionar(el, false));
     v.camadas.push(halo, linha); v.linha = linha; v.halo = halo;
   } else if (el.tipo === 'zona') {
-    const pol = L.polygon(el.poligono, { pane: 'zonas', color: COR.zona, weight: 2, opacity: .9, fillColor: COR.zona, fillOpacity: .12, dashArray: '6 5' }).addTo(map);
+    const pol = L.polygon(el.poligono, { pane: 'zonas', color: COR.zona, weight: 2, opacity: .9, fillColor: COR.zona, fillOpacity: .12, dashArray: '6 5', bubblingMouseEvents: false }).addTo(map);
     pol.bindTooltip(el.nome, { sticky: true, className: 'rotulo', opacity: 1 });
     pol.on('click', () => selecionar(el, true));
     v.camadas.push(pol); v.poligono = pol;
@@ -387,7 +388,7 @@ function limitesDe(el) {
 function margensVoo(el) {
   const W = window.innerWidth, H = window.innerHeight, zona = !!(el && (el.tipo === 'zona' || el.pai));
   if (estreito()) return { paddingTopLeft: [20, 70], paddingBottomRight: [20, Math.round(H * .55)] };
-  if (zona && W < 1000) return { paddingTopLeft: [40, 80], paddingBottomRight: [40, Math.round(H * .46)], maxZoom: 19.5 }; // cartão em baixo
+  if (zona && W < 1000) return { paddingTopLeft: [40, 80], paddingBottomRight: [40, Math.round(H * .42) + 100], maxZoom: 19.5 }; // cartão em baixo (até 42vh + margens)
   if (zona) return { paddingTopLeft: [Math.round(W * .08), 90], paddingBottomRight: [Math.round(W * .06) + 420, 60], maxZoom: 19.5 }; // cartão à direita
   return { paddingTopLeft: [80, 80], paddingBottomRight: [80, 120] };
 }
