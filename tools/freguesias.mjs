@@ -237,9 +237,9 @@ for (const F of FREGS) {
   fs.writeFileSync(path.join(dir, 'verdes.js'), cabecalhoVerdes + 'window.VERDES = ' + JSON.stringify(verdes) + ';\n');
   // preset vazio (só se ainda não houver)
   const preset = { preset: F.id, titulo: F.nome, subtitulo: '', elementos: [], categorias: [] };
-  const novoP = escreverSeNovo(path.join(dir, 'presets', F.id + '.js'), `// Preset «${F.nome}», gravado pelo modo de edição. Modelo dos campos: ver README.md.\nwindow.CONTEUDOS_PRESET = ` + JSON.stringify(preset, null, 1) + ';\n');
+  const novoP = escreverSeNovo(path.join(dir, 'presets', F.id + '.js'), `// Preset «${F.nome}», vazio, gerado por tools/freguesias.mjs. Modelo dos campos: ver README.md.\nwindow.CONTEUDOS_PRESET = ` + JSON.stringify(preset, null, 1) + ';\n');
   escreverSeNovo(path.join(dir, 'presets', 'index.js'), '// Lista dos presets desta freguesia (regenerada pelo servidor local a cada gravação).\nwindow.PRESETS = ' + JSON.stringify([{ id: F.id, nome: F.nome, subtitulo: '', elementos: 0 }], null, 1) + ';\n');
   escreverSeNovo(path.join(dir, 'conteudos.js'), `// Preset ativo (cópia de ${base}presets/${F.id}.js). Modelo dos campos: ver README.md.\nwindow.CONTEUDOS = ` + JSON.stringify(preset, null, 1) + ';\n');
   const kb = f => fs.existsSync(path.join(dir, f)) ? Math.round(fs.statSync(path.join(dir, f)).size / 1024) + ' kB' : '—';
-  console.log(`${F.nome}: ${ruas.length} ruas, ${lotes.length} lotes, ${numeros.length} números, ${verdes.length} verdes · imagem ${kb('satelite.jpg')}, edificado ${kb('edificado.js')}${novoP ? ' · preset vazio criado' : ''} · ${((Date.now() - t0) / 1000).toFixed(0)} s`);
+  console.log(`${F.nome}: ${ruas.length} ruas, ${lotes.length} lotes, ${numeros.length} números, ${verdes.length} espaços verdes · imagem ${kb('satelite.jpg')}, edificado ${kb('edificado.js')}${novoP ? ' · preset vazio criado' : ''} · ${((Date.now() - t0) / 1000).toFixed(0)} s`);
 }

@@ -1,12 +1,12 @@
 // Servidor local simples para a apresentação (sem dependências).
-//   node tools/serve.mjs        → http://localhost:8081
+//   node tools/serve.mjs        → http://localhost:8081 (só neste computador)
+//   HOST=0.0.0.0 node tools/serve.mjs → também na rede local (para ver noutro aparelho; a gravação continua só a partir deste computador)
 // Além de servir os ficheiros, aceita do modo de edição (só a partir desta máquina e da própria página):
 //   (os pedidos de presets levam ?freguesia=<id>; sem isso é Campo de Ourique, em dados/; as outras em dados/freguesias/<id>/)
 //   POST /guardar               → escreve <pasta>/presets/<preset>.js e a cópia ativa <pasta>/conteudos.js (o anterior fica em
 //                                 <pasta>/conteudos.anterior.js) e regenera <pasta>/presets/index.js
-//   POST /ativar-preset/<id>    → copia esse preset para dados/conteudos.js
+//   POST /ativar-preset/<id>    → copia esse preset para <pasta>/conteudos.js
 //   POST /apagar-preset/<id>    → apaga o preset (fica uma cópia .apagado.bak)
-//   GET  /presets               → lista dos presets
 //   POST /guardar-foto/<nome>   → escreve a imagem em assets/fotos/<nome> e devolve o caminho
 import http from 'node:http';
 import fs from 'node:fs';
@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = Number(process.env.PORT) || 8081;
+const HOST = process.env.HOST || '127.0.0.1';
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -72,14 +73,15 @@ function ficheiroConteudos(F, dados) {
     '// Para trocar de preset ou editar, abre a apresentação e carrega no lápis.\n' +
     'window.CONTEUDOS = ' + JSON.stringify(dados, null, 1) + ';\n';
 }
+const paraComentario = t => String(t).replace(/[\r\n\u2028\u2029]+/g, ' ').replace(/[{}]/g, '').slice(0, 120); // o título vem do utilizador: numa linha e sem chavetas
 function ficheiroPreset(dados) {
-  return '// Preset «' + (dados.titulo || dados.preset) + '», gravado pelo modo de edição em ' + agora() + '. Modelo dos campos: ver README.md.\n' +
+  return '// Preset «' + paraComentario(dados.titulo || dados.preset) + '», gravado pelo modo de edição em ' + agora() + '. Modelo dos campos: ver README.md.\n' +
     'window.CONTEUDOS_PRESET = ' + JSON.stringify(dados, null, 1) + ';\n';
 }
 function lerPreset(F, id) {
   const t = fs.readFileSync(path.join(F.presets, id + '.js'), 'utf8');
-  const a = t.indexOf('{'), b = t.lastIndexOf('}');
-  if (a < 0 || b < 0) throw new Error('preset sem dados');
+  const m = /window\.[A-Z_]+\s*=\s*\{/.exec(t), a = m ? m.index + m[0].length - 1 : t.indexOf('{'), b = t.lastIndexOf('}'); // depois de «window.X =»: o comentário não conta
+  if (a < 0 || b < a) throw new Error('preset sem dados');
   return JSON.parse(t.slice(a, b + 1)); // os presets escritos à mão como código (ex.: exemplo.js) não se leem aqui; a página carrega-os como script
 }
 const caches = new Map(); // última lista conhecida por freguesia (para presets escritos como código)
@@ -171,6 +173,8 @@ async function guardarFoto(req, res, nome) {
 http.createServer(async (req, res) => {
   let rel;
   try { rel = decodeURIComponent(new URL(req.url, 'http://x').pathname); } catch (err) { rel = '/'; }
+  if (rel.includes('\0')) { res.writeHead(400).end('Pedido inválido'); return; } // um carácter nulo fazia o fs.stat lançar fora do try e parar o servidor
+  if (rel.split(/[\\/]/).some(p => p.startsWith('.') && p !== '.' && p !== '..')) { res.writeHead(403).end('Proibido'); return; } // .git, .claude e outros ficheiros escondidos
   try {
     if (req.method === 'POST') {
       if (!local(req)) return json(res, 403, { erro: 'Só a partir desta máquina' });
@@ -182,12 +186,11 @@ http.createServer(async (req, res) => {
       if (rel.startsWith('/apagar-preset/')) return apagarPreset(res, F, rel.slice('/apagar-preset/'.length));
       return json(res, 404, { erro: 'Não encontrado' });
     }
-    if (req.method === 'GET' && rel === '/presets') { const F = freguesiaDe(req.url); return F ? json(res, 200, { presets: listarPresets(F) }) : json(res, 400, { erro: 'Freguesia desconhecida' }); }
   } catch (err) { console.error(err.message); return json(res, err.codigo || 500, { erro: err.message }); }
   if (rel.endsWith('/')) rel += 'index.html';
   const file = path.join(ROOT, rel);
   if (!file.startsWith(ROOT + path.sep)) { res.writeHead(403).end('Proibido'); return; }
-  fs.stat(file, (errStat, st) => {
+  try { fs.stat(file, (errStat, st) => {
     if (errStat || !st.isFile()) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Não encontrado'); return; }
     const cabecalhos = { 'Content-Type': TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream', 'Cache-Control': 'no-store', 'Last-Modified': st.mtime.toUTCString(), 'Content-Length': st.size };
     if (req.method === 'HEAD') { res.writeHead(200, cabecalhos); res.end(); return; } // a página compara a data do ficheiro com a gravação automática
@@ -195,5 +198,5 @@ http.createServer(async (req, res) => {
       if (err) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Não encontrado'); return; }
       res.writeHead(200, cabecalhos); res.end(data);
     });
-  });
-}).listen(PORT, '0.0.0.0', () => console.log(`Apresentação disponível em http://localhost:${PORT} (modo de edição grava em dados/conteudos.js)`));
+  }); } catch (err) { if (!res.headersSent) res.writeHead(400).end('Pedido inválido'); }
+}).listen(PORT, HOST, () => console.log(`Apresentação disponível em http://localhost:${PORT}${HOST === '127.0.0.1' ? '' : ' (e na rede local: ' + HOST + ')'}; o modo de edição grava em dados/ e em dados/freguesias/<id>/`));

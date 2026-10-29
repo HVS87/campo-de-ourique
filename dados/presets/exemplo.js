@@ -1,14 +1,15 @@
-// Preset «Exemplo»: dados de demonstração com os quatro tipos de elemento (ponto, conjunto, rua, zona com pontos dentro).
+// Preset «Exemplo»: dados de demonstração com quatro dos tipos de elemento (ponto, conjunto, rua, zona com pontos dentro).
 // O modo de edição grava os presets em dados/presets/<id>.js e copia o ativo para dados/conteudos.js (ao gravar,
 // este cabeçalho é substituído; o modelo completo dos campos está no README.md).
 // Carregado depois de dados/geo.js e dados/ruas.js, por isso pode usar window.MAPA_DADOS (ruas e áreas do OpenStreetMap).
 //
 // Modelo de cada elemento:
-//   { id, tipo: 'ponto' | 'grupo' | 'rua' | 'zona', nome, icone, texto, fotos, pos | pontos | linhas | poligono, filhos }
+//   { id, tipo: 'ponto' | 'grupo' | 'desmaterializado' | 'rua' | 'zona', nome, icone, texto, fotos, pos | pontos | linhas | poligono, filhos }
 //
 //   id        identificador único, sem espaços (serve também na ligação: index.html#id)
 //   tipo      'ponto'  — um lugar, com `pos: [lat, lon]`
 //             'grupo'  — vários marcadores com o mesmo cartão, com `pontos: [[lat, lon], ...]`
+//             'desmaterializado' — sem lugar no mapa (fica num ícone no canto superior direito)
 //             'rua'    — rua em toda a extensão, com `linhas: [[[lat, lon], ...], ...]`
 //                        ou só `rua: 'Nome'` para ir buscar o traçado a geo.js ou a ruas.js
 //             'zona'   — área pintada, com `poligono: [[lat, lon], ...]`
@@ -16,10 +17,11 @@
 //                        pode ter `filhos`: pontos dentro da zona, que só aparecem quando a zona está selecionada
 //   nome      título do cartão
 //   icone     um emoji ou símbolo, mostrado no índice e no cartão
-//   texto     texto do cartão: uma string (pode ter HTML) ou uma lista de parágrafos
+//   texto     texto do cartão: um texto (pode ter HTML) ou uma lista de parágrafos
 //   fotos     lista de fotos: 'assets/fotos/x.jpg' ou { src: 'assets/fotos/x.jpg', legenda: '...' }
 //   prioridade (opcional) cor no mapa: 'urgente' (preto), 'importante' (vermelho), 'preocupante' (amarelo),
 //             'pouco' (verde) ou 'sugestao' (branco); sem prioridade fica cinzento
+//   competencia (opcional) a quem cabe resolver: 'governo', 'camara' (Câmara Municipal) ou 'junta' (Junta de Freguesia)
 //
 // Opcionais no objeto principal: visita: [ids] (ordem dos destaques) e categorias: [{ id, nome, icone, cor, membros: [ids] }].
 // Para criar e editar tudo isto sem tocar neste ficheiro: abrir a apresentação e carregar no lápis (modo de edição).
@@ -31,7 +33,7 @@
   const centro = pts => { let a = 0, b = 0; for (const p of pts) { a += p[0]; b += p[1]; } return [a / pts.length, b / pts.length]; };
   const cMercado = centro(D.areas['Mercado de Campo de Ourique']);
   const cParada = centro(D.areas['Jardim da Parada']);
-  // pontos únicos da Rua Coelho da Rocha, de oeste para leste (só para as posições de exemplo do grupo)
+  // pontos únicos da Rua Coelho da Rocha, de oeste para este (só para as posições de exemplo do grupo)
   const coelho = [...new Map(D.ruas['Rua Coelho da Rocha'].flat().map(p => [p.join(), p])).values()].sort((a, b) => a[1] - b[1]);
 
   window.CONTEUDOS_PRESET = {

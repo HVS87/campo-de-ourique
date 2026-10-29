@@ -16,7 +16,7 @@ seu `conteudos.js`.
   abertos da Câmara Municipal de Lisboa: limite oficial («Base_Freguesias»; Alcântara tem duas partes), ruas («Vias e
   Ruas», recortadas ao limite), lotes e números de polícia («Edificado»), espaços verdes e hortas urbanas («Ambiente
   DMEVAE»), mais a imagem de satélite de reserva da DGT. Cada uma começa com um preset vazio com o nome da freguesia.
-- **Camadas novas** no painel «Camadas»: «Áreas verdes» (espaços verdes e hortas urbanas da estrutura ecológica
+- **Camadas novas** no painel «Camadas»: «Espaços verdes» (espaços verdes e hortas urbanas da estrutura ecológica
   municipal, com nome, área e gestão ao passar o cursor) e «Mapa da cidade», que troca o satélite pelo mapa do
   OpenStreetMap como fundo (a escolha fica lembrada).
 
@@ -28,13 +28,18 @@ cada uma. Também se chega lá ao continuar a afastar (roda do rato ou «−») 
 Ao passar o cursor, a freguesia pulsa e a barra de baixo mostra o nome e a área; um clique abre-a. No ecrã tátil,
 o primeiro toque realça a freguesia e o segundo (ou «Abrir …» na barra) abre-a. «← Voltar» (ou Esc) regressa à
 freguesia aberta, e a pesquisa encontra também as freguesias. `?cidade` no endereço abre logo neste mapa. Os
-limites (`dados/freguesias/limites.js`, 38 kB) só se descarregam quando se abre o mapa de Lisboa.
+limites (`dados/freguesias/limites.js`, 38 kB) só se transferem quando se abre o mapa de Lisboa. No ecrã tátil, juntar
+os dedos (pinça) na vista geral da freguesia também abre o mapa de Lisboa.
 
 ## Como abrir
 
 ```bash
 node tools/serve.mjs
 ```
+
+O servidor só responde neste computador; `HOST=0.0.0.0 node tools/serve.mjs` abre-o também à rede local (para ver
+noutro aparelho; a gravação continua a aceitar-se só a partir deste computador, e os ficheiros escondidos, como
+`.git`, nunca são servidos).
 
 Depois: http://localhost:8081/ (arranca em modo de visualização; o lápis no canto superior direito liga o
 modo de edição, e `?editor` abre-o logo). Também abre diretamente a partir do ficheiro `index.html`, sem
@@ -54,8 +59,9 @@ ferramentas; «⋯ Mais» abre o título, o subtítulo e os presets):
 - **Botão «+»** (canto inferior direito, só em edição): abre a lista do que se pode criar: ponto, conjunto de
   pontos, ponto desmaterializado, rua, zona, zona livre e lote. Em telemóveis e tablets tem também «Ponto onde
   estou» e «Rua onde estou», que usam a localização do aparelho (a rua é a mais próxima, até 60 m; fora da
-  freguesia, pergunta antes).
-- **Ponto**: um clique no mapa cria um ponto (dentro de uma zona fica filho dela).
+  freguesia, pergunta antes). O browser só dá a localização a páginas em https ou abertas no próprio aparelho.
+- **Ponto**: um clique no mapa cria um ponto (dentro de uma zona fica filho dela). Com uma ferramenta de criar
+  escolhida, as zonas e as ruas destacadas deixam passar o clique para o mapa.
 - **Conjunto**: vários pontos no mapa com um só cartão. Cada clique acrescenta um ponto; Esc ou «Concluído»
   termina. No cartão do conjunto há a lista dos pontos (✕ tira um) e «＋ Acrescentar pontos no mapa»; um ponto
   também se pode «Transformar em conjunto».
@@ -65,28 +71,31 @@ ferramentas; «⋯ Mais» abre o título, o subtítulo e os presets):
   empilhá-los. Criam-se no «+» ou com «◌ Desmaterializar» no cartão de um ponto; «📍 Pôr no mapa» faz o caminho
   inverso.
 - **Zona** (vértices, duplo clique termina) e **Zona livre** (pincel): desenham zonas novas.
-- **Rua**: liga a camada das ruas e um clique numa rua cria o elemento com o traçado do OpenStreetMap.
+- **Rua**: liga a camada «Nomes das ruas» e um clique numa rua cria o elemento com o traçado dessa camada
+  (OpenStreetMap em Campo de Ourique, Câmara Municipal nas outras freguesias).
 - **Lote**: liga a camada dos lotes e um clique num lote cria uma zona com o contorno do cadastro.
 - **Título e subtítulo** editam-se na segunda linha da barra.
 - **Visita guiada** (no índice, em edição): lista ordenada dos destaques com ↑ ↓ e ✕, seletor para acrescentar
   qualquer elemento (incluindo pontos dentro de zonas) e «Repor» para voltar à ordem natural. Cada cartão em
   formulário tem também a caixa «Destaque na visita guiada».
 - **Categorias** (no índice, em edição): «+ Nova categoria» abre o cartão da categoria com nome, símbolo, cor,
-  lista de membros (tirar com ✕, acrescentar pelo seletor) e «Apagar categoria»; ✎ num chip volta a abrir.
+  lista de membros (tirar com ✕, acrescentar pelo seletor) e «Apagar categoria»; ✎ na etiqueta da categoria
+  volta a abri-lo.
   Em cada cartão de elemento há caixas para o pôr nas categorias. Um elemento pode estar em várias.
 - **Cartão em modo de formulário**: nome, prioridade, competência, símbolo, texto (parágrafos separados por linha em branco; aceita HTML,
   com botões para ligação, negrito e itálico), fotos (ficheiros do computador, que o servidor grava em
   `assets/fotos/`, ou por endereço; legenda por foto), ordem no índice (↑ ↓; a visita segue esta ordem
   enquanto não for personalizada), caixas de categorias e de destaque na visita, apagar.
-- **Guardar** escreve `dados/conteudos.js` através do servidor local (o ficheiro anterior fica em
-  `dados/conteudos.anterior.js`).
+- **Guardar** escreve, através do servidor local, o ficheiro do preset (`presets/<id>.js`) e a cópia ativa
+  `conteudos.js`, na pasta da freguesia (`dados/` em Campo de Ourique, `dados/freguesias/<id>/` nas outras); o
+  `conteudos.js` anterior fica em `conteudos.anterior.js`.
 - **Sair** (ou o lápis) com alterações por guardar pergunta o que fazer: «Guardar e sair», «Sair sem guardar»
   (as alterações são descartadas e não se recuperam: o preset volta ao que está gravado) ou «Continuar a
   editar». Mudar de freguesia com alterações por guardar faz a mesma pergunta.
 - **Presets** (terceira linha da barra): há vários presets, cada um em `dados/presets/<id>.js`; o seletor troca
   o preset ativo (também existe no fundo do painel do índice, em visualização) e o ativo é copiado para
-  `dados/conteudos.js`, que é o que a apresentação abre. Ao arrancar vêm dois: **Campo de Ourique** (vazio,
-  para os conteúdos reais) e **Campo de Ourique (exemplo)** (dados de demonstração). **Novo…** cria um preset
+  `dados/conteudos.js`, que é o que a apresentação abre. Em Campo de Ourique há dois: **Campo de Ourique** (os
+  conteúdos reais) e **Campo de Ourique (exemplo)** (dados de demonstração). **Novo…** cria um preset
   vazio com o nome que escolheres; **Apagar** apaga o ativo (fica uma cópia `.apagado.bak`); **Importar…**
   carrega um preset exportado (.json) ou um `conteudos.js` gravado por esta ferramenta como **preset
   alternativo** desta freguesia (nunca substitui um existente; com o mesmo nome fica «(importado)»), que passa a
@@ -97,13 +106,14 @@ ferramentas; «⋯ Mais» abre o título, o subtítulo e os presets):
   **Transferir conteudos.js** transfere
   o ficheiro no formato de `dados/conteudos.js`, para quando a apresentação não está servida por
   `tools/serve.mjs` (nesse caso as fotos ficam embebidas); **Repor do ficheiro** descarta o trabalho em curso
-  e volta ao que está gravado. A gravação automática é independente por preset, e o preset escolhido fica
+  e volta ao preset tal como está gravado. A gravação automática é independente por preset, e o preset escolhido fica
   lembrado neste browser entre sessões.
 - **Gravação automática**: cada alteração fica guardada no browser (localStorage) e é reposta automaticamente ao
   abrir a página, mesmo que não se tenha gravado o ficheiro; a barra indica «Alterações por guardar
-  (recuperadas de …)». Se `dados/conteudos.js` tiver sido alterado depois (à mão ou noutro browser), vale o
-  ficheiro. Só se perde com «Repor do ficheiro» ou ao limpar os dados do site. O aviso ao fechar a página só
-  aparece em modo de edição.
+  (recuperadas de …)». Se o ficheiro do preset tiver sido alterado depois (à mão ou noutro browser), vale o
+  ficheiro, ao abrir a página e ao trocar de preset. Grava meio segundo depois da última alteração (e logo ao
+  fechar a página). Perde-se com «Sair sem guardar», «Repor do ficheiro», ao apagar o preset ou ao limpar os
+  dados do site. O aviso ao fechar a página só aparece em modo de edição.
 
 ## Modelo de `dados/conteudos.js`
 
@@ -120,7 +130,7 @@ ferramentas; «⋯ Mais» abre o título, o subtítulo e os presets):
   sugestão). Sem prioridade, o elemento fica cinzento. Escolhe-se no cartão em modo de edição.
 - `competencia` (opcional): a quem cabe resolver: `governo` (Governo), `camara` (Câmara Municipal) ou `junta`
   (Junta de Freguesia). Aparece no cartão.
-- `texto`: string (pode ter HTML) ou lista de parágrafos. `fotos`: `[{ src, legenda }]` (`src` é um caminho
+- `texto`: um texto (pode ter HTML) ou uma lista de parágrafos. `fotos`: `[{ src, legenda }]` (`src` é um caminho
   como `assets/fotos/x.jpg`, um endereço ou, sem servidor, uma imagem embebida).
 - `visita`: lista de ids pela ordem dos destaques (ausente = todos os elementos de topo, pela ordem do índice).
 - `categorias`: `[{ id, nome, icone, cor, membros: [ids] }]`.
@@ -133,25 +143,29 @@ ferramentas; «⋯ Mais» abre o título, o subtítulo e os presets):
   se o servidor da DGT falhar ou não houver rede); exterior da freguesia escurecido a 72 %. Os pontos de
   interesse são círculos com a cor da prioridade, que pulsam ao passar o cursor, tal como as ruas destacadas
   e as zonas, de onde saem ondas da mesma cor; a informação abre num cartão
-  central. À esquerda, um painel colapsável (fechado ao arrancar, botão ☰) com as categorias (chips que
+  central (no telemóvel, em baixo; com o telemóvel deitado, à direita). À esquerda, um painel colapsável
+  (fechado ao arrancar, botão ☰) com as categorias (etiquetas que
   filtram o mapa e o índice; combinam-se; ▶ visita a categoria; «Mostrar tudo» limpa), o índice por tipo,
   o botão «Visita guiada» (setas ‹ › ou teclado: ←, →, Espaço, Home, End; um seletor na barra troca entre a
   visita completa e a visita de cada categoria) e «Vista geral». As categorias também aparecem na pesquisa e,
-  nos cartões, como chips que abrem o cartão da categoria (lista de membros, «Visitar», «Mostrar só esta»). Em cima à direita,
-  uma caixa de pesquisa discreta (atalho: tecla /) que procura lugares, zonas e todas as ruas, sem acentos,
-  com escrita preditiva (a conclusão aparece a cinzento; Tab ou → aceita; ↑ ↓ e Enter escolhem na lista).
-  Em baixo à esquerda, o botão «Camadas» abre um painel colapsável (fechado ao arrancar) com quatro camadas
+  nos cartões, como etiquetas que abrem o cartão da categoria (lista de membros, «Visitar», «Mostrar só esta»). Em cima à direita,
+  uma caixa de pesquisa discreta (atalho: tecla /) que procura pontos, zonas, categorias, todas as ruas e as
+  freguesias, sem acentos e com várias palavras («quinta lou»), com escrita preditiva (a conclusão aparece a
+  cinzento; Tab ou → aceita; ↑ ↓ e Enter escolhem na lista).
+  Em baixo à esquerda, o botão «Camadas» abre um painel colapsável (fechado ao arrancar) com seis camadas
   opcionais, todas desligadas por predefinição: «Pontos nas zonas» (mostra sempre os pontos escondidos dentro
-  das zonas); «Nomes das ruas» (traçado de todas as ruas da freguesia, OSM: ao passar o cursor a rua
+  das zonas); «Nomes das ruas» (traçado de todas as ruas da freguesia, do OpenStreetMap em Campo de Ourique e
+  da Câmara Municipal nas outras; desligada, a camada fica suspensa e não pesa ao mover o mapa; ao passar o cursor a rua
   ilumina-se e o nome surge ao longo da via; a partir do zoom 17 aparecem os nomes de todas as que têm
   comprimento para isso); «Números de polícia» (do cadastro municipal, desenhados num canvas a partir do
-  zoom 17,5, só para o que está no ecrã); e «Lotes do cadastro» (contornos dos 2689 edifícios da cartografia municipal
-  1/1000, com a morada ao passar o cursor). Os pontos dentro
-  No canto inferior direito, o botão «Legenda» (fechado ao arrancar) mostra o significado das cores e quantos
-  elementos há de cada prioridade: preto para problemas urgentes, vermelho para situações importantes, amarelo
-  para situações preocupantes, verde para situações pouco preocupantes e branco para sugestões.
+  zoom 17,5, só para o que está no ecrã); «Lotes do cadastro» (contornos dos edifícios da cartografia municipal
+  1/1000, com a morada ao passar o cursor); «Espaços verdes» (espaços verdes e hortas urbanas da CML, com nome,
+  área e gestão); e «Mapa da cidade» (troca o satélite pelo mapa do OpenStreetMap). Os pontos dentro
   de uma zona ficam escondidos até se selecionar a zona (ou um deles, pelo índice ou pela pesquisa), ou até
-  se ligar o interruptor «Pontos nas zonas». Carregar numa zona faz o mapa voar até ela ocupar o máximo do
+  se ligar o interruptor «Pontos nas zonas». No canto inferior direito, o botão «Legenda» (fechado ao arrancar)
+  mostra o significado das cores e quantos elementos há de cada prioridade: preto para problemas urgentes,
+  vermelho para situações importantes, amarelo para situações preocupantes, verde para situações pouco
+  preocupantes e branco para sugestões. Carregar numa zona faz o mapa voar até ela ocupar o máximo do
   ecrã possível, com os seus pontos à vista; o cartão encosta à direita ou em baixo, conforme o que deixa a
   zona maior, para não a tapar. Ao desselecionar a zona (clique no mapa ou Esc) o mapa volta à vista inicial
   da freguesia. Esc fecha o que estiver aberto. Cada elemento tem ligação própria: `index.html#id`.
