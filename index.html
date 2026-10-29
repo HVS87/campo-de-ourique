@@ -2,91 +2,151 @@
 <html lang="pt">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Campo de Ourique</title>
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <script src="vendor/leaflet/leaflet.js"></script>
 <script src="dados/geo.js"></script>
+<script src="dados/ruas.js"></script>
 <script src="dados/conteudos.js"></script>
 <style>
   :root {
-    --bg: #0f1216; --panel: rgba(18, 22, 28, .92); --panel-border: rgba(255,255,255,.12);
+    --bg: #0f1216; --panel: rgba(18, 22, 28, .94); --panel-border: rgba(255,255,255,.12);
     --ink: #eef1f5; --ink-dim: #a6afbb; --accent: #f3c35b; --accent-ink: #1a1405;
     --ponto: #f3c35b; --grupo: #7ad3ff; --rua: #ff8a5b; --zona: #9be38a;
-    --radius: 12px; --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+    --radius: 14px; --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+    --painel-w: 320px;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: var(--font); overflow: hidden; }
   #map { position: absolute; inset: 0; background: #0b0d10; }
   button { font: inherit; }
+  .vidro { background: var(--panel); border: 1px solid var(--panel-border); backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(0,0,0,.45); }
+  .redondo { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; color: var(--ink); cursor: pointer; font-size: 18px; padding: 0; }
+  .redondo:hover { background: rgba(40,46,56,.96); }
+  .redondo.on { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
 
-  /* ---- painel esquerdo: título e índice ---- */
-  #painel {
-    position: absolute; top: 12px; left: 12px; z-index: 1000; width: 300px; max-height: calc(100% - 120px);
-    display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--panel-border);
-    border-radius: var(--radius); backdrop-filter: blur(8px); box-shadow: 0 10px 30px rgba(0,0,0,.45); font-size: 13px;
-    transition: transform .25s;
-  }
-  #painel header { padding: 14px 16px 10px; border-bottom: 1px solid var(--panel-border); }
-  #painel h1 { font-size: 18px; margin: 0; letter-spacing: .3px; }
-  #painel h1 small { display: block; font-weight: 400; color: var(--ink-dim); font-size: 12px; margin-top: 3px; }
-  .acoes { display: flex; gap: 6px; padding: 10px 10px 0; flex-wrap: wrap; }
-  .btn { font-size: 12.5px; padding: 7px 11px; border-radius: 8px; border: 1px solid var(--panel-border); background: rgba(255,255,255,.06); color: var(--ink); cursor: pointer; }
+  /* ---- barra superior: índice, título, pesquisa ---- */
+  #btn-painel { position: absolute; top: 14px; left: 14px; z-index: 1001; }
+  #marca { position: absolute; top: 14px; left: 66px; z-index: 1000; height: 42px; display: flex; align-items: center; padding: 0 16px 0 14px; border-radius: 21px; pointer-events: none; }
+  #marca b { font-size: 15px; letter-spacing: .3px; }
+  #marca small { color: var(--ink-dim); font-size: 12px; margin-left: 8px; }
+  #pesquisa-box { position: absolute; top: 14px; right: 14px; z-index: 1002; width: 300px; transition: width .2s; }
+  #pesquisa-box .campo { position: relative; height: 42px; border-radius: 21px; display: flex; align-items: center; }
+  #pesquisa-box .lupa { position: absolute; left: 13px; top: 11px; width: 18px; height: 18px; color: var(--ink-dim); pointer-events: none; }
+  #pesquisa, #ghost { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0 38px 0 40px; border: 0; border-radius: 21px; font: inherit; font-size: 14px; background: transparent; }
+  #pesquisa { color: var(--ink); outline: none; z-index: 2; }
+  #pesquisa::placeholder { color: var(--ink-dim); }
+  #ghost { color: var(--ink-dim); white-space: pre; overflow: hidden; display: flex; align-items: center; z-index: 1; pointer-events: none; opacity: .75; }
+  #ghost span { visibility: hidden; }
+  #pesquisa-limpar { position: absolute; right: 8px; top: 7px; width: 28px; height: 28px; border-radius: 50%; border: 0; background: transparent; color: var(--ink-dim); cursor: pointer; display: none; z-index: 3; }
+  #pesquisa-box.com-texto #pesquisa-limpar { display: block; }
+  #pesquisa-limpar:hover { background: rgba(255,255,255,.1); color: var(--ink); }
+  #sugestoes { margin-top: 6px; border-radius: var(--radius); overflow: hidden; display: none; max-height: min(60vh, 420px); overflow-y: auto; }
+  #sugestoes.aberto { display: block; }
+  #sugestoes button { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 9px 14px; border: 0; background: transparent; color: var(--ink); cursor: pointer; font-size: 13.5px; }
+  #sugestoes button:hover, #sugestoes button.ativo { background: rgba(255,255,255,.08); }
+  #sugestoes button b { font-weight: 600; color: var(--accent); }
+  #sugestoes .etq { margin-left: auto; font-size: 10.5px; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-dim); flex: none; }
+  #sugestoes .nada { padding: 10px 14px; color: var(--ink-dim); font-size: 13px; }
+  .pinta { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--c); }
+  .pinta.rua, .pinta.zona { border-radius: 2px; }
+  .pinta.rua-osm { background: transparent; border-top: 2px solid #ddd; height: 0; width: 10px; border-radius: 0; }
+
+  /* ---- painel esquerdo colapsável: índice ---- */
+  #painel { position: absolute; top: 0; left: 0; bottom: 0; z-index: 1000; width: var(--painel-w); display: flex; flex-direction: column; border-radius: 0; border-width: 0 1px 0 0; transform: translateX(-100%); transition: transform .25s; }
+  #painel.aberto { transform: none; }
+  #painel header { padding: 70px 18px 12px; border-bottom: 1px solid var(--panel-border); }
+  #painel h1 { font-size: 20px; margin: 0; letter-spacing: .3px; }
+  #painel h1 small { display: block; font-weight: 400; color: var(--ink-dim); font-size: 12.5px; margin-top: 3px; }
+  .acoes { display: flex; gap: 6px; padding: 12px 12px 4px; flex-wrap: wrap; }
+  .btn { font-size: 12.5px; padding: 7px 11px; border-radius: 9px; border: 1px solid var(--panel-border); background: rgba(255,255,255,.06); color: var(--ink); cursor: pointer; }
   .btn:hover { background: rgba(255,255,255,.12); }
   .btn.on { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 600; }
-  #indice { padding: 8px 10px 10px; display: grid; gap: 3px; overflow: auto; }
-  #indice button { text-align: left; font-size: 12.5px; padding: 6px 8px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--ink); cursor: pointer; display: flex; gap: 8px; align-items: center; }
+  #indice { padding: 8px 10px 16px; display: grid; gap: 2px; overflow: auto; align-content: start; }
+  #indice h3 { margin: 10px 8px 4px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px; color: var(--ink-dim); font-weight: 600; }
+  #indice button { text-align: left; font-size: 13px; padding: 7px 8px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--ink); cursor: pointer; display: flex; gap: 10px; align-items: center; }
   #indice button:hover { background: rgba(255,255,255,.06); }
   #indice button.sel { border-color: rgba(255,255,255,.25); background: rgba(255,255,255,.08); }
-  #indice button.filho { padding-left: 26px; font-size: 12px; color: var(--ink-dim); }
-  #indice .num { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; font-size: 11px; font-weight: 700; color: #1a1405; background: var(--c); flex: none; }
-  #indice .filho .num { width: 8px; height: 8px; margin: 0 6px; }
+  #indice button.filho { padding-left: 28px; font-size: 12.5px; color: var(--ink-dim); }
   #indice .vazio { color: var(--ink-dim); padding: 8px; font-size: 12px; line-height: 1.4; }
-  #btn-painel { display: none; position: absolute; top: 12px; left: 12px; z-index: 1001; border-radius: 999px; padding: 8px 14px; background: var(--panel); border: 1px solid var(--panel-border); color: var(--ink); backdrop-filter: blur(8px); cursor: pointer; }
+  #indice .ico { width: 20px; text-align: center; flex: none; }
+  .rodape { margin-top: auto; padding: 10px 14px 12px; border-top: 1px solid var(--panel-border); color: var(--ink-dim); font-size: 11px; line-height: 1.45; }
+  .rodape a { color: #ccc; }
+
+  /* ---- canto inferior esquerdo: zoom e camada de ruas ---- */
+  .leaflet-bottom.leaflet-left { margin: 0 0 14px 14px; display: flex; flex-direction: column-reverse; gap: 8px; }
+  .leaflet-bottom.leaflet-left .leaflet-control { margin: 0; }
+  .leaflet-bar { border: 1px solid var(--panel-border) !important; border-radius: 12px !important; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,.45) !important; }
+  .leaflet-bar a { width: 36px !important; height: 36px !important; line-height: 36px !important; background: var(--panel) !important; color: var(--ink) !important; border-color: var(--panel-border) !important; backdrop-filter: blur(10px); }
+  .leaflet-bar a:hover { background: rgba(40,46,56,.96) !important; }
+  #btn-ruas { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px 0 12px; border-radius: 19px; color: var(--ink); cursor: pointer; font-size: 12.5px; white-space: nowrap; }
+  #btn-ruas:hover { background: rgba(40,46,56,.96); }
+  #btn-ruas.on { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 600; }
+  #btn-ruas .inter { width: 26px; height: 14px; border-radius: 7px; background: rgba(255,255,255,.18); position: relative; flex: none; }
+  #btn-ruas .inter::after { content: ""; position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; border-radius: 50%; background: #fff; transition: left .15s; }
+  #btn-ruas.on .inter { background: rgba(0,0,0,.25); } #btn-ruas.on .inter::after { left: 14px; background: #1a1405; }
+  .leaflet-control-attribution { background: rgba(0,0,0,.55) !important; color: #bbb !important; font-size: 10px; }
+  .leaflet-control-attribution a { color: #ddd !important; }
 
   /* ---- limite ---- */
   .limite { filter: drop-shadow(0 0 6px rgba(255,255,255,.55)); }
   .limite-halo { filter: blur(6px); }
 
-  /* ---- marcadores: pinos numerados ---- */
+  /* ---- marcadores: círculos, pulsantes ao passar o cursor ---- */
   .mk { position: relative; }
-  .mk-pino { width: 28px; height: 28px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid #1a1405; box-shadow: 0 2px 6px rgba(0,0,0,.5); display: grid; place-items: center; background: var(--c, var(--ponto)); transition: transform .15s; }
-  .mk-pino i { transform: rotate(45deg); font-style: normal; font-weight: 700; font-size: 12px; color: #1a1405; }
-  .mk:hover .mk-pino { transform: rotate(-45deg) scale(1.1); }
-  .mk.sel .mk-pino { outline: 3px solid #fff; outline-offset: 1px; }
-  .mk.filho .mk-pino { width: 20px; height: 20px; }
-  .rotulo { background: rgba(10,12,16,.85); color: #fff; padding: 3px 8px; border-radius: 6px; font-size: 12px; white-space: nowrap; border: 1px solid rgba(255,255,255,.15); pointer-events: none; box-shadow: 0 2px 8px rgba(0,0,0,.4); }
+  .mk-circ { position: absolute; inset: 0; border-radius: 50%; background: var(--c, var(--ponto)); border: 2px solid rgba(20,20,20,.9); box-shadow: 0 0 0 2px rgba(255,255,255,.55), 0 2px 8px rgba(0,0,0,.6); transition: transform .15s; }
+  .mk-circ::before, .mk-circ::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; border: 2px solid var(--c, var(--ponto)); opacity: 0; }
+  .mk:hover .mk-circ { transform: scale(1.15); }
+  .mk:hover .mk-circ::before, .mk.sel .mk-circ::before { animation: pulso 1.6s ease-out infinite; }
+  .mk:hover .mk-circ::after, .mk.sel .mk-circ::after { animation: pulso 1.6s ease-out .8s infinite; }
+  @keyframes pulso { 0% { transform: scale(.7); opacity: .95; } 100% { transform: scale(2.3); opacity: 0; } }
+  .mk.sel .mk-circ { box-shadow: 0 0 0 3px #fff, 0 2px 10px rgba(0,0,0,.7); }
+  .rotulo { background: rgba(10,12,16,.88); color: #fff; padding: 3px 9px; border-radius: 7px; font-size: 12px; white-space: nowrap; border: 1px solid rgba(255,255,255,.15); pointer-events: none; box-shadow: 0 2px 8px rgba(0,0,0,.4); }
   .rotulo::before { display: none; }
 
-  /* ---- painel lateral de informação ---- */
-  #lateral { position: absolute; top: 12px; right: 12px; bottom: 12px; width: 380px; z-index: 1000; background: var(--panel); border: 1px solid var(--panel-border); border-radius: var(--radius); backdrop-filter: blur(8px); padding: 18px 20px 20px; overflow: auto; transform: translateX(420px); transition: transform .25s; box-shadow: 0 10px 30px rgba(0,0,0,.45); }
-  #lateral.aberto { transform: none; }
-  .fechar { position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,.06); border: 0; color: var(--ink-dim); font-size: 16px; cursor: pointer; }
+  /* ---- camada de ruas (opcional) ---- */
+  .pane-ruas .rua-linha { stroke: rgba(255,255,255,.55); stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: stroke .15s, stroke-width .15s; }
+  .pane-ruas .rua-hit { stroke: transparent; stroke-width: 14; fill: none; cursor: pointer; }
+  .pane-ruas .rua-linha.hover, .pane-ruas .rua-linha.destaque { stroke: var(--accent); stroke-width: 4; filter: drop-shadow(0 0 5px rgba(243,195,91,.7)); }
+  .pane-ruas .rua-nome { font: 600 12px/1 var(--font); fill: #fff; letter-spacing: .4px; paint-order: stroke fill; stroke: rgba(0,0,0,.85); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; opacity: 0; transition: opacity .15s; }
+  .pane-ruas.z17 .rua-nome { opacity: .95; }
+  .pane-ruas .rua-nome.curto { opacity: 0 !important; }
+  .pane-ruas .rua-nome.hover, .pane-ruas .rua-nome.destaque { opacity: 1 !important; fill: var(--accent); font-size: 13px; }
+  .pane-ruas.ruas-off .rua-linha:not(.destaque), .pane-ruas.ruas-off .rua-nome:not(.destaque) { opacity: 0 !important; }
+  .pane-ruas.ruas-off .rua-hit { pointer-events: none; }
+
+  /* ---- cartão central ---- */
+  #modal { position: absolute; inset: 0; z-index: 1100; background: rgba(0,0,0,.42); display: none; place-items: center; padding: 20px 20px 90px; }
+  #modal.aberto { display: grid; }
+  #modal .cartao { position: relative; width: min(600px, 100%); max-height: 100%; overflow: auto; border-radius: 18px; padding: 22px 26px 24px; box-shadow: 0 24px 70px rgba(0,0,0,.65); animation: surgir .22s ease-out; }
+  @keyframes surgir { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
+  .fechar { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.06); border: 0; color: var(--ink-dim); font-size: 16px; cursor: pointer; }
   .fechar:hover { background: rgba(255,255,255,.14); color: var(--ink); }
-  .info h2 { margin: 0 32px 4px 0; font-size: 20px; line-height: 1.25; }
-  .info h2 .num { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; font-size: 13px; font-weight: 700; color: #1a1405; background: var(--c); vertical-align: 3px; margin-right: 8px; }
-  .info .tipo { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: var(--ink-dim); margin-bottom: 12px; }
+  .info h2 { margin: 0 36px 4px 0; font-size: 23px; line-height: 1.2; display: flex; gap: 10px; align-items: center; }
+  .info h2 .pinta { width: 12px; height: 12px; }
+  .info .tipo { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: var(--ink-dim); margin: 0 0 14px 22px; }
   .info .tipo a { color: var(--accent); cursor: pointer; text-decoration: none; }
-  .info .texto { font-size: 14px; line-height: 1.5; color: #d8dde5; }
+  .info .texto { font-size: 15px; line-height: 1.55; color: #d8dde5; }
   .info .texto p { margin: 0 0 10px; }
   .info .texto a { color: var(--accent); }
-  .fotos { display: grid; gap: 10px; margin: 0 0 14px; }
+  .fotos { display: grid; gap: 10px; margin: 0 0 16px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
   .fotos figure { margin: 0; }
-  .fotos img { display: block; width: 100%; border-radius: 10px; cursor: zoom-in; background: #1a1f27; }
+  .fotos img { display: block; width: 100%; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 10px; cursor: zoom-in; background: #1a1f27; }
   .fotos figcaption { font-size: 12px; color: var(--ink-dim); margin-top: 4px; line-height: 1.4; }
-  .filhos { margin: 12px 0 0; padding: 12px 0 0; border-top: 1px solid var(--panel-border); }
+  .filhos { margin: 14px 0 0; padding: 12px 0 0; border-top: 1px solid var(--panel-border); }
   .filhos h3 { margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: var(--ink-dim); font-weight: 600; }
-  .filhos button { display: flex; gap: 8px; align-items: center; width: 100%; text-align: left; padding: 7px 8px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--ink); cursor: pointer; font-size: 13.5px; }
+  .filhos button { display: flex; gap: 10px; align-items: center; width: 100%; text-align: left; padding: 7px 8px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--ink); cursor: pointer; font-size: 14px; }
   .filhos button:hover { background: rgba(255,255,255,.07); }
 
   /* ---- lightbox ---- */
-  #lightbox { position: absolute; inset: 0; z-index: 1300; background: rgba(0,0,0,.88); display: none; place-items: center; cursor: zoom-out; }
+  #lightbox { position: absolute; inset: 0; z-index: 1300; background: rgba(0,0,0,.9); display: none; place-items: center; cursor: zoom-out; }
   #lightbox.aberto { display: grid; }
   #lightbox img { max-width: 94vw; max-height: 86vh; border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.7); }
   #lightbox figcaption { position: absolute; left: 0; right: 0; bottom: 20px; text-align: center; color: #ddd; font-size: 14px; padding: 0 20px; }
 
   /* ---- guião ---- */
-  #guiao { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 1000; display: none; gap: 8px; align-items: center; background: var(--panel); border: 1px solid var(--panel-border); border-radius: 999px; padding: 6px 8px; backdrop-filter: blur(8px); box-shadow: 0 10px 30px rgba(0,0,0,.45); }
+  #guiao { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 1200; display: none; gap: 8px; align-items: center; border-radius: 999px; padding: 6px 8px; }
   #guiao.aberto { display: flex; }
   #guiao .seta { width: 38px; height: 38px; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 18px; cursor: pointer; }
   #guiao .seta:hover { filter: brightness(1.08); }
@@ -96,11 +156,11 @@
   #guiao .sair:hover { background: rgba(255,255,255,.1); color: var(--ink); }
 
   /* ---- avisos ---- */
-  #aviso { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); z-index: 1200; background: var(--panel); border: 1px solid var(--panel-border); color: var(--ink); padding: 8px 14px; border-radius: 999px; font-size: 12.5px; display: none; max-width: 90vw; text-align: center; backdrop-filter: blur(8px); }
+  #aviso { position: absolute; left: 50%; bottom: 76px; transform: translateX(-50%); z-index: 1250; color: var(--ink); padding: 8px 14px; border-radius: 999px; font-size: 12.5px; display: none; max-width: 90vw; text-align: center; }
   #aviso.aberto { display: block; }
 
   /* ---- editor (só com ?editor) ---- */
-  #editor { display: none; position: absolute; left: 50%; top: 12px; transform: translateX(-50%); z-index: 1100; background: var(--panel); border: 1px solid var(--panel-border); border-radius: var(--radius); padding: 8px; backdrop-filter: blur(8px); width: min(560px, 92vw); font-size: 12.5px; }
+  #editor { display: none; position: absolute; left: 50%; top: 66px; transform: translateX(-50%); z-index: 1050; border-radius: var(--radius); padding: 8px; width: min(560px, 92vw); font-size: 12.5px; }
   #editor.aberto { display: block; }
   #editor .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
   #editor .row b { margin-right: 4px; }
@@ -109,44 +169,64 @@
   #editor .nota { color: var(--ink-dim); font-size: 11.5px; line-height: 1.4; padding: 4px 4px 0; }
   #map.desenhar { cursor: crosshair; }
 
-  .leaflet-control-attribution { background: rgba(0,0,0,.55) !important; color: #bbb !important; font-size: 10px; }
-  .leaflet-control-attribution a { color: #ddd !important; }
-  .leaflet-bar a { background: var(--panel) !important; color: var(--ink) !important; border-color: var(--panel-border) !important; }
-  .leaflet-bar a:hover { background: rgba(255,255,255,.12) !important; }
-
-  @media (max-width: 760px) {
-    #btn-painel { display: block; }
-    #painel { width: calc(100% - 24px); max-height: 60%; top: 56px; transform: translateX(-110%); }
-    #painel.aberto { transform: none; }
-    #lateral { width: calc(100% - 24px); top: auto; height: 58%; transform: translateY(120%); }
-    #lateral.aberto { transform: none; }
-    #guiao .texto { min-width: 150px; }
+  /* ---- ecrãs médios (tablet) e estreitos (telemóvel) ---- */
+  @media (max-width: 900px) {
+    #marca small { display: none; }
+    #pesquisa-box { width: 230px; }
   }
+  @media (max-width: 640px) {
+    :root { --painel-w: min(86vw, 340px); }
+    #marca { display: none; }
+    #pesquisa-box { width: 42px; }
+    #pesquisa-box:focus-within, #pesquisa-box.com-texto { width: calc(100vw - 84px); }
+    #pesquisa-box:not(:focus-within):not(.com-texto) #pesquisa { padding: 0; color: transparent; }
+    #pesquisa-box:not(:focus-within):not(.com-texto) #pesquisa::placeholder { color: transparent; }
+    #pesquisa-box:not(:focus-within):not(.com-texto) #ghost { display: none; }
+    #modal { padding: 12px 12px 80px; align-items: end; }
+    #modal .cartao { padding: 18px 18px 20px; border-radius: 16px; }
+    .info h2 { font-size: 19px; }
+    .info .texto { font-size: 14px; }
+    #guiao .texto { min-width: 140px; font-size: 12.5px; }
+    #btn-ruas span.txt { display: none; }
+    #btn-ruas { padding: 0 12px; }
+  }
+  @media (pointer: coarse) { .mk-circ { border-width: 2px; } }
 </style>
 </head>
 <body>
 <div id="map"></div>
 
-<button id="btn-painel" aria-label="Abrir índice">☰ Índice</button>
-<aside id="painel">
-  <header>
-    <h1 id="titulo">Campo de Ourique <small id="subtitulo"></small></h1>
-  </header>
+<button id="btn-painel" class="vidro redondo" aria-label="Abrir índice" aria-expanded="false">☰</button>
+<div id="marca" class="vidro"><b id="marca-titulo">Campo de Ourique</b><small id="marca-sub"></small></div>
+
+<div id="pesquisa-box">
+  <div class="campo vidro">
+    <svg class="lupa" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <div id="ghost" aria-hidden="true"></div>
+    <input id="pesquisa" type="text" placeholder="Pesquisar lugares e ruas…" autocomplete="off" spellcheck="false" aria-label="Pesquisar" aria-autocomplete="both" aria-controls="sugestoes">
+    <button id="pesquisa-limpar" aria-label="Limpar pesquisa">✕</button>
+  </div>
+  <div id="sugestoes" class="vidro" role="listbox"></div>
+</div>
+
+<aside id="painel" class="vidro">
+  <header><h1 id="titulo">Campo de Ourique <small id="subtitulo"></small></h1></header>
   <div class="acoes">
     <button class="btn" id="btn-guiao">▶ Guião passo a passo</button>
     <button class="btn" id="btn-repor">Vista geral</button>
   </div>
   <nav id="indice" aria-label="Índice"></nav>
+  <div class="rodape">Ortoimagens © DGT 2023 (CC BY 4.0) · Limites e ruas © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a></div>
 </aside>
 
-<aside id="lateral" aria-live="polite"><button class="fechar" id="btn-fechar" aria-label="Fechar">✕</button><div id="lateral-conteudo"></div></aside>
+<div id="modal"><div class="cartao vidro"><button class="fechar" id="btn-fechar" aria-label="Fechar">✕</button><div id="modal-conteudo"></div></div></div>
 
-<div id="guiao"><button class="seta" id="g-prev" aria-label="Anterior">‹</button><span class="texto" id="g-texto"></span><button class="seta" id="g-next" aria-label="Seguinte">›</button><button class="sair" id="g-sair" aria-label="Sair do guião">✕</button></div>
+<div id="guiao" class="vidro"><button class="seta" id="g-prev" aria-label="Anterior">‹</button><span class="texto" id="g-texto"></span><button class="seta" id="g-next" aria-label="Seguinte">›</button><button class="sair" id="g-sair" aria-label="Sair do guião">✕</button></div>
 
-<div id="aviso"></div>
+<div id="aviso" class="vidro"></div>
 <div id="lightbox"><figure><img alt=""><figcaption></figcaption></figure></div>
 
-<aside id="editor">
+<aside id="editor" class="vidro">
   <div class="row"><b>Editor</b>
     <button class="btn" data-tool="poligono">Polígono por vértices</button>
     <button class="btn" data-tool="pincel">Pincel livre</button>
@@ -164,16 +244,21 @@
 'use strict';
 const D = window.MAPA_DADOS;
 const C = window.CONTEUDOS || {};
+const RUAS = window.RUAS_OSM || [];
 const LIMITE = D.limite;
 const COR = { ponto: '#f3c35b', grupo: '#7ad3ff', rua: '#ff8a5b', zona: '#9be38a' };
 const TIPO = { ponto: 'Ponto', grupo: 'Conjunto de pontos', rua: 'Rua', zona: 'Zona' };
 const EDITOR = new URLSearchParams(location.search).has('editor');
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const normalizar = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const estreito = () => window.innerWidth <= 640;
 
 document.title = C.titulo || 'Campo de Ourique';
 $('#titulo').childNodes[0].textContent = (C.titulo || 'Campo de Ourique') + ' ';
 $('#subtitulo').textContent = C.subtitulo || '';
+$('#marca-titulo').textContent = C.titulo || 'Campo de Ourique';
+$('#marca-sub').textContent = C.subtitulo || '';
 
 // ---------- elementos ----------
 function centro(pts) { let a = 0, b = 0; for (const p of pts) { a += p[0]; b += p[1]; } return [a / pts.length, b / pts.length]; }
@@ -184,7 +269,10 @@ function preparar(el, pai) {
   if (POR_ID[el.id]) console.warn('Id repetido:', el.id);
   if (pai && el.tipo !== 'ponto') { console.warn('Só pontos podem ser filhos de uma zona:', el.id); return null; }
   el.pai = pai || null;
-  if (el.tipo === 'rua' && !el.linhas) el.linhas = D.ruas[el.rua || el.nome];
+  if (el.tipo === 'rua' && !el.linhas) {
+    el.linhas = D.ruas[el.rua || el.nome];
+    if (!el.linhas) { const r = RUAS.find(x => x.nome === (el.rua || el.nome)); if (r) el.linhas = r.trocos; }
+  }
   if (el.tipo === 'zona' && !el.poligono) el.poligono = D.areas[el.area || el.nome];
   if (el.tipo === 'ponto' && !el.pos && el.area && D.areas[el.area]) el.pos = centro(D.areas[el.area]);
   const ok = el.tipo === 'ponto' ? !!el.pos : el.tipo === 'grupo' ? !!(el.pontos && el.pontos.length) : el.tipo === 'rua' ? !!(el.linhas && el.linhas.length) : !!(el.poligono && el.poligono.length >= 3);
@@ -198,19 +286,21 @@ for (const e of C.elementos || []) { const p = preparar(e, null); if (p) ELEMENT
 // ---------- mapa ----------
 const map = L.map('map', { zoomControl: false, attributionControl: false, maxZoom: 20, minZoom: 14, zoomSnap: .5 });
 L.control.zoom({ position: 'bottomleft' }).addTo(map);
-L.control.attribution({ position: 'bottomright', prefix: false }).addAttribution('Limites e ruas © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>').addTo(map);
+L.control.attribution({ position: 'bottomright', prefix: false }).addAttribution('© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>').addTo(map);
 map.createPane('satBase').style.zIndex = 190;   // imagem fixa (reserva e fundo imediato)
 map.createPane('sat').style.zIndex = 200;       // satélite em direto
 map.createPane('mascara').style.zIndex = 390;
+map.createPane('ruasTodas').style.zIndex = 395; // camada opcional com todas as ruas
 map.createPane('zonas').style.zIndex = 400;
 map.createPane('ruas').style.zIndex = 410;
 map.createPane('limite').style.zIndex = 420;
 const limiteBounds = L.latLngBounds(LIMITE);
-map.fitBounds(limiteBounds, { padding: [20, 20] });
+function margensGerais() { return { paddingTopLeft: [estreito() ? 16 : 40, 70], paddingBottomRight: [estreito() ? 16 : 40, 40] }; }
+map.fitBounds(limiteBounds, margensGerais());
 map.setMaxBounds(limiteBounds.pad(1.2));
 
 // Satélite: imagem fixa por baixo (aparece logo e serve de reserva) e DGT em direto por cima.
-const fixa = L.imageOverlay(D.imagem.ficheiro, D.imagem.bounds, { pane: 'satBase', attribution: D.imagem.fonte }).addTo(map);
+L.imageOverlay(D.imagem.ficheiro, D.imagem.bounds, { pane: 'satBase', attribution: D.imagem.fonte }).addTo(map);
 const DGT_URL = 'https://ortos.dgterritorio.gov.pt/wms/ortosat2023';
 const dgt = L.tileLayer.wms(DGT_URL, { pane: 'sat', layers: 'ortoSat2023-CorVerdadeira', format: 'image/jpeg', version: '1.3.0', crs: L.CRS.EPSG3857, maxZoom: 20, tileSize: 512, attribution: 'Ortoimagens © <a href="https://www.dgterritorio.gov.pt" target="_blank" rel="noopener">DGT</a> 2023' });
 let dgtOk = false, dgtErros = 0, emReserva = false;
@@ -235,16 +325,16 @@ L.polygon([MUNDO, LIMITE], { pane: 'mascara', stroke: false, fillColor: '#05070a
 L.polyline(LIMITE, { pane: 'limite', color: '#ffffff', weight: 10, opacity: .35, className: 'limite-halo', interactive: false }).addTo(map);
 L.polyline(LIMITE, { pane: 'limite', color: '#ffffff', weight: 2, opacity: .95, className: 'limite', interactive: false }).addTo(map);
 
-// ---------- marcadores e geometrias ----------
+// ---------- marcadores e geometrias dos pontos de interesse ----------
 const vista = {}; // id -> { el, camadas, marcadores, linha, halo, poligono }
 let numero = 0;
 function icone(el, filho) {
-  const cor = COR[filho ? 'ponto' : el.tipo];
-  return L.divIcon({ className: 'mk' + (filho ? ' filho' : ''), html: `<div class="mk-pino" style="--c:${cor}"><i>${filho ? '' : el.numero}</i></div>`, iconSize: filho ? [20, 20] : [28, 28], iconAnchor: filho ? [3, 18] : [4, 26] });
+  const cor = COR[filho ? 'ponto' : el.tipo], s = filho ? 13 : 18;
+  return L.divIcon({ className: 'mk' + (filho ? ' filho' : ''), html: `<div class="mk-circ" style="--c:${cor}"></div>`, iconSize: [s, s], iconAnchor: [s / 2, s / 2] });
 }
 function marcador(el, pos, filho) {
   const m = L.marker(pos, { icon: icone(el, filho), riseOnHover: true, keyboard: false });
-  m.bindTooltip(el.nome, { direction: 'top', offset: [10, -14], className: 'rotulo', opacity: 1 });
+  m.bindTooltip(el.nome, { direction: 'top', offset: [0, -12], className: 'rotulo', opacity: 1 });
   m.on('click', () => selecionar(el, false));
   return m;
 }
@@ -276,16 +366,15 @@ function construirElemento(el) {
     for (const f of el.filhos) construirElemento(f);
   }
 }
-// margens do voo: deixam livres o painel esquerdo e o lateral (em ecrãs estreitos, o lateral ocupa a parte de baixo)
-function margens() {
-  const estreito = window.innerWidth <= 760;
-  return estreito ? { paddingTopLeft: [20, 70], paddingBottomRight: [20, Math.round(window.innerHeight * .6) + 20] } : { paddingTopLeft: [340, 60], paddingBottomRight: [420, 90] };
-}
 function limitesDe(el) {
   if (el.tipo === 'ponto') return L.latLngBounds([el.pos, el.pos]);
   if (el.tipo === 'grupo') return L.latLngBounds(el.pontos);
   if (el.tipo === 'rua') return L.latLngBounds(el.linhas.flat());
   return L.latLngBounds(el.poligono);
+}
+// margens do voo: o cartão fica ao centro, por isso o alvo sobe um pouco; em ecrãs estreitos o cartão ocupa a parte de baixo
+function margensVoo() {
+  return estreito() ? { paddingTopLeft: [20, 70], paddingBottomRight: [20, Math.round(window.innerHeight * .55)] } : { paddingTopLeft: [80, 80], paddingBottomRight: [80, 120] };
 }
 
 // ---------- seleção ----------
@@ -303,8 +392,8 @@ function limparSelecao() {
   selecionado = null;
   if (location.hash) history.replaceState(null, '', location.pathname + location.search);
 }
-function selecionar(el, voar) {
-  limparSelecao();
+function selecionar(el, voar, semCartao) {
+  limparSelecao(); limparRuaDestaque();
   selecionado = el;
   const v = vista[el.id];
   if (v.linha) { v.linha.setStyle({ weight: 6, opacity: 1, color: '#ffd166' }); v.halo.setStyle({ opacity: .45, weight: 24 }); }
@@ -312,13 +401,13 @@ function selecionar(el, voar) {
   if (el.pai) { vista[el.pai.id].poligono.setStyle(estiloZona.ativa); mostrarFilhos(el.pai, true); }
   v.marcadores.forEach(m => m.getElement() && m.getElement().classList.add('sel'));
   const b = document.querySelector(`#indice button[data-id="${el.id}"]`); if (b) { b.classList.add('sel'); b.scrollIntoView({ block: 'nearest' }); }
-  if (voar) map.flyToBounds(limitesDe(el), Object.assign({ maxZoom: 18.5, duration: .9 }, margens()));
+  if (voar) map.flyToBounds(limitesDe(el), Object.assign({ maxZoom: 18.5, duration: .9 }, margensVoo()));
   history.replaceState(null, '', '#' + el.id);
-  mostrarInfo(el);
-  if (window.innerWidth <= 760) $('#painel').classList.remove('aberto');
+  if (!semCartao) mostrarInfo(el);
+  if (estreito()) abrirPainel(false);
 }
 
-// ---------- painel lateral ----------
+// ---------- cartão central ----------
 function htmlTexto(t) {
   if (!t) return '';
   if (Array.isArray(t)) return t.map(p => `<p>${p}</p>`).join('');
@@ -333,42 +422,199 @@ function htmlFotos(fotos) {
 }
 function htmlInfo(el) {
   const cor = COR[el.pai ? 'ponto' : el.tipo];
-  let h = `<div class="info"><h2>${el.numero ? `<span class="num" style="--c:${cor}">${el.numero}</span>` : ''}${el.icone ? el.icone + ' ' : ''}${esc(el.nome)}</h2>`;
+  let h = `<div class="info"><h2><span class="pinta ${el.tipo}" style="--c:${cor}"></span><span>${el.icone ? el.icone + ' ' : ''}${esc(el.nome)}</span></h2>`;
   h += `<div class="tipo">${TIPO[el.tipo]}${el.pai ? ` · dentro de <a data-ir="${el.pai.id}">${esc(el.pai.nome)}</a>` : ''}</div>`;
   h += htmlFotos(el.fotos) + `<div class="texto">${htmlTexto(el.texto)}</div>`;
   if (el.filhos.length) h += `<div class="filhos"><h3>Nesta zona</h3>${el.filhos.map(f => `<button data-ir="${f.id}"><span>${f.icone || '📍'}</span>${esc(f.nome)}</button>`).join('')}</div>`;
   return h + '</div>';
 }
-const lateral = $('#lateral'), lateralConteudo = $('#lateral-conteudo');
+const modal = $('#modal'), modalConteudo = $('#modal-conteudo');
 function mostrarInfo(el) {
-  lateralConteudo.innerHTML = htmlInfo(el);
-  lateral.scrollTop = 0;
-  lateral.classList.add('aberto');
+  modalConteudo.innerHTML = htmlInfo(el);
+  modal.querySelector('.cartao').scrollTop = 0;
+  modal.classList.add('aberto');
 }
-function fecharLateral() { lateral.classList.remove('aberto'); }
-lateralConteudo.addEventListener('click', e => {
+function fecharCartao() { modal.classList.remove('aberto'); }
+function cartaoAberto() { return modal.classList.contains('aberto'); }
+modalConteudo.addEventListener('click', e => {
   const ir = e.target.closest('[data-ir]'); if (ir) { selecionar(POR_ID[ir.dataset.ir], true); return; }
   const img = e.target.closest('.fotos img'); if (img) abrirLightbox(img.src, img.dataset.legenda);
 });
-$('#btn-fechar').addEventListener('click', () => { fecharLateral(); limparSelecao(); });
+$('#btn-fechar').addEventListener('click', fecharCartao);
+modal.addEventListener('click', e => { if (e.target === modal) fecharCartao(); });
 
 // ---------- lightbox ----------
 const lightbox = $('#lightbox');
 function abrirLightbox(src, legenda) { lightbox.querySelector('img').src = src; lightbox.querySelector('figcaption').textContent = legenda || ''; lightbox.classList.add('aberto'); }
 lightbox.addEventListener('click', () => lightbox.classList.remove('aberto'));
 
-// ---------- índice ----------
+// ---------- painel esquerdo (índice), colapsável ----------
+const painel = $('#painel'), btnPainel = $('#btn-painel');
+function abrirPainel(abrir) {
+  if (abrir === undefined) abrir = !painel.classList.contains('aberto');
+  painel.classList.toggle('aberto', abrir);
+  btnPainel.classList.toggle('on', abrir);
+  btnPainel.setAttribute('aria-expanded', String(abrir));
+  btnPainel.textContent = abrir ? '✕' : '☰';
+}
+btnPainel.addEventListener('click', () => abrirPainel());
 function construirIndice() {
   const box = $('#indice'); box.innerHTML = '';
   if (!ELEMENTOS.length) { box.innerHTML = '<div class="vazio">Ainda não há pontos de interesse. Acrescenta-os em dados/conteudos.js.</div>'; return; }
-  for (const el of ELEMENTOS) {
-    box.insertAdjacentHTML('beforeend', `<button data-id="${el.id}"><span class="num" style="--c:${COR[el.tipo]}">${el.numero}</span>${esc(el.nome)}</button>`);
-    for (const f of el.filhos) box.insertAdjacentHTML('beforeend', `<button data-id="${f.id}" class="filho"><span class="num" style="--c:${COR.ponto}"></span>${esc(f.nome)}</button>`);
+  const grupos = [['ponto', 'Lugares'], ['grupo', 'Conjuntos'], ['rua', 'Ruas'], ['zona', 'Zonas']];
+  for (const [tipo, titulo] of grupos) {
+    const lista = ELEMENTOS.filter(e => e.tipo === tipo); if (!lista.length) continue;
+    box.insertAdjacentHTML('beforeend', `<h3>${titulo}</h3>`);
+    for (const el of lista) {
+      box.insertAdjacentHTML('beforeend', `<button data-id="${el.id}"><span class="pinta ${el.tipo}" style="--c:${COR[el.tipo]}"></span><span class="ico">${el.icone || ''}</span>${esc(el.nome)}</button>`);
+      for (const f of el.filhos) box.insertAdjacentHTML('beforeend', `<button data-id="${f.id}" class="filho"><span class="pinta" style="--c:${COR.ponto}"></span><span class="ico">${f.icone || ''}</span>${esc(f.nome)}</button>`);
+    }
   }
   box.querySelectorAll('button').forEach(b => b.addEventListener('click', () => selecionar(POR_ID[b.dataset.id], true)));
 }
-$('#btn-painel').addEventListener('click', () => $('#painel').classList.toggle('aberto'));
-$('#btn-repor').addEventListener('click', () => { limparSelecao(); fecharLateral(); map.flyToBounds(limiteBounds, { padding: [20, 20], duration: .9 }); });
+$('#btn-repor').addEventListener('click', () => { limparSelecao(); limparRuaDestaque(); fecharCartao(); map.flyToBounds(limiteBounds, Object.assign({ duration: .9 }, margensGerais())); if (estreito()) abrirPainel(false); });
+
+// ---------- camada opcional: todas as ruas, com nome ao longo da via ----------
+const paneRuas = map.getPane('ruasTodas');
+paneRuas.classList.add('pane-ruas', 'ruas-off');
+const rendRuas = L.svg({ pane: 'ruasTodas', padding: .5 });
+const RUAS_VISTA = []; // { rua, linhas, nomes }
+let ruasLigadas = false, ruaHover = null, ruaDestaque = null;
+function orientar(pts) { // o nome deve ler-se da esquerda para a direita (ou de baixo para cima nas ruas norte-sul)
+  const a = pts[0], b = pts[pts.length - 1];
+  const dx = (b[1] - a[1]) * Math.cos(a[0] * Math.PI / 180), dy = b[0] - a[0];
+  const inverter = Math.abs(dx) >= Math.abs(dy) * .4 ? dx < 0 : dy < 0;
+  return inverter ? pts.slice().reverse() : pts;
+}
+function construirRuas() {
+  RUAS.forEach((rua, i) => {
+    const r = { rua, linhas: [], nomes: [] };
+    rua.trocos.forEach((troco, j) => {
+      const pts = orientar(troco);
+      const hit = L.polyline(pts, { renderer: rendRuas, pane: 'ruasTodas', className: 'rua-hit', interactive: true, weight: 14, opacity: 0 }).addTo(map);
+      const linha = L.polyline(pts, { renderer: rendRuas, pane: 'ruasTodas', className: 'rua-linha', interactive: false }).addTo(map);
+      linha._path.id = `rua-${i}-${j}`;
+      const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      txt.setAttribute('class', 'rua-nome'); txt.setAttribute('dy', '-5'); txt.setAttribute('text-anchor', 'middle');
+      const tp = document.createElementNS('http://www.w3.org/2000/svg', 'textPath');
+      tp.setAttribute('href', '#' + linha._path.id); tp.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', '#' + linha._path.id);
+      tp.setAttribute('startOffset', '50%'); tp.textContent = rua.nome;
+      txt.appendChild(tp); rendRuas._rootGroup.appendChild(txt);
+      hit.on('mouseover', () => ruaSobre(r)); hit.on('mouseout', () => ruaSobre(null)); hit.on('click', e => { L.DomEvent.stop(e); destacarRua(r, false); });
+      hit.bindTooltip(rua.nome, { sticky: true, className: 'rotulo', opacity: 1 });
+      r.linhas.push(linha); r.nomes.push(txt);
+    });
+    RUAS_VISTA.push(r);
+  });
+  atualizarNomesRuas();
+}
+function classeRua(r, cls, ligar) { r.linhas.forEach(l => l._path.classList.toggle(cls, ligar)); r.nomes.forEach(t => t.classList.toggle(cls, ligar)); }
+function ruaSobre(r) {
+  if (ruaHover && ruaHover !== r) classeRua(ruaHover, 'hover', false);
+  ruaHover = r; if (r) classeRua(r, 'hover', true);
+}
+function atualizarNomesRuas() { // esconde nomes que não cabem no comprimento da rua ao zoom atual
+  paneRuas.classList.toggle('z17', map.getZoom() >= 17);
+  for (const r of RUAS_VISTA) r.nomes.forEach((t, j) => {
+    let comp = 0; try { comp = r.linhas[j]._path.getTotalLength(); } catch (err) { comp = 0; }
+    t.classList.toggle('curto', comp < r.rua.nome.length * 7.5 + 24);
+  });
+}
+map.on('zoomend', atualizarNomesRuas);
+function ligarRuas(ligar) {
+  ruasLigadas = ligar === undefined ? !ruasLigadas : ligar;
+  paneRuas.classList.toggle('ruas-off', !ruasLigadas);
+  $('#btn-ruas').classList.toggle('on', ruasLigadas);
+  $('#btn-ruas').setAttribute('aria-pressed', String(ruasLigadas));
+}
+function destacarRua(r, voar) {
+  limparRuaDestaque(); limparSelecao(); fecharCartao();
+  ruaDestaque = r; classeRua(r, 'destaque', true);
+  if (voar) map.flyToBounds(L.latLngBounds(r.rua.trocos.flat()), { paddingTopLeft: [60, 80], paddingBottomRight: [60, 60], maxZoom: 18, duration: .9 });
+}
+function limparRuaDestaque() { if (ruaDestaque) classeRua(ruaDestaque, 'destaque', false); ruaDestaque = null; }
+// botão da camada, junto ao zoom
+const CtrlRuas = L.Control.extend({ onAdd() {
+  const b = L.DomUtil.create('button', 'vidro'); b.id = 'btn-ruas'; b.type = 'button'; b.setAttribute('aria-pressed', 'false');
+  b.innerHTML = '<span class="inter"></span><span class="txt">Nomes das ruas</span>';
+  L.DomEvent.disableClickPropagation(b); b.addEventListener('click', () => ligarRuas());
+  return b;
+} });
+new CtrlRuas({ position: 'bottomleft' }).addTo(map);
+
+// ---------- pesquisa com escrita predicativa ----------
+const INDICE_PESQUISA = [];
+function construirPesquisa() {
+  INDICE_PESQUISA.length = 0;
+  // cada entrada tem o nome completo e, nas vias, um alias sem o tipo («Saraiva de Carvalho» para «Rua Saraiva de Carvalho»)
+  const PREFIXO = /^(rua|avenida|av.|travessa|largo|praca|jardim|beco|calcada|estrada|alameda|escadinhas|patio|azinhaga|campo|rotunda|parque|mercado|igreja) (d[aeo]s? )?/;
+  const add = (nome, tipo, acao, cor) => {
+    const chave = normalizar(nome), m = chave.match(PREFIXO);
+    const nomes = [nome], chaves = [chave];
+    if (m && m[0].length < nome.length) { nomes.push(nome.slice(m[0].length)); chaves.push(chave.slice(m[0].length)); }
+    INDICE_PESQUISA.push({ nome, chave, nomes, chaves, tipo, acao, cor });
+  };
+  const todos = []; (function rec(l) { for (const e of l) { todos.push(e); rec(e.filhos); } })(ELEMENTOS);
+  for (const el of todos) add(el.nome, el.pai ? 'ponto' : el.tipo, () => selecionar(el, true), COR[el.pai ? 'ponto' : el.tipo]);
+  const nomesPOI = new Set(todos.filter(e => e.tipo === 'rua').map(e => normalizar(e.nome)));
+  for (const r of RUAS_VISTA) if (!nomesPOI.has(normalizar(r.rua.nome))) add(r.rua.nome, 'rua-osm', () => destacarRua(r, true));
+  INDICE_PESQUISA.sort((a, b) => a.nome.localeCompare(b.nome, 'pt'));
+}
+const ETQ = { ponto: 'lugar', grupo: 'conjunto', rua: 'rua', zona: 'zona', 'rua-osm': 'rua' };
+const inp = $('#pesquisa'), ghost = $('#ghost'), sug = $('#sugestoes'), pesquisaBox = $('#pesquisa-box');
+let resultados = [], ativo = -1;
+function procurar(q) {
+  const n = normalizar(q.trim()); if (!n) return [];
+  const comeca = [], contem = [], palavra = [];
+  for (const it of INDICE_PESQUISA) {
+    if (it.chaves.some(c => c.startsWith(n))) comeca.push(it);
+    else if (it.chave.split(/[\s\-–,()]+/).some(w => w.startsWith(n))) palavra.push(it);
+    else if (it.chave.includes(n)) contem.push(it);
+  }
+  return comeca.concat(palavra, contem).slice(0, 9);
+}
+function realcar(nome, q) {
+  const t = q.trim(), n = normalizar(nome), k = n.indexOf(normalizar(t));
+  if (k < 0 || !t) return esc(nome);
+  return esc(nome.slice(0, k)) + '<b>' + esc(nome.slice(k, k + t.length)) + '</b>' + esc(nome.slice(k + t.length));
+}
+function atualizarPesquisa() {
+  const q = inp.value;
+  pesquisaBox.classList.toggle('com-texto', q.length > 0);
+  resultados = procurar(q); ativo = -1;
+  // escrita predicativa: completa em cinzento com o primeiro resultado que começa pelo texto escrito
+  let comp = null;
+  if (q && !q.endsWith(' ')) for (const r of resultados) { const k = r.chaves.findIndex(c => c.startsWith(normalizar(q)) && c.length > q.length); if (k >= 0) { comp = r.nomes[k]; break; } }
+  ghost.innerHTML = comp ? `<span>${esc(q)}</span>${esc(comp.slice(q.length))}` : '';
+  ghost.dataset.completar = comp || '';
+  if (!q.trim()) { sug.classList.remove('aberto'); sug.innerHTML = ''; return; }
+  sug.innerHTML = resultados.length
+    ? resultados.map((r, i) => `<button role="option" data-i="${i}"><span class="pinta ${r.tipo}" style="--c:${r.cor || '#ddd'}"></span><span>${realcar(r.nome, q)}</span><span class="etq">${ETQ[r.tipo]}</span></button>`).join('')
+    : '<div class="nada">Nada encontrado.</div>';
+  sug.classList.add('aberto');
+}
+function escolher(i) {
+  const r = resultados[i]; if (!r) return;
+  inp.value = r.nome; atualizarPesquisa(); sug.classList.remove('aberto'); inp.blur();
+  r.acao();
+}
+function marcarAtivo(i) {
+  ativo = i; sug.querySelectorAll('button').forEach((b, k) => b.classList.toggle('ativo', k === i));
+  const b = sug.querySelector('button.ativo'); if (b) b.scrollIntoView({ block: 'nearest' });
+}
+inp.addEventListener('input', atualizarPesquisa);
+inp.addEventListener('focus', () => { if (inp.value.trim()) atualizarPesquisa(); });
+inp.addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown') { e.preventDefault(); if (resultados.length) marcarAtivo((ativo + 1) % resultados.length); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); if (resultados.length) marcarAtivo((ativo - 1 + resultados.length) % resultados.length); }
+  else if ((e.key === 'Tab' || e.key === 'ArrowRight') && ghost.dataset.completar && inp.selectionStart === inp.value.length) { e.preventDefault(); inp.value = ghost.dataset.completar; atualizarPesquisa(); }
+  else if (e.key === 'Enter') { e.preventDefault(); escolher(ativo >= 0 ? ativo : 0); }
+  else if (e.key === 'Escape') { e.stopPropagation(); if (inp.value) { inp.value = ''; atualizarPesquisa(); } else inp.blur(); }
+});
+sug.addEventListener('mousedown', e => { const b = e.target.closest('button[data-i]'); if (b) { e.preventDefault(); escolher(+b.dataset.i); } });
+$('#pesquisa-limpar').addEventListener('click', () => { inp.value = ''; atualizarPesquisa(); inp.focus(); });
+document.addEventListener('click', e => { if (!pesquisaBox.contains(e.target)) sug.classList.remove('aberto'); });
+inp.addEventListener('blur', () => setTimeout(() => sug.classList.remove('aberto'), 150));
 
 // ---------- guião passo a passo ----------
 const guiao = $('#guiao'), btnGuiao = $('#btn-guiao');
@@ -385,21 +631,24 @@ function ligarGuiao(ligar) {
   guiao.classList.toggle('aberto', ligar);
   btnGuiao.classList.toggle('on', ligar);
   btnGuiao.textContent = ligar ? '■ Sair do guião' : '▶ Guião passo a passo';
-  if (ligar) irPasso(selecionado && !selecionado.pai ? ELEMENTOS.indexOf(selecionado) : 0);
+  if (ligar) { abrirPainel(false); irPasso(selecionado && !selecionado.pai ? ELEMENTOS.indexOf(selecionado) : 0); }
 }
 btnGuiao.addEventListener('click', () => ligarGuiao(!guiaoAberto()));
 $('#g-sair').addEventListener('click', () => ligarGuiao(false));
 $('#g-prev').addEventListener('click', () => irPasso(passo - 1));
 $('#g-next').addEventListener('click', () => irPasso(passo + 1));
 document.addEventListener('keydown', e => {
-  if (e.target.matches('input, textarea')) return;
+  if (e.target && e.target.matches && e.target.matches('input, textarea')) return;
   if (e.key === 'Escape') {
     if (lightbox.classList.contains('aberto')) { lightbox.classList.remove('aberto'); return; }
     if (ferramenta) { cancelarDesenho(); porFerramenta(null); return; }
-    if (lateral.classList.contains('aberto')) { fecharLateral(); limparSelecao(); return; }
-    if (guiaoAberto()) ligarGuiao(false);
+    if (cartaoAberto()) { fecharCartao(); return; }
+    if (guiaoAberto()) { ligarGuiao(false); return; }
+    if (selecionado || ruaDestaque) { limparSelecao(); limparRuaDestaque(); return; }
+    if (painel.classList.contains('aberto')) abrirPainel(false);
     return;
   }
+  if (e.key === '/' && !cartaoAberto()) { e.preventDefault(); inp.focus(); return; }
   if (!guiaoAberto()) return;
   if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); irPasso(passo + 1); }
   if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); irPasso(passo - 1); }
@@ -435,13 +684,13 @@ function atualizarTemp() {
   if (!tempLinha) tempLinha = L.polygon(desenho, { color: '#fff', weight: 2, dashArray: '4 4', fillColor: '#fff', fillOpacity: .15, interactive: false }).addTo(map);
   else tempLinha.setLatLngs(desenho);
 }
-function idDe(nome) { return nome.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'elemento'; }
+function idDe(nome) { return normalizar(nome).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'elemento'; }
 function acrescentar(el, pai) {
   let id = idDe(el.nome); for (let k = 2; POR_ID[id]; k++) id = idDe(el.nome) + '-' + k;
   el.id = id; el.pai = pai; el.filhos = []; el.fotos = [];
   if (pai) pai.filhos.push(el); else ELEMENTOS.push(el);
   POR_ID[id] = el; NOVOS.push(el);
-  construir(); construirIndice(); selecionar(el, false); exportar();
+  construir(); construirIndice(); construirPesquisa(); selecionar(el, false, true); exportar();
 }
 function terminarZona(pts) {
   cancelarDesenho();
@@ -479,15 +728,15 @@ function exportar() {
 }
 function apagarUltimo() {
   const el = NOVOS.pop(); if (!el) return;
-  limparSelecao(); fecharLateral();
+  limparSelecao(); fecharCartao();
   for (const f of el.filhos) { const k = NOVOS.indexOf(f); if (k >= 0) NOVOS.splice(k, 1); delete POR_ID[f.id]; }
   const lista = el.pai ? el.pai.filhos : ELEMENTOS; lista.splice(lista.indexOf(el), 1); delete POR_ID[el.id];
-  construir(); construirIndice(); exportar();
+  construir(); construirIndice(); construirPesquisa(); exportar();
 }
 map.on('click', e => {
   if (ferramenta === 'poligono') { desenho.push(e.latlng); tempPontos.push(L.circleMarker(e.latlng, { radius: 5, color: '#fff', fillColor: '#f3c35b', fillOpacity: 1, interactive: false }).addTo(map)); atualizarTemp(); }
   else if (ferramenta === 'ponto') novoPonto(e.latlng);
-  else if (!ferramenta && selecionado) { limparSelecao(); fecharLateral(); }
+  else if (!ferramenta) { if (selecionado) limparSelecao(); limparRuaDestaque(); if (estreito()) abrirPainel(false); }
 });
 if (EDITOR) {
   $('#editor').classList.add('aberto');
@@ -507,10 +756,10 @@ if (EDITOR) {
 }
 
 // ---------- arranque ----------
-construir(); construirIndice();
+construir(); construirIndice(); construirRuas(); construirPesquisa();
 const inicial = POR_ID[decodeURIComponent(location.hash.slice(1))];
 if (inicial) map.whenReady(() => setTimeout(() => selecionar(inicial, true), 300));
-window.__mapa = { map, ELEMENTOS, POR_ID, selecionar, irPasso, ligarGuiao, vista, dgt, reserva };
+window.__mapa = { map, ELEMENTOS, POR_ID, RUAS_VISTA, selecionar, irPasso, ligarGuiao, ligarRuas, destacarRua, abrirPainel, vista, dgt, reserva };
 })();
 </script>
 </body>
