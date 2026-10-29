@@ -10,9 +10,32 @@ que abrem um painel de informação.
 node tools/serve.mjs
 ```
 
-Depois: http://localhost:8081/ (a apresentação) e http://localhost:8081/?editor (a mesma, com o editor
-de zonas e pontos). Também abre diretamente a partir do ficheiro `index.html`, sem servidor; só a imagem
-de satélite em direto precisa de internet.
+Depois: http://localhost:8081/ (arranca em modo de visualização; o lápis no canto superior direito liga o
+modo de edição, e `?editor` abre-o logo). Também abre diretamente a partir do ficheiro `index.html`, sem
+servidor; só a imagem de satélite em direto precisa de internet, e sem o servidor local o modo de edição
+não grava diretamente (transfere o ficheiro).
+
+## Modo de edição
+
+Liga-se no lápis (canto superior direito). Barra de ferramentas no topo:
+
+- **Mover**: clicar num elemento abre o cartão em modo de formulário; arrastar um ponto muda a posição; largar
+  um ponto sobre uma zona mete-o dentro dela (enquanto se arrasta sobre a zona, o ponto encolhe e pulsa e a
+  zona pisca, a indicar que vai «mergulhar»); arrastar um ponto para fora da zona tira-o de lá. Numa zona
+  selecionada aparecem os vértices: arrastam-se, os pontos médios criam vértices novos e um duplo clique num
+  vértice apaga-o.
+- **Ponto**: um clique no mapa cria um ponto (dentro de uma zona fica filho dela).
+- **Zona** (vértices, duplo clique termina) e **Zona livre** (pincel): desenham zonas novas.
+- **Rua**: liga a camada das ruas e um clique numa rua cria o elemento com o traçado do OpenStreetMap.
+- **Lote**: liga a camada dos lotes e um clique num lote cria uma zona com o contorno do cadastro.
+- **Título e subtítulo** editam-se na segunda linha da barra.
+- **Cartão em modo de formulário**: nome, símbolo, texto (parágrafos separados por linha em branco; aceita HTML,
+  com botões para ligação, negrito e itálico), fotos (ficheiros do computador, que o servidor grava em
+  `assets/fotos/`, ou por endereço; legenda por foto), ordem no índice e no guião (↑ ↓), apagar.
+- **Guardar** escreve `dados/conteudos.js` através do servidor local (o ficheiro anterior fica em
+  `dados/conteudos.anterior.js`). **Transferir** descarrega o mesmo ficheiro, para quando a apresentação não
+  está servida por `tools/serve.mjs`; nesse caso as fotos ficam embebidas. Enquanto há alterações por guardar,
+  ficam também num rascunho no browser, que é proposto na próxima vez que se entra em edição.
 
 ## Ficheiros
 
@@ -36,11 +59,8 @@ de satélite em direto precisa de internet.
   ecrã possível, com os seus pontos à vista; o cartão encosta à direita ou em baixo, conforme o que deixa a
   zona maior, para não a tapar. Ao desselecionar a zona (clique no mapa ou Esc) o mapa volta à vista inicial
   da freguesia. Esc fecha o que estiver aberto. Cada elemento tem ligação própria: `index.html#id`.
-- `index.html?editor` — mostra a barra do editor (só para preparar conteúdos, só com rato): polígono por
-  vértices, pincel livre, ponto (fica filho da zona selecionada se cair dentro dela), apagar último,
-  copiar JSON. Nada é guardado: o JSON copia-se para `dados/conteudos.js`.
-- `dados/conteudos.js` — título, subtítulo e lista de pontos de interesse. O modelo está explicado no
-  cabeçalho do ficheiro. Os elementos atuais são exemplos, por substituir pelos reais.
+- `dados/conteudos.js` — título, subtítulo e lista de pontos de interesse; é o ficheiro que o modo de edição
+  grava. O modelo está explicado no cabeçalho do ficheiro. Os elementos atuais são exemplos.
 - `dados/geo.js` — limite da freguesia, ruas (Ferreira Borges, Saraiva de Carvalho, Coelho da Rocha),
   jardins e Mercado (OpenStreetMap, ODbL), em `[lat, lon]`, mais os limites da imagem fixa. Em
   `conteudos.js` uma rua ou zona pode referir-se a estes dados por nome (`rua: '...'`, `area: '...'`).
@@ -57,7 +77,8 @@ de satélite em direto precisa de internet.
 - `vendor/leaflet/` — Leaflet 1.9.4 guardado localmente (funciona sem internet).
 - `prototipo.html` — protótipo com todas as alternativas comutáveis (satélite, máscara, janela,
   navegação, marcadores, editor), mantido para consulta. Usa o Leaflet do CDN.
-- `tools/serve.mjs` — servidor local simples (porta 8081), sem dependências.
+- `tools/serve.mjs` — servidor local simples (porta 8081), sem dependências; aceita do modo de edição a gravação
+  de `dados/conteudos.js` e das fotos em `assets/fotos/` (só a partir desta máquina).
 - `tools/ruas-osm.mjs` — regenera `dados/ruas.js` a partir do OpenStreetMap (precisa de internet).
 - `tools/edificado-cml.mjs` — regenera `dados/edificado.js` a partir do serviço da CML; `tools/edificado-osm.mjs`
   é a alternativa com o edificado e os números do OpenStreetMap (escreve `dados/edificado-osm.js`).

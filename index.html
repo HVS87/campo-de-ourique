@@ -32,7 +32,7 @@
   #marca { position: absolute; top: 14px; left: 66px; z-index: 1000; height: 42px; display: flex; align-items: center; padding: 0 16px 0 14px; border-radius: 21px; pointer-events: none; }
   #marca b { font-size: 15px; letter-spacing: .3px; }
   #marca small { color: var(--ink-dim); font-size: 12px; margin-left: 8px; }
-  #pesquisa-box { position: absolute; top: 14px; right: 14px; z-index: 1002; width: 300px; transition: width .2s; }
+  #pesquisa-box { position: absolute; top: 14px; right: 66px; z-index: 1002; width: 300px; transition: width .2s; }
   #pesquisa-box .campo { position: relative; height: 42px; border-radius: 21px; display: flex; align-items: center; }
   #pesquisa-box .lupa { position: absolute; left: 13px; top: 11px; width: 18px; height: 18px; color: var(--ink-dim); pointer-events: none; }
   #pesquisa, #ghost { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0 38px 0 40px; border: 0; border-radius: 21px; font: inherit; font-size: 14px; background: transparent; }
@@ -182,15 +182,55 @@
   #aviso { position: absolute; left: 50%; bottom: 76px; transform: translateX(-50%); z-index: 1250; color: var(--ink); padding: 8px 14px; border-radius: 999px; font-size: 12.5px; display: none; max-width: 90vw; text-align: center; }
   #aviso.aberto { display: block; }
 
-  /* ---- editor (só com ?editor) ---- */
-  #editor { display: none; position: absolute; left: 50%; top: 66px; transform: translateX(-50%); z-index: 1050; border-radius: var(--radius); padding: 8px; width: min(560px, 92vw); font-size: 12.5px; }
-  #editor.aberto { display: block; }
-  #editor .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-  #editor .row b { margin-right: 4px; }
-  #editor .dica { color: var(--accent); font-weight: 600; padding: 6px 4px 2px; min-height: 22px; }
-  #editor textarea { width: 100%; height: 110px; margin-top: 6px; font: 11px/1.3 ui-monospace, Consolas, monospace; background: #0b0d10; color: #cfd6df; border: 1px solid var(--panel-border); border-radius: 8px; resize: vertical; }
-  #editor .nota { color: var(--ink-dim); font-size: 11.5px; line-height: 1.4; padding: 4px 4px 0; }
+  /* ---- modo de edição ---- */
+  #btn-editar { position: absolute; top: 14px; right: 14px; z-index: 1002; }
+  #btn-editar svg { width: 18px; height: 18px; }
+  #barra-edicao { display: none; position: absolute; left: 50%; top: 66px; transform: translateX(-50%); z-index: 1050; border-radius: var(--radius); padding: 8px 10px; width: min(760px, 94vw); font-size: 12.5px; }
+  #barra-edicao.aberto { display: block; }
+  #barra-edicao .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  #barra-edicao .row + .row { margin-top: 6px; }
+  #barra-edicao .sep { width: 1px; height: 22px; background: var(--panel-border); margin: 0 4px; }
+  #barra-edicao .estado { margin-left: auto; color: var(--ink-dim); font-size: 12px; white-space: nowrap; }
+  #barra-edicao.sujo .estado { color: #ffb86b; font-weight: 600; }
+  #barra-edicao .dica { color: var(--accent); font-weight: 600; padding: 6px 2px 0; min-height: 20px; font-size: 12px; }
+  #barra-edicao input.titulo { font: inherit; font-size: 12.5px; background: rgba(255,255,255,.06); border: 1px solid var(--panel-border); color: var(--ink); border-radius: 8px; padding: 6px 9px; width: 200px; }
+  #barra-edicao input.titulo.sub { width: 240px; }
+  .btn.perigo { border-color: rgba(255,120,120,.45); color: #ff9b9b; }
+  .btn.perigo:hover { background: rgba(255,120,120,.15); }
+  .btn:disabled { opacity: .45; cursor: default; }
   #map.desenhar { cursor: crosshair; }
+  body.edicao .mk { cursor: grab; }
+  body.edicao .mk.leaflet-drag-target { cursor: grabbing; }
+  /* o ponto «mergulha» na zona sobre a qual está a ser arrastado */
+  .mk.mergulhar .mk-circ { transform: scale(.5); opacity: .75; transition: transform .25s, opacity .25s; box-shadow: 0 0 0 2px rgba(255,255,255,.3), 0 0 14px 4px rgba(155,227,138,.6); }
+  .mk.mergulhar .mk-circ::before { animation: pulso .7s ease-out infinite; }
+  .mk.mergulhar .mk-circ::after { animation: pulso .7s ease-out .35s infinite; }
+  .mk.emergir .mk-circ { transform: scale(1.25); transition: transform .2s; }
+  .leaflet-interactive.alvo { animation: alvo-pulso .9s ease-in-out infinite; }
+  @keyframes alvo-pulso { 0%, 100% { fill-opacity: .18; stroke-width: 3; } 50% { fill-opacity: .5; stroke-width: 6; } }
+  /* vértices das zonas */
+  .vertice { width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 2px solid #1a1405; box-shadow: 0 0 0 2px rgba(0,0,0,.45); cursor: move; }
+  .vertice.medio { background: rgba(255,255,255,.5); border-color: rgba(26,20,5,.6); }
+  /* formulário do cartão */
+  .form-edicao .tipo-ed { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: var(--ink-dim); margin: 2px 36px 4px 0; }
+  .form-edicao label { display: block; font-size: 12px; color: var(--ink-dim); margin: 10px 0 0; }
+  .form-edicao label small { margin-left: 6px; font-size: 11px; opacity: .85; }
+  .form-edicao input:not([type=file]), .form-edicao textarea { display: block; width: 100%; margin-top: 4px; font: inherit; font-size: 14px; background: rgba(255,255,255,.06); border: 1px solid var(--panel-border); color: var(--ink); border-radius: 8px; padding: 7px 9px; }
+  .form-edicao input:focus, .form-edicao textarea:focus { outline: none; border-color: rgba(243,195,91,.6); }
+  .form-edicao textarea { resize: vertical; min-height: 130px; font-size: 13.5px; line-height: 1.45; }
+  .form-edicao .linha { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
+  .form-edicao .curto { display: inline-block; margin-right: 10px; }
+  .form-edicao .curto input { width: 84px; display: inline-block; }
+  .fotos-ed { margin-top: 14px; border-top: 1px solid var(--panel-border); padding-top: 10px; }
+  .fotos-ed h3 { margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: var(--ink-dim); font-weight: 600; }
+  .foto-ed { display: grid; grid-template-columns: 64px 1fr 30px; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .foto-ed img { width: 64px; height: 48px; object-fit: cover; border-radius: 6px; background: #1a1f27; }
+  .foto-ed input { margin-top: 4px; font-size: 12px; padding: 5px 7px; }
+  .foto-ed .fechar { position: static; width: 28px; height: 28px; }
+  .acoes-ed { display: flex; gap: 6px; margin-top: 14px; align-items: center; flex-wrap: wrap; }
+  .acoes-ed .esp { flex: 1; }
+  #sem-servidor { display: none; color: #ffb86b; font-size: 11.5px; padding: 4px 2px 0; }
+  #barra-edicao.offline #sem-servidor { display: block; }
 
   /* ---- ecrãs médios (tablet) e estreitos (telemóvel) ---- */
   @media (max-width: 900px) {
@@ -201,7 +241,7 @@
     :root { --painel-w: min(86vw, 340px); }
     #marca { display: none; }
     #pesquisa-box { width: 42px; }
-    #pesquisa-box:focus-within, #pesquisa-box.com-texto { width: calc(100vw - 84px); }
+    #pesquisa-box:focus-within, #pesquisa-box.com-texto { width: calc(100vw - 136px); }
     #pesquisa-box:not(:focus-within):not(.com-texto) #pesquisa { padding: 0; color: transparent; }
     #pesquisa-box:not(:focus-within):not(.com-texto) #pesquisa::placeholder { color: transparent; }
     #pesquisa-box:not(:focus-within):not(.com-texto) #ghost { display: none; }
@@ -250,17 +290,28 @@
 <div id="aviso" class="vidro"></div>
 <div id="lightbox"><figure><img alt=""><figcaption></figcaption></figure></div>
 
-<aside id="editor" class="vidro">
-  <div class="row"><b>Editor</b>
-    <button class="btn" data-tool="poligono">Polígono por vértices</button>
-    <button class="btn" data-tool="pincel">Pincel livre</button>
-    <button class="btn" data-tool="ponto">Ponto</button>
-    <button class="btn" data-tool="apagar">Apagar último</button>
-    <button class="btn" id="btn-copiar">Copiar JSON</button>
+<button id="btn-editar" class="vidro redondo" aria-label="Modo de edição" aria-pressed="false" title="Modo de edição"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+
+<aside id="barra-edicao" class="vidro" aria-label="Modo de edição">
+  <div class="row"><b>Edição</b>
+    <button class="btn" data-tool="mover" title="Selecionar e arrastar">↖ Mover</button>
+    <button class="btn" data-tool="ponto">● Ponto</button>
+    <button class="btn" data-tool="poligono">⬠ Zona</button>
+    <button class="btn" data-tool="pincel">🖌 Zona livre</button>
+    <button class="btn" data-tool="rua">🛣 Rua</button>
+    <button class="btn" data-tool="lote">🏠 Lote</button>
+    <span class="sep"></span>
+    <button class="btn on" id="btn-guardar">Guardar</button>
+    <button class="btn" id="btn-transferir" title="Descarregar conteudos.js">Transferir</button>
+    <button class="btn" id="btn-sair-edicao">Sair</button>
+    <span class="estado" id="estado-edicao">Sem alterações</span>
   </div>
-  <div class="dica" id="dica"></div>
-  <textarea id="export" readonly placeholder="Os elementos que desenhares aparecem aqui em JSON, prontos para colar em dados/conteudos.js."></textarea>
-  <div class="nota">Polígono: clique em cada vértice, duplo clique termina, Esc cancela. Pincel: arrastar com o rato. Ponto: um clique; se houver uma zona selecionada e o ponto cair dentro dela, fica filho dessa zona (no JSON aparece sob o id da zona). O desenho não é guardado: copia o JSON para dados/conteudos.js.</div>
+  <div class="row">
+    <input class="titulo" id="ed-titulo" placeholder="Título" aria-label="Título">
+    <input class="titulo sub" id="ed-subtitulo" placeholder="Subtítulo" aria-label="Subtítulo">
+    <span class="dica" id="dica"></span>
+  </div>
+  <div id="sem-servidor">Sem servidor local: «Guardar» transfere o ficheiro conteudos.js para substituíres em dados/, e as fotos ficam embebidas.</div>
 </aside>
 
 <script>
@@ -358,10 +409,11 @@ function icone(el, filho) {
   const cor = COR[filho ? 'ponto' : el.tipo], s = filho ? 13 : 18;
   return L.divIcon({ className: 'mk' + (filho ? ' filho' : ''), html: `<div class="mk-circ" style="--c:${cor}"></div>`, iconSize: [s, s], iconAnchor: [s / 2, s / 2] });
 }
-function marcador(el, pos, filho) {
-  const m = L.marker(pos, { icon: icone(el, filho), riseOnHover: true, keyboard: false, bubblingMouseEvents: false });
+function marcador(el, pos, filho, idx) {
+  const m = L.marker(pos, { icon: icone(el, filho), riseOnHover: true, keyboard: false, bubblingMouseEvents: false, draggable: edicao });
   m.bindTooltip(el.nome, { direction: 'top', offset: [0, -12], className: 'rotulo', opacity: 1 });
   m.on('click', () => selecionar(el, false));
+  if (edicao) ligarArrasto(m, el, idx || 0);
   return m;
 }
 function construir() {
@@ -375,9 +427,9 @@ function construirElemento(el) {
   vista[el.id] = v;
   if (el.tipo === 'ponto') {
     const m = marcador(el, el.pos, !!el.pai); v.marcadores.push(m); v.camadas.push(m);
-    if (!el.pai) m.addTo(map);
+    if (!el.pai || edicao || todosPontos) m.addTo(map);
   } else if (el.tipo === 'grupo') {
-    for (const p of el.pontos) { const m = marcador(el, p, false).addTo(map); v.marcadores.push(m); v.camadas.push(m); }
+    el.pontos.forEach((p, i) => { const m = marcador(el, p, false, i).addTo(map); v.marcadores.push(m); v.camadas.push(m); });
   } else if (el.tipo === 'rua') {
     const halo = L.polyline(el.linhas, { pane: 'ruas', color: COR.rua, weight: 16, opacity: .18, lineCap: 'round', bubblingMouseEvents: false }).addTo(map);
     const linha = L.polyline(el.linhas, { pane: 'ruas', color: COR.rua, weight: 4, opacity: .85, lineCap: 'round', bubblingMouseEvents: false }).addTo(map);
@@ -387,7 +439,7 @@ function construirElemento(el) {
   } else if (el.tipo === 'zona') {
     const pol = L.polygon(el.poligono, { pane: 'zonas', color: COR.zona, weight: 2, opacity: .9, fillColor: COR.zona, fillOpacity: .12, dashArray: '6 5', bubblingMouseEvents: false }).addTo(map);
     pol.bindTooltip(el.nome, { sticky: true, className: 'rotulo', opacity: 1 });
-    pol.on('click', () => selecionar(el, true));
+    pol.on('click', () => selecionar(el, !edicao));
     v.camadas.push(pol); v.poligono = pol;
     for (const f of el.filhos) construirElemento(f);
   }
@@ -401,8 +453,8 @@ function limitesDe(el) {
 // margens do voo. Pontos e ruas: o cartão fica ao centro, por isso o alvo sobe um pouco.
 // Zonas (e pontos dentro delas): o cartão encosta à direita e a zona cresce até ocupar grande parte do espaço livre.
 // Em ecrãs estreitos o cartão ocupa a parte de baixo.
-function margensVoo(el) {
-  const W = window.innerWidth, H = window.innerHeight, zona = !!(el && (el.tipo === 'zona' || el.pai));
+function margensVoo(el, encostar) {
+  const W = window.innerWidth, H = window.innerHeight, zona = !!(el && (el.tipo === 'zona' || el.pai)) || !!encostar;
   if (estreito()) return { modo: 'baixo', paddingTopLeft: [20, 70], paddingBottomRight: [20, Math.round(H * .55)] };
   if (!zona) return { modo: 'centro', paddingTopLeft: [80, 80], paddingBottomRight: [80, 120] };
   // zona: o cartão encosta à direita (400 px) ou em baixo (até 38 % da altura), conforme o que deixa a zona maior
@@ -423,7 +475,7 @@ function desselecionar() {
 let selecionado = null;
 const estiloZona = { normal: { fillOpacity: .12, weight: 2, dashArray: '6 5' }, ativa: { fillOpacity: .16, weight: 3, dashArray: null } };
 let todosPontos = false; // camada «Pontos nas zonas»: mostra sempre os pontos escondidos dentro das zonas
-function mostrarFilhos(zona, mostrar) { for (const f of zona.filhos) { const m = vista[f.id].marcadores[0]; if (mostrar || todosPontos) m.addTo(map); else map.removeLayer(m); } }
+function mostrarFilhos(zona, mostrar) { for (const f of zona.filhos) { const m = vista[f.id].marcadores[0]; if (mostrar || todosPontos || edicao) m.addTo(map); else map.removeLayer(m); } }
 function ligarPontos(ligar) {
   todosPontos = ligar === undefined ? !todosPontos : ligar;
   for (const el of ELEMENTOS) if (el.tipo === 'zona') mostrarFilhos(el, selecionado === el || (selecionado && selecionado.pai === el));
@@ -437,7 +489,7 @@ function limparSelecao() {
   if (v.poligono) { v.poligono.setStyle(estiloZona.normal); mostrarFilhos(el, false); }
   if (el.pai) { vista[el.pai.id].poligono.setStyle(estiloZona.normal); mostrarFilhos(el.pai, false); }
   document.querySelectorAll('#indice button.sel').forEach(b => b.classList.remove('sel'));
-  selecionado = null;
+  selecionado = null; mostrarVertices(null);
   if (location.hash) history.replaceState(null, '', location.pathname + location.search);
 }
 function selecionar(el, voar, semCartao) {
@@ -449,11 +501,12 @@ function selecionar(el, voar, semCartao) {
   if (el.pai) { vista[el.pai.id].poligono.setStyle(estiloZona.ativa); mostrarFilhos(el.pai, true); }
   v.marcadores.forEach(m => m.getElement() && m.getElement().classList.add('sel'));
   const b = document.querySelector(`#indice button[data-id="${el.id}"]`); if (b) { b.classList.add('sel'); b.scrollIntoView({ block: 'nearest' }); }
-  const marg = margensVoo(el);
+  const marg = margensVoo(el, edicao);
   if (voar) map.flyToBounds(limitesDe(el), Object.assign({ maxZoom: 18.5, duration: .9 }, marg));
   history.replaceState(null, '', '#' + el.id);
   if (!semCartao) mostrarInfo(el, marg.modo);
   if (estreito()) abrirPainel(false);
+  mostrarVertices(el);
 }
 
 // ---------- cartão central ----------
@@ -479,16 +532,17 @@ function htmlInfo(el) {
 }
 const modal = $('#modal'), modalConteudo = $('#modal-conteudo');
 function mostrarInfo(el, modo) {
-  const zona = el.tipo === 'zona' || !!el.pai;
-  modal.classList.toggle('lado', zona && modo === 'lado');
-  modal.classList.toggle('baixo', zona && modo !== 'lado');
-  modalConteudo.innerHTML = htmlInfo(el);
+  const encostado = el.tipo === 'zona' || !!el.pai || edicao; // em edição o cartão nunca tapa o mapa
+  modal.classList.toggle('lado', encostado && modo === 'lado');
+  modal.classList.toggle('baixo', encostado && modo !== 'lado');
+  modalConteudo.innerHTML = edicao ? htmlForm(el) : htmlInfo(el);
   modal.querySelector('.cartao').scrollTop = 0;
   modal.classList.add('aberto');
 }
 function fecharCartao() { modal.classList.remove('aberto'); }
 function cartaoAberto() { return modal.classList.contains('aberto'); }
 modalConteudo.addEventListener('click', e => {
+  if (edicao) return;
   const ir = e.target.closest('[data-ir]'); if (ir) { selecionar(POR_ID[ir.dataset.ir], true); return; }
   const img = e.target.closest('.fotos img'); if (img) abrirLightbox(img.src, img.dataset.legenda);
 });
@@ -552,7 +606,8 @@ function construirRuas() {
       tp.setAttribute('href', '#' + linha._path.id); tp.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', '#' + linha._path.id);
       tp.setAttribute('startOffset', '50%'); tp.textContent = rua.nome;
       txt.appendChild(tp); rendRuas._rootGroup.appendChild(txt);
-      hit.on('mouseover', () => ruaSobre(r)); hit.on('mouseout', () => ruaSobre(null)); hit.on('click', e => { L.DomEvent.stop(e); destacarRua(r, false); });
+      hit.on('mouseover', () => ruaSobre(r)); hit.on('mouseout', () => ruaSobre(null));
+      hit.on('click', e => { L.DomEvent.stop(e); if (edicao && ferramenta === 'rua') criarRua(r); else destacarRua(r, false); });
       hit.bindTooltip(rua.nome, { sticky: true, className: 'rotulo', opacity: 1 });
       r.linhas.push(linha); r.nomes.push(txt);
     });
@@ -595,6 +650,7 @@ for (const l of ED.lotes) {
   if (l.m) pol.bindTooltip(esc(l.m), { sticky: true, className: 'rotulo', opacity: 1 });
   pol.on('mouseover', () => pol.setStyle({ color: '#f3c35b', weight: 2, fillOpacity: .18 }));
   pol.on('mouseout', () => pol.setStyle({ color: estiloLote.color, weight: 1, fillOpacity: .05 }));
+  pol.on('click', e => { if (edicao && ferramenta === 'lote') { L.DomEvent.stop(e); criarDeLote(l); } });
   grupoLotes.addLayer(pol);
 }
 function ligarLotes(ligar) {
@@ -751,7 +807,7 @@ document.addEventListener('keydown', e => {
   if (e.target && e.target.matches && e.target.matches('input, textarea')) return;
   if (e.key === 'Escape') {
     if (lightbox.classList.contains('aberto')) { lightbox.classList.remove('aberto'); return; }
-    if (ferramenta) { cancelarDesenho(); porFerramenta(null); return; }
+    if (edicao && ferramenta !== 'mover') { porFerramenta('mover'); return; }
     if (cartaoAberto()) { fecharCartao(); return; }
     if (guiaoAberto()) { ligarGuiao(false); return; }
     if (selecionado || ruaDestaque) { desselecionar(); return; }
@@ -773,17 +829,46 @@ function aviso(txt, ms) {
   clearTimeout(avisoTimer); if (ms) avisoTimer = setTimeout(() => a.classList.remove('aberto'), ms);
 }
 
-// ---------- editor (só com ?editor, só com rato) ----------
-let ferramenta = null, desenho = [], tempLinha = null, tempPontos = [], aPintar = false, criados = 0;
-const NOVOS = [];
+// ---------- modo de edição ----------
+// A apresentação arranca em modo de visualização; o lápis (canto superior direito) liga a edição.
+let edicao = false, ferramenta = 'mover', desenho = [], tempLinha = null, tempPontos = [], aPintar = false, alterado = false, criados = 0;
+let alvoZona = null, rascunhoVisto = false, servidorOk = null;
+const btnEditar = $('#btn-editar'), barra = $('#barra-edicao'), estadoEl = $('#estado-edicao');
+const DICAS = {
+  mover: 'Arrasta os pontos; larga um ponto sobre uma zona para o meter lá dentro. Clica num elemento para editar o cartão; numa zona, arrasta os vértices (duplo clique apaga um).',
+  ponto: 'Clica no mapa para criar um ponto. Dentro de uma zona fica filho dela.',
+  poligono: 'Clica em cada vértice da zona · duplo clique termina · Esc cancela',
+  pincel: 'Pinta a zona arrastando com o rato · Esc cancela',
+  rua: 'Clica numa rua do mapa para a acrescentar como elemento (a camada das ruas ficou ligada).',
+  lote: 'Clica num lote do cadastro para o acrescentar como zona (a camada dos lotes ficou ligada).',
+};
+function aplicarTitulo() {
+  const t = C.titulo || 'Campo de Ourique', s = C.subtitulo || '';
+  document.title = t; $('#titulo').childNodes[0].textContent = t + ' '; $('#subtitulo').textContent = s; $('#marca-titulo').textContent = t; $('#marca-sub').textContent = s;
+}
+function entrarEdicao(ligar) {
+  if (ligar === undefined) ligar = !edicao;
+  edicao = ligar;
+  document.body.classList.toggle('edicao', edicao);
+  barra.classList.toggle('aberto', edicao);
+  btnEditar.classList.toggle('on', edicao); btnEditar.setAttribute('aria-pressed', String(edicao));
+  btnGuiao.disabled = edicao; if (edicao && guiaoAberto()) ligarGuiao(false);
+  const s = selecionado; limparSelecao(); limparRuaDestaque(); fecharCartao();
+  porFerramenta('mover');
+  construir(); construirIndice();
+  if (edicao) { $('#ed-titulo').value = C.titulo || ''; $('#ed-subtitulo').value = C.subtitulo || ''; verificarServidor(); recuperarRascunho(); }
+  if (s && POR_ID[s.id]) selecionar(s, false);
+}
 function porFerramenta(nome) {
   cancelarDesenho();
-  ferramenta = nome && ferramenta !== nome ? nome : null;
-  document.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === ferramenta));
-  $('#map').classList.toggle('desenhar', !!ferramenta);
-  $('#dica').textContent = { poligono: 'Clique para cada vértice · duplo clique termina · Esc cancela', pincel: 'Arraste com o rato para pintar a zona · Esc cancela', ponto: 'Clique no mapa para colocar um ponto' }[ferramenta] || '';
-  if (ferramenta === 'pincel') map.dragging.disable(); else map.dragging.enable();
-  map.doubleClickZoom[ferramenta === 'poligono' ? 'disable' : 'enable']();
+  ferramenta = nome || 'mover';
+  barra.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === ferramenta));
+  $('#map').classList.toggle('desenhar', edicao && ferramenta !== 'mover');
+  $('#dica').textContent = edicao ? DICAS[ferramenta] : '';
+  if (edicao && ferramenta === 'pincel') map.dragging.disable(); else map.dragging.enable();
+  map.doubleClickZoom[edicao && ferramenta === 'poligono' ? 'disable' : 'enable']();
+  if (edicao && ferramenta === 'rua' && !ruasLigadas) ligarRuas(true);
+  if (edicao && ferramenta === 'lote' && !lotesLigados) ligarLotes(true);
 }
 function cancelarDesenho() {
   desenho = []; tempPontos.forEach(m => map.removeLayer(m)); tempPontos = [];
@@ -794,22 +879,7 @@ function atualizarTemp() {
   if (!tempLinha) tempLinha = L.polygon(desenho, { color: '#fff', weight: 2, dashArray: '4 4', fillColor: '#fff', fillOpacity: .15, interactive: false }).addTo(map);
   else tempLinha.setLatLngs(desenho);
 }
-function idDe(nome) { return normalizar(nome).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'elemento'; }
-function acrescentar(el, pai) {
-  let id = idDe(el.nome); for (let k = 2; POR_ID[id]; k++) id = idDe(el.nome) + '-' + k;
-  el.id = id; el.pai = pai; el.filhos = []; el.fotos = [];
-  if (pai) pai.filhos.push(el); else ELEMENTOS.push(el);
-  POR_ID[id] = el; NOVOS.push(el);
-  construir(); construirIndice(); construirPesquisa(); selecionar(el, false, true); exportar();
-}
-function terminarZona(pts) {
-  cancelarDesenho();
-  if (pts.length < 3) return;
-  const nome = prompt('Nome da zona:', 'Zona ' + (criados + 1)); if (nome === null) return;
-  criados++;
-  acrescentar({ tipo: 'zona', nome: nome || 'Zona ' + criados, icone: '✏️', poligono: pts.map(p => [+p.lat.toFixed(6), +p.lng.toFixed(6)]), texto: 'Texto por escrever.' }, null);
-}
-function dentro(pt, poligono) { // ray casting
+function dentro(pt, poligono) { // ray casting; pt é L.LatLng
   let d = false;
   for (let i = 0, j = poligono.length - 1; i < poligono.length; j = i++) {
     const a = poligono[i], b = poligono[j];
@@ -817,59 +887,298 @@ function dentro(pt, poligono) { // ray casting
   }
   return d;
 }
-function novoPonto(ll) {
-  const zona = selecionado ? (selecionado.tipo === 'zona' ? selecionado : selecionado.pai) : null;
-  const pai = zona && dentro(ll, zona.poligono) ? zona : null;
-  const nome = prompt(pai ? `Nome do ponto (dentro de ${pai.nome}):` : 'Nome do ponto:', 'Ponto ' + (criados + 1)); if (nome === null) return;
-  criados++;
-  acrescentar({ tipo: 'ponto', nome: nome || 'Ponto ' + criados, icone: '📍', pos: [+ll.lat.toFixed(6), +ll.lng.toFixed(6)], texto: 'Texto por escrever.' }, pai);
+function zonaEm(ll, excluir) { const p = L.latLng(ll); for (const z of ELEMENTOS) if (z.tipo === 'zona' && z !== excluir && dentro(p, z.poligono)) return z; return null; }
+const arredLL = ll => [+ll.lat.toFixed(6), +ll.lng.toFixed(6)];
+
+// ---- estado: alterações, rascunho, gravação ----
+function estado(txt, sujo) { estadoEl.textContent = txt; barra.classList.toggle('sujo', !!sujo); }
+function marcarAlterado() {
+  alterado = true; estado('Alterações por guardar', true);
+  try { localStorage.setItem('co-rascunho', JSON.stringify({ quando: Date.now(), dados: serializar() })); } catch (err) { /* sem espaço ou sem storage */ }
 }
-function exportar() {
-  const limpo = o => { const c = {}; for (const k of ['id', 'tipo', 'nome', 'icone', 'texto', 'fotos', 'pos', 'pontos', 'linhas', 'poligono']) if (o[k] !== undefined) c[k] = o[k]; if (o.tipo === 'zona') c.filhos = o.filhos.map(limpo); return c; };
-  const saida = [];
-  for (const el of NOVOS) {
-    if (!el.pai) saida.push(limpo(el));
-    else if (!NOVOS.includes(el.pai)) { // filho novo de uma zona já existente: aparece sob o id da zona
-      let z = saida.find(s => s.id === el.pai.id && s._so_filhos); if (!z) { z = { id: el.pai.id, _so_filhos: true, filhos: [] }; saida.push(z); }
-      z.filhos.push(limpo(el));
+function limpo(el) {
+  const c = { id: el.id, tipo: el.tipo, nome: el.nome };
+  if (el.icone) c.icone = el.icone;
+  c.texto = el.texto || '';
+  c.fotos = (el.fotos || []).map(f => typeof f === 'string' ? { src: f, legenda: '' } : { src: f.src, legenda: f.legenda || '' });
+  if (el.tipo === 'ponto') c.pos = el.pos;
+  if (el.tipo === 'grupo') c.pontos = el.pontos;
+  if (el.tipo === 'rua') { if (el.rua) c.rua = el.rua; else c.linhas = el.linhas; }
+  if (el.tipo === 'zona') { c.poligono = el.poligono; if (el.lote) c.lote = el.lote; c.filhos = el.filhos.map(limpo); }
+  return c;
+}
+function serializar() { return { titulo: C.titulo || 'Campo de Ourique', subtitulo: C.subtitulo || '', elementos: ELEMENTOS.map(limpo) }; }
+function ficheiroConteudos(d) {
+  return '// Conteúdos da apresentação, gravados pelo modo de edição em ' + new Date().toISOString().slice(0, 16).replace('T', ' ') + '.\n' +
+    '// Modelo dos elementos: ver README.md. Para editar, abre a apresentação e carrega no lápis (modo de edição).\n' +
+    'window.CONTEUDOS = ' + JSON.stringify(d, null, 1) + ';\n';
+}
+function carregar(d) {
+  limparSelecao(); fecharCartao();
+  ELEMENTOS.length = 0; for (const k in POR_ID) delete POR_ID[k];
+  C.titulo = d.titulo; C.subtitulo = d.subtitulo;
+  for (const e of d.elementos || []) { const p = preparar(e, null); if (p) ELEMENTOS.push(p); }
+  aplicarTitulo(); construir(); construirIndice(); construirPesquisa();
+  if (edicao) { $('#ed-titulo').value = C.titulo || ''; $('#ed-subtitulo').value = C.subtitulo || ''; }
+}
+function recuperarRascunho() {
+  if (rascunhoVisto) return; rascunhoVisto = true;
+  try {
+    const r = JSON.parse(localStorage.getItem('co-rascunho') || 'null');
+    if (!r || !r.dados || JSON.stringify(r.dados) === JSON.stringify(serializar())) return;
+    if (confirm('Há um rascunho por guardar, de ' + new Date(r.quando).toLocaleString('pt-PT') + '. Queres recuperá-lo?')) { carregar(r.dados); marcarAlterado(); }
+    else localStorage.removeItem('co-rascunho');
+  } catch (err) { /* ignora rascunhos ilegíveis */ }
+}
+async function verificarServidor() { // o servidor local (tools/serve.mjs) aceita gravação; um servidor qualquer ou file:// não
+  if (servidorOk !== null) return servidorOk;
+  try { const r = await fetch('/guardar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"sonda":true}' }); const j = r.ok ? await r.json() : {}; servidorOk = !!j.sonda; }
+  catch (err) { servidorOk = false; }
+  barra.classList.toggle('offline', !servidorOk);
+  return servidorOk;
+}
+async function guardar() {
+  const dados = serializar();
+  if (await verificarServidor()) {
+    try {
+      const r = await fetch('/guardar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.erro || r.statusText);
+      alterado = false; localStorage.removeItem('co-rascunho');
+      estado('Guardado em dados/conteudos.js · ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5)); aviso('Guardado em dados/conteudos.js.', 2500);
+      return;
+    } catch (err) { aviso('Não foi possível gravar no servidor (' + err.message + '); a transferir o ficheiro.', 6000); }
+  }
+  transferir(dados);
+}
+function transferir(dados) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([ficheiroConteudos(dados || serializar())], { type: 'text/javascript' }));
+  a.download = 'conteudos.js'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  estado('Ficheiro transferido: substitui dados/conteudos.js', alterado);
+}
+
+// ---- criar, apagar, ordenar, mover ----
+function idDe(nome) { return normalizar(nome).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'elemento'; }
+function acrescentar(el, pai) {
+  let id = idDe(el.nome); for (let k = 2; POR_ID[id]; k++) id = idDe(el.nome) + '-' + k;
+  el.id = id; el.fotos = el.fotos || []; el.texto = el.texto || '';
+  const p = preparar(el, pai); if (!p) { aviso('Não foi possível criar o elemento.', 3000); return; }
+  if (pai) pai.filhos.push(p); else ELEMENTOS.push(p);
+  construir(); construirIndice(); construirPesquisa(); marcarAlterado();
+  selecionar(p, false);
+  setTimeout(() => { const i = modalConteudo.querySelector('input[name=nome]'); if (i) { i.focus(); i.select(); } }, 60);
+}
+function novoPonto(ll) { criados++; acrescentar({ tipo: 'ponto', nome: 'Novo ponto ' + criados, icone: '📍', pos: arredLL(ll) }, zonaEm(ll, null)); }
+function terminarZona(pts) {
+  cancelarDesenho();
+  if (pts.length < 3) return;
+  criados++;
+  acrescentar({ tipo: 'zona', nome: 'Nova zona ' + criados, icone: '⬠', poligono: pts.map(arredLL) }, null);
+  porFerramenta('mover');
+}
+function criarRua(r) {
+  const ja = ELEMENTOS.find(e => e.tipo === 'rua' && normalizar(e.nome) === normalizar(r.rua.nome));
+  if (ja) { aviso('Essa rua já é um elemento.', 2500); selecionar(ja, false); porFerramenta('mover'); return; }
+  acrescentar({ tipo: 'rua', nome: r.rua.nome, icone: '🛣️', rua: r.rua.nome }, null);
+  porFerramenta('mover');
+}
+function criarDeLote(l) {
+  criados++;
+  acrescentar({ tipo: 'zona', nome: l.m || 'Lote ' + criados, icone: '🏠', poligono: l.p.map(p => p.slice()), lote: l.c || '' }, null);
+  porFerramenta('mover');
+}
+function removerDoModelo(el) {
+  const lista = el.pai ? el.pai.filhos : ELEMENTOS; const i = lista.indexOf(el); if (i >= 0) lista.splice(i, 1);
+  delete POR_ID[el.id]; for (const f of el.filhos || []) delete POR_ID[f.id];
+}
+function apagar(el) {
+  const n = (el.filhos || []).length;
+  if (!confirm(`Apagar «${el.nome}»${n ? ` e os seus ${n} ponto${n > 1 ? 's' : ''}` : ''}?`)) return;
+  limparSelecao(); fecharCartao(); removerDoModelo(el);
+  construir(); construirIndice(); construirPesquisa(); marcarAlterado();
+}
+function reordenar(el, delta) {
+  const lista = el.pai ? el.pai.filhos : ELEMENTOS; const i = lista.indexOf(el), j = i + delta;
+  if (i < 0 || j < 0 || j >= lista.length) return;
+  lista.splice(i, 1); lista.splice(j, 0, el);
+  construir(); construirIndice(); marcarAlterado(); selecionar(el, false);
+}
+// o ponto foi largado depois de arrastado: nova posição e, se for o caso, nova zona-mãe
+function largarPonto(el, idx, ll, zona) {
+  const pos = arredLL(ll);
+  if (el.tipo === 'grupo') el.pontos[idx] = pos;
+  else {
+    el.pos = pos; delete el.area;
+    if (zona !== el.pai) {
+      const lista = el.pai ? el.pai.filhos : ELEMENTOS; lista.splice(lista.indexOf(el), 1);
+      el.pai = zona; (zona ? zona.filhos : ELEMENTOS).push(el);
+      aviso(zona ? `«${el.nome}» passou para dentro de «${zona.nome}».` : `«${el.nome}» saiu da zona.`, 3000);
     }
   }
-  $('#export').value = JSON.stringify(saida, null, 1);
+  construir(); construirIndice(); construirPesquisa(); marcarAlterado();
+  selecionar(el, false, !cartaoAberto());
 }
-function apagarUltimo() {
-  const el = NOVOS.pop(); if (!el) return;
-  limparSelecao(); fecharCartao();
-  for (const f of el.filhos) { const k = NOVOS.indexOf(f); if (k >= 0) NOVOS.splice(k, 1); delete POR_ID[f.id]; }
-  const lista = el.pai ? el.pai.filhos : ELEMENTOS; lista.splice(lista.indexOf(el), 1); delete POR_ID[el.id];
-  construir(); construirIndice(); construirPesquisa(); exportar();
+function marcarAlvo(z) {
+  if (alvoZona && alvoZona !== z) { const p = vista[alvoZona.id] && vista[alvoZona.id].poligono; if (p && p._path) p._path.classList.remove('alvo'); }
+  alvoZona = z;
+  if (z) { const p = vista[z.id] && vista[z.id].poligono; if (p && p._path) p._path.classList.add('alvo'); }
 }
+function ligarArrasto(m, el, idx) { // chamado por marcador() quando a edição está ligada
+  m.on('dragstart', () => { m.closeTooltip(); });
+  m.on('drag', () => {
+    const e = m.getElement(); if (!e) return;
+    if (el.tipo !== 'ponto') return;
+    const z = zonaEm(m.getLatLng(), null);
+    marcarAlvo(z && z !== el.pai ? z : null);
+    e.classList.toggle('mergulhar', !!(z && z !== el.pai));
+    e.classList.toggle('emergir', !z && !!el.pai);
+  });
+  m.on('dragend', () => {
+    const ll = m.getLatLng(), z = el.tipo === 'ponto' ? zonaEm(ll, null) : null;
+    marcarAlvo(null);
+    largarPonto(el, idx, ll, z);
+  });
+}
+
+// ---- vértices da zona selecionada ----
+const verticesGrupo = L.layerGroup().addTo(map);
+function mostrarVertices(el) {
+  verticesGrupo.clearLayers();
+  if (!edicao || !el || el.tipo !== 'zona') return;
+  const pts = el.poligono, pol = vista[el.id].poligono;
+  const alterarGeometria = () => { delete el.area; pol.setLatLngs(pts); };
+  pts.forEach((p, i) => {
+    const h = L.marker(p, { icon: L.divIcon({ className: 'vertice', iconSize: [12, 12], iconAnchor: [6, 6] }), draggable: true, bubblingMouseEvents: false, keyboard: false });
+    h.on('drag', () => { pts[i] = arredLL(h.getLatLng()); alterarGeometria(); });
+    h.on('dragend', () => { marcarAlterado(); mostrarVertices(el); });
+    h.on('dblclick', e => { L.DomEvent.stop(e); if (pts.length <= 3) return; pts.splice(i, 1); alterarGeometria(); marcarAlterado(); mostrarVertices(el); });
+    verticesGrupo.addLayer(h);
+    const q = pts[(i + 1) % pts.length], meio = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
+    const hm = L.marker(meio, { icon: L.divIcon({ className: 'vertice medio', iconSize: [10, 10], iconAnchor: [5, 5] }), draggable: true, bubblingMouseEvents: false, keyboard: false });
+    hm.on('dragstart', () => { pts.splice(i + 1, 0, meio.slice()); hm._idx = i + 1; });
+    hm.on('drag', () => { pts[hm._idx] = arredLL(hm.getLatLng()); alterarGeometria(); });
+    hm.on('dragend', () => { marcarAlterado(); mostrarVertices(el); });
+    verticesGrupo.addLayer(hm);
+  });
+}
+
+// ---- formulário do cartão ----
+function htmlForm(el) {
+  const texto = Array.isArray(el.texto) ? el.texto.join('\n\n') : (el.texto || '');
+  const fotos = (el.fotos || []).map(f => typeof f === 'string' ? { src: f, legenda: '' } : f);
+  const origem = el.rua ? ' · traçado do OpenStreetMap' : el.lote ? ' · lote ' + esc(el.lote) : '';
+  return `<form class="form-edicao" autocomplete="off">
+    <div class="tipo-ed">${TIPO[el.tipo]}${el.pai ? ' · dentro de ' + esc(el.pai.nome) : ''}${origem}</div>
+    <label>Nome<input name="nome" value="${esc(el.nome)}"></label>
+    <div class="linha"><label class="curto">Símbolo<input name="icone" value="${esc(el.icone || '')}" maxlength="4"></label><span style="color:var(--ink-dim);font-size:12px">um emoji ou símbolo, mostrado no índice e no cartão</span></div>
+    <label>Texto<small>parágrafos separados por uma linha em branco; aceita HTML</small><textarea name="texto">${esc(texto)}</textarea></label>
+    <div class="linha"><button type="button" class="btn" data-ac="ligacao">🔗 Ligação</button><button type="button" class="btn" data-ac="negrito"><b>B</b> Negrito</button><button type="button" class="btn" data-ac="italico"><i>I</i> Itálico</button></div>
+    <div class="fotos-ed"><h3>Fotos</h3>
+      ${fotos.map((f, i) => `<div class="foto-ed"><img src="${esc(f.src)}" alt="" loading="lazy"><div><input name="foto-src" data-i="${i}" value="${esc(f.src)}" placeholder="assets/fotos/ficheiro.jpg ou https://…"><input name="foto-leg" data-i="${i}" value="${esc(f.legenda || '')}" placeholder="Legenda"></div><button type="button" class="fechar" data-ac="foto-remover" data-i="${i}" aria-label="Remover foto">✕</button></div>`).join('')}
+      <div class="linha"><button type="button" class="btn" data-ac="foto-ficheiro">📷 Adicionar ficheiro…</button><button type="button" class="btn" data-ac="foto-url">🔗 Adicionar por endereço</button><input type="file" name="ficheiros" accept="image/*" multiple hidden></div>
+    </div>
+    <div class="acoes-ed"><button type="button" class="btn" data-ac="subir" title="Mover para cima na ordem">↑</button><button type="button" class="btn" data-ac="descer" title="Mover para baixo na ordem">↓</button><span class="esp"></span><button type="button" class="btn perigo" data-ac="apagar">Apagar</button><button type="button" class="btn on" data-ac="concluir">Concluído</button></div>
+  </form>`;
+}
+let timerNome = null;
+function atualizarNome(el) {
+  const v = vista[el.id]; if (!v) return;
+  v.marcadores.forEach(m => m.getTooltip() && m.setTooltipContent(el.nome));
+  if (v.poligono) v.poligono.setTooltipContent(el.nome);
+  if (v.halo) v.halo.setTooltipContent(el.nome);
+  const b = document.querySelector(`#indice button[data-id="${el.id}"]`); if (b) b.lastChild.textContent = el.nome;
+  clearTimeout(timerNome); timerNome = setTimeout(construirPesquisa, 400);
+}
+function envolver(ta, antes, depois, defeito) {
+  const i = ta.selectionStart, j = ta.selectionEnd, sel = ta.value.slice(i, j) || defeito;
+  ta.setRangeText(antes + sel + depois, i, j, 'end'); ta.dispatchEvent(new Event('input', { bubbles: true })); ta.focus();
+}
+function redimensionar(file, max) { // devolve data URL da imagem reduzida (só quando não há servidor para a guardar)
+  return new Promise((resolve, reject) => {
+    const img = new Image(); const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+      resolve(c.toDataURL('image/jpeg', .82));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('imagem ilegível')); };
+    img.src = url;
+  });
+}
+async function adicionarFicheiros(el, ficheiros) {
+  const comServidor = await verificarServidor();
+  for (const f of ficheiros) {
+    try {
+      if (comServidor) {
+        const r = await fetch('/guardar-foto/' + encodeURIComponent(f.name), { method: 'POST', body: f });
+        const j = await r.json(); if (!r.ok) throw new Error(j.erro || r.statusText);
+        el.fotos.push({ src: j.caminho, legenda: '' });
+      } else el.fotos.push({ src: await redimensionar(f, 1600), legenda: '' });
+    } catch (err) { aviso('Foto não adicionada: ' + err.message, 4000); }
+  }
+  marcarAlterado(); mostrarInfo(el, modal.classList.contains('lado') ? 'lado' : 'baixo');
+}
+modalConteudo.addEventListener('input', e => {
+  if (!edicao || !selecionado) return;
+  const el = selecionado, t = e.target, n = t.name;
+  if (n === 'nome') { el.nome = t.value.trim() || el.nome; atualizarNome(el); }
+  else if (n === 'icone') el.icone = t.value.trim();
+  else if (n === 'texto') { const ps = t.value.split(/\n\s*\n/).map(s => s.trim()).filter(Boolean); el.texto = ps.length > 1 ? ps : (ps[0] || ''); }
+  else if (n === 'foto-src' || n === 'foto-leg') {
+    const i = +t.dataset.i; const f = el.fotos[i]; const o = typeof f === 'string' ? { src: f, legenda: '' } : f;
+    if (n === 'foto-src') { o.src = t.value.trim(); const img = t.closest('.foto-ed').querySelector('img'); if (img) img.src = o.src; } else o.legenda = t.value;
+    el.fotos[i] = o;
+  } else return;
+  marcarAlterado();
+});
+modalConteudo.addEventListener('click', async e => {
+  if (!edicao || !selecionado) return;
+  const b = e.target.closest('[data-ac]'); if (!b) return;
+  const el = selecionado, ac = b.dataset.ac, form = modalConteudo.querySelector('form'), ta = form.querySelector('textarea[name=texto]');
+  if (ac === 'ligacao') { const url = prompt('Endereço da ligação:', 'https://'); if (url) envolver(ta, `<a href="${url}" target="_blank" rel="noopener">`, '</a>', 'texto da ligação'); }
+  else if (ac === 'negrito') envolver(ta, '<b>', '</b>', 'texto');
+  else if (ac === 'italico') envolver(ta, '<i>', '</i>', 'texto');
+  else if (ac === 'foto-remover') { el.fotos.splice(+b.dataset.i, 1); marcarAlterado(); mostrarInfo(el, modal.classList.contains('lado') ? 'lado' : 'baixo'); }
+  else if (ac === 'foto-ficheiro') { const inp = form.querySelector('input[type=file]'); inp.onchange = () => adicionarFicheiros(el, [...inp.files]); inp.click(); }
+  else if (ac === 'foto-url') { const u = prompt('Endereço ou caminho da imagem (por exemplo assets/fotos/nome.jpg):'); if (u) { el.fotos.push({ src: u.trim(), legenda: '' }); marcarAlterado(); mostrarInfo(el, modal.classList.contains('lado') ? 'lado' : 'baixo'); } }
+  else if (ac === 'subir') reordenar(el, -1);
+  else if (ac === 'descer') reordenar(el, 1);
+  else if (ac === 'apagar') apagar(el);
+  else if (ac === 'concluir') fecharCartao();
+});
+
+// ---- eventos do mapa e da barra ----
 map.on('click', e => {
+  if (!edicao) { desselecionar(); if (estreito()) abrirPainel(false); return; }
   if (ferramenta === 'poligono') { desenho.push(e.latlng); tempPontos.push(L.circleMarker(e.latlng, { radius: 5, color: '#fff', fillColor: '#f3c35b', fillOpacity: 1, interactive: false }).addTo(map)); atualizarTemp(); }
   else if (ferramenta === 'ponto') novoPonto(e.latlng);
-  else if (!ferramenta) { desselecionar(); if (estreito()) abrirPainel(false); }
+  else if (ferramenta === 'mover') { limparSelecao(); limparRuaDestaque(); fecharCartao(); }
 });
-if (EDITOR) {
-  $('#editor').classList.add('aberto');
-  map.on('dblclick', e => { if (ferramenta === 'poligono') { L.DomEvent.stop(e); terminarZona(desenho.slice(0, -1)); } });
-  map.on('mousedown', e => { if (ferramenta === 'pincel') { aPintar = true; desenho = [e.latlng]; } });
-  map.on('mousemove', e => { if (aPintar) { desenho.push(e.latlng); atualizarTemp(); } });
-  map.on('mouseup', () => {
-    if (!aPintar) return; aPintar = false;
-    const pts = L.LineUtil.simplify(desenho.map(ll => map.latLngToLayerPoint(ll)), 4).map(p => map.layerPointToLatLng(p));
-    terminarZona(pts);
-  });
-  document.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => { if (b.dataset.tool === 'apagar') apagarUltimo(); else porFerramenta(b.dataset.tool); }));
-  $('#btn-copiar').addEventListener('click', async () => {
-    const t = $('#export'); t.select();
-    try { await navigator.clipboard.writeText(t.value); aviso('JSON copiado.', 2000); } catch (err) { document.execCommand('copy'); aviso('JSON copiado.', 2000); }
-  });
-}
+map.on('dblclick', e => { if (edicao && ferramenta === 'poligono') { L.DomEvent.stop(e); terminarZona(desenho.slice(0, -1)); } });
+map.on('mousedown', e => { if (edicao && ferramenta === 'pincel') { aPintar = true; desenho = [e.latlng]; } });
+map.on('mousemove', e => { if (aPintar) { desenho.push(e.latlng); atualizarTemp(); } });
+map.on('mouseup', () => {
+  if (!aPintar) return; aPintar = false;
+  const pts = L.LineUtil.simplify(desenho.map(ll => map.latLngToLayerPoint(ll)), 4).map(p => map.layerPointToLatLng(p));
+  terminarZona(pts);
+});
+btnEditar.addEventListener('click', () => entrarEdicao());
+$('#btn-sair-edicao').addEventListener('click', () => entrarEdicao(false));
+$('#btn-guardar').addEventListener('click', guardar);
+$('#btn-transferir').addEventListener('click', () => transferir());
+barra.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => porFerramenta(b.dataset.tool)));
+$('#ed-titulo').addEventListener('input', e => { C.titulo = e.target.value.trim(); aplicarTitulo(); marcarAlterado(); });
+$('#ed-subtitulo').addEventListener('input', e => { C.subtitulo = e.target.value.trim(); aplicarTitulo(); marcarAlterado(); });
+window.addEventListener('beforeunload', e => { if (alterado) { e.preventDefault(); e.returnValue = ''; } });
 
 // ---------- arranque ----------
 construir(); construirIndice(); construirRuas(); construirPesquisa();
 const inicial = POR_ID[decodeURIComponent(location.hash.slice(1))];
 if (inicial) map.whenReady(() => setTimeout(() => selecionar(inicial, true), 300));
-window.__mapa = { map, ELEMENTOS, POR_ID, RUAS_VISTA, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva };
+if (EDITOR) entrarEdicao(true); // ?editor abre logo em modo de edição; por predefinição arranca em visualização
+window.__mapa = { map, ELEMENTOS, POR_ID, RUAS_VISTA, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva, entrarEdicao, porFerramenta, serializar, guardar, largarPonto, novoPonto, criarRua, criarDeLote, get edicao() { return edicao; }, get ferramenta() { return ferramenta; } };
 })();
 </script>
 </body>
