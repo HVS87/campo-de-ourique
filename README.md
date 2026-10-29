@@ -29,6 +29,12 @@ Liga-se no lápis (canto superior direito). Barra de ferramentas no topo:
 - **Rua**: liga a camada das ruas e um clique numa rua cria o elemento com o traçado do OpenStreetMap.
 - **Lote**: liga a camada dos lotes e um clique num lote cria uma zona com o contorno do cadastro.
 - **Título e subtítulo** editam-se na segunda linha da barra.
+- **Visita guiada** (no índice, em edição): lista ordenada dos destaques com ↑ ↓ e ✕, seletor para acrescentar
+  qualquer elemento (incluindo pontos dentro de zonas) e «Repor» para voltar à ordem natural. Cada cartão em
+  formulário tem também a caixa «Destaque na visita guiada».
+- **Categorias** (no índice, em edição): «+ Nova categoria» abre o cartão da categoria com nome, símbolo, cor,
+  lista de membros (tirar com ✕, acrescentar pelo seletor) e «Apagar categoria»; ✎ num chip volta a abrir.
+  Em cada cartão de elemento há caixas para o pôr nas categorias. Um elemento pode estar em várias.
 - **Cartão em modo de formulário**: nome, símbolo, texto (parágrafos separados por linha em branco; aceita HTML,
   com botões para ligação, negrito e itálico), fotos (ficheiros do computador, que o servidor grava em
   `assets/fotos/`, ou por endereço; legenda por foto), ordem no índice e no guião (↑ ↓), apagar.
@@ -43,8 +49,11 @@ Liga-se no lápis (canto superior direito). Barra de ferramentas no topo:
   DGT OrtoSat 2023 em direto por WMS, com a imagem fixa por baixo (aparece logo e fica como reserva automática
   se o servidor da DGT falhar ou não houver rede); exterior da freguesia escurecido a 72 %. Os pontos de
   interesse são círculos coloridos por tipo, que pulsam ao passar o cursor; a informação abre num cartão
-  central. À esquerda, um painel colapsável (fechado ao arrancar, botão ☰) com o índice por tipo, o botão
-  «Guião passo a passo» (setas ‹ › ou teclado: ←, →, Espaço, Home, End) e «Vista geral». Em cima à direita,
+  central. À esquerda, um painel colapsável (fechado ao arrancar, botão ☰) com as categorias (chips que
+  filtram o mapa e o índice; combinam-se; ▶ visita a categoria; «Mostrar tudo» limpa), o índice por tipo,
+  o botão «Visita guiada» (setas ‹ › ou teclado: ←, →, Espaço, Home, End; um seletor na barra troca entre a
+  visita completa e a visita de cada categoria) e «Vista geral». As categorias também aparecem na pesquisa e,
+  nos cartões, como chips que abrem o cartão da categoria (lista de membros, «Visitar», «Mostrar só esta»). Em cima à direita,
   uma caixa de pesquisa discreta (atalho: tecla /) que procura lugares, zonas e todas as ruas, sem acentos,
   com escrita predicativa (a conclusão aparece a cinzento; Tab ou → aceita; ↑ ↓ e Enter escolhem na lista).
   Em baixo à esquerda, o botão «Camadas» abre um painel colapsável (fechado ao arrancar) com quatro camadas
@@ -59,8 +68,8 @@ Liga-se no lápis (canto superior direito). Barra de ferramentas no topo:
   ecrã possível, com os seus pontos à vista; o cartão encosta à direita ou em baixo, conforme o que deixa a
   zona maior, para não a tapar. Ao desselecionar a zona (clique no mapa ou Esc) o mapa volta à vista inicial
   da freguesia. Esc fecha o que estiver aberto. Cada elemento tem ligação própria: `index.html#id`.
-- `dados/conteudos.js` — título, subtítulo e lista de pontos de interesse; é o ficheiro que o modo de edição
-  grava. O modelo está explicado no cabeçalho do ficheiro. Os elementos atuais são exemplos.
+- `dados/conteudos.js` — título, subtítulo, lista de pontos de interesse, `visita` (ordem dos destaques, se
+  personalizada) e `categorias` ({ id, nome, icone, cor, membros }); é o ficheiro que o modo de edição grava. O modelo está explicado no cabeçalho do ficheiro. Os elementos atuais são exemplos.
 - `dados/geo.js` — limite da freguesia, ruas (Ferreira Borges, Saraiva de Carvalho, Coelho da Rocha),
   jardins e Mercado (OpenStreetMap, ODbL), em `[lat, lon]`, mais os limites da imagem fixa. Em
   `conteudos.js` uma rua ou zona pode referir-se a estes dados por nome (`rua: '...'`, `area: '...'`).
