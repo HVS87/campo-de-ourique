@@ -6,11 +6,26 @@
 <title>Campo de Ourique</title>
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="dados/geo.js"></script>
-<script src="dados/ruas.js"></script>
-<script src="dados/edificado.js"></script>
-<script src="dados/conteudos.js"></script>
-<script src="dados/presets/index.js"></script>
+<script src="dados/freguesias/index.js"></script>
+<script>
+// Carrega só os dados da freguesia escolhida: ?freguesia=<id> no endereço, ou a última usada neste browser, ou Campo de Ourique.
+// Campo de Ourique tem os dados em dados/; as outras em dados/freguesias/<id>/ (geradas por tools/freguesias.mjs).
+(function () {
+  var lista = window.FREGUESIAS || [], CO = 'campo-de-ourique';
+  var pedida = new URLSearchParams(location.search).get('freguesia'), guardada = null;
+  try { guardada = localStorage.getItem('co-freguesia'); } catch (e) { /* sem storage */ }
+  var existe = function (id) { return !!id && (id === CO || lista.some(function (f) { return f.id === id; })); };
+  var id = existe(pedida) ? pedida : existe(guardada) ? guardada : CO;
+  var base = id === CO ? 'dados/' : 'dados/freguesias/' + id + '/';
+  window.FREGUESIA = Object.assign({ id: id, nome: id }, lista.find(function (f) { return f.id === id; }) || {}, { base: base });
+  try { localStorage.setItem('co-freguesia', id); } catch (e) { /* sem storage */ }
+  var ficheiros = ['geo.js', 'ruas.js', 'edificado.js', 'verdes.js', 'conteudos.js', 'presets/index.js'];
+  var carregados = ficheiros.map(function (f) { // descarregam em paralelo e executam por ordem (async = false)
+    return new Promise(function (ok) { var s = document.createElement('script'); s.src = base + f; s.async = false; s.onload = ok; s.onerror = function () { console.warn('Não foi possível carregar ' + base + f); ok(); }; document.head.appendChild(s); });
+  });
+  window.__dados = Promise.all(carregados).then(function () { return new Promise(function (ok) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ok); else ok(); }); });
+})();
+</script>
 <style>
   :root {
     --bg: #0f1216; --panel: rgba(18, 22, 28, .94); --panel-border: rgba(255,255,255,.12);
@@ -60,6 +75,15 @@
   #painel.aberto { transform: none; }
   #painel header { padding: 70px 18px 12px; border-bottom: 1px solid var(--panel-border); }
   #painel h1 { font-size: 20px; margin: 0; letter-spacing: .3px; }
+  .titulo-linha { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .btn.freguesia { flex: none; padding: 5px 9px; font-size: 12px; margin-top: 1px; }
+  .lista-freguesias { margin-top: 10px; max-height: 46vh; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 6px; }
+  .lista-freguesias[hidden] { display: none; }
+  .lista-freguesias button { text-align: left; font-size: 12.5px; padding: 6px 8px; border-radius: 7px; border: 1px solid transparent; background: transparent; color: var(--ink); cursor: pointer; }
+  .lista-freguesias button:hover { background: rgba(255,255,255,.08); }
+  .lista-freguesias button.atual { border-color: rgba(243,195,91,.6); color: var(--accent); font-weight: 600; cursor: default; }
+  .lista-freguesias .a-carregar { opacity: .6; }
+  @media (pointer: coarse) { .lista-freguesias button { min-height: 40px; } }
   #painel h1 small { display: block; font-weight: 400; color: var(--ink-dim); font-size: 12.5px; margin-top: 3px; }
   .acoes { display: flex; gap: 6px; padding: 12px 12px 4px; flex-wrap: wrap; }
   .btn { font-size: 12.5px; padding: 7px 11px; border-radius: 9px; border: 1px solid var(--panel-border); background: rgba(255,255,255,.06); color: var(--ink); cursor: pointer; }
@@ -173,6 +197,9 @@
   .pane-ruas .rua-nome.hover, .pane-ruas .rua-nome.destaque { opacity: 1 !important; fill: var(--accent); font-size: 13px; }
   .pane-ruas.ruas-off .rua-linha:not(.destaque), .pane-ruas.ruas-off .rua-nome:not(.destaque) { opacity: 0 !important; }
   .pane-ruas.ruas-off .rua-hit { pointer-events: none; }
+  /* sobre o mapa da cidade (fundo claro) as linhas das ruas ficam escuras */
+  body.fundo-mapa .pane-ruas .rua-linha:not(.hover):not(.destaque) { stroke: rgba(30,34,40,.55); }
+  .rotulo.verde b { color: #9be38a; }
 
   /* ---- cartão central ---- */
   #modal { position: absolute; inset: 0; z-index: 1100; background: rgba(0,0,0,.42); display: none; place-items: center; padding: 20px 20px 90px; }
@@ -380,14 +407,18 @@
 </div>
 
 <aside id="painel" class="vidro">
-  <header><h1 id="titulo">Campo de Ourique <small id="subtitulo"></small></h1></header>
+  <header>
+    <div class="titulo-linha"><h1 id="titulo">Campo de Ourique <small id="subtitulo"></small></h1>
+      <button class="btn freguesia" id="btn-freguesia" type="button" aria-expanded="false" aria-controls="lista-freguesias" title="Mudar para outra freguesia de Lisboa">⇄ Freguesia</button></div>
+    <div id="lista-freguesias" class="lista-freguesias" hidden role="listbox" aria-label="Freguesias de Lisboa"></div>
+  </header>
   <div class="acoes">
     <button class="btn" id="btn-guiao">▶ Visita guiada</button>
     <button class="btn" id="btn-repor">Vista geral</button>
   </div>
   <nav id="indice" aria-label="Índice"></nav>
   <div class="preset-vista" id="preset-vista" hidden><label>Preset <select id="sel-preset-vista" class="seletor" aria-label="Preset"></select></label></div>
-  <div class="rodape">Ortoimagens © DGT 2023 (CC BY 4.0) · Limites e ruas © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a></div>
+  <div class="rodape" id="rodape">Ortoimagens © DGT 2023 (CC BY 4.0) · Limites e ruas © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a></div>
 </aside>
 
 <div id="modal"><div class="cartao vidro"><button class="fechar" id="btn-fechar" aria-label="Fechar">✕</button><div id="modal-conteudo"></div></div></div>
@@ -433,12 +464,17 @@
 </aside>
 
 <script>
-(function () {
+window.__dados.then(function () {
 'use strict';
+const FREG = window.FREGUESIA || { id: 'campo-de-ourique', nome: 'Campo de Ourique', base: 'dados/' }; // freguesia carregada
+const BASE = FREG.base, CO = FREG.id === 'campo-de-ourique';
 const D = window.MAPA_DADOS;
 const C = window.CONTEUDOS || {};
 const RUAS = window.RUAS_OSM || [];
 const LIMITE = D.limite;
+const LIMITES = [D.limite, ...(D.limitesExtra || [])]; // algumas freguesias têm mais de uma parte (por exemplo Alcântara)
+const FONTE_RUAS = D.fonteRuas || 'OSM';
+const qsFreguesia = '?freguesia=' + encodeURIComponent(FREG.id); // para os pedidos de gravação ao servidor local
 // cor de cada elemento: pela prioridade (campo «prioridade»); sem classificação fica cinzento neutro
 const PRIORIDADES = [
   { id: 'urgente', nome: 'Problema urgente', cor: '#111111' },
@@ -491,7 +527,8 @@ for (const e of C.elementos || []) { const p = preparar(e, null); if (p) ELEMENT
 // ---------- mapa ----------
 const map = L.map('map', { zoomControl: false, attributionControl: false, maxZoom: 20, minZoom: 14, zoomSnap: .25, zoomDelta: 1 });
 L.control.zoom({ position: 'bottomleft' }).addTo(map);
-L.control.attribution({ position: 'bottomright', prefix: false }).addAttribution('© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>').addTo(map);
+L.control.attribution({ position: 'bottomright', prefix: false }).addAttribution(CO ? '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>' : 'Limites, ruas e edificado © <a href="https://geodados-cml.hub.arcgis.com/" target="_blank" rel="noopener">Câmara Municipal de Lisboa</a>').addTo(map);
+map.createPane('verdes').style.zIndex = 392;    // camada opcional: espaços verdes e hortas urbanas (CML)
 map.createPane('satBase').style.zIndex = 190;   // imagem fixa (reserva e fundo imediato)
 map.createPane('sat').style.zIndex = 200;       // satélite em direto
 map.createPane('mascara').style.zIndex = 390;
@@ -501,20 +538,20 @@ map.createPane('numeros').style.zIndex = 396;   // camada opcional: números de 
 map.createPane('zonas').style.zIndex = 400;
 map.createPane('ruas').style.zIndex = 410;
 map.createPane('limite').style.zIndex = 420;
-const limiteBounds = L.latLngBounds(LIMITE);
+const limiteBounds = L.latLngBounds(LIMITES.flat());
 function margensGerais() { return { paddingTopLeft: [estreito() ? 16 : 40, 70], paddingBottomRight: [estreito() ? 16 : 40, 40] }; }
 map.fitBounds(limiteBounds, margensGerais());
 map.setMaxBounds(limiteBounds.pad(1.2));
 
 // Satélite: imagem fixa por baixo (aparece logo e serve de reserva) e DGT em direto por cima.
-L.imageOverlay(D.imagem.ficheiro, D.imagem.bounds, { pane: 'satBase', attribution: D.imagem.fonte }).addTo(map);
+const fixa = L.imageOverlay(D.imagem.ficheiro, D.imagem.bounds, { pane: 'satBase', attribution: D.imagem.fonte }).addTo(map);
 const DGT_URL = 'https://ortos.dgterritorio.gov.pt/wms/ortosat2023';
 const dgt = L.tileLayer.wms(DGT_URL, { pane: 'sat', layers: 'ortoSat2023-CorVerdadeira', format: 'image/jpeg', version: '1.3.0', crs: L.CRS.EPSG3857, maxZoom: 20, tileSize: 512, attribution: 'Ortoimagens © <a href="https://www.dgterritorio.gov.pt" target="_blank" rel="noopener">DGT</a> 2023' });
 let dgtOk = false, dgtErros = 0, emReserva = false;
 function reserva(motivo) {
   if (emReserva) return; emReserva = true;
   map.removeLayer(dgt);
-  map.setMaxZoom(18);
+  if (!fundoMapa) map.setMaxZoom(18);
   console.info('Satélite em direto indisponível (' + motivo + '); a usar a imagem guardada.');
   aviso('Sem ligação ao satélite em direto da DGT: a usar a imagem guardada (DGT 2023, zoom limitado).', 6000);
 }
@@ -523,14 +560,25 @@ else {
   dgt.on('tileload', () => { dgtOk = true; });
   dgt.on('tileerror', () => { dgtErros++; if (!dgtOk && dgtErros >= 2) reserva('erro'); });
   dgt.addTo(map);
-  setTimeout(() => { if (!dgtOk) reserva('tempo'); }, 15000);
+  setTimeout(() => { if (!dgtOk && !fundoMapa) reserva('tempo'); }, 15000);
+}
+// Fundo alternativo: mapa da cidade (OpenStreetMap) em vez do satélite; a escolha fica lembrada neste browser
+const mapaCidade = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { pane: 'sat', maxZoom: 20, maxNativeZoom: 19, attribution: 'Mapa © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">colaboradores do OpenStreetMap</a>' });
+let fundoMapa = false;
+function ligarMapa(ligar) {
+  fundoMapa = ligar === undefined ? !fundoMapa : ligar;
+  if (fundoMapa) { map.removeLayer(dgt); map.removeLayer(fixa); mapaCidade.addTo(map); map.setMaxZoom(20); }
+  else { map.removeLayer(mapaCidade); fixa.addTo(map); if (!emReserva && navigator.onLine !== false) dgt.addTo(map); else map.setMaxZoom(18); }
+  document.body.classList.toggle('fundo-mapa', fundoMapa);
+  try { localStorage.setItem('co-fundo', fundoMapa ? 'mapa' : 'satelite'); } catch (err) { /* sem storage */ }
+  if ($('#btn-mapa')) estadoCamada('btn-mapa', fundoMapa);
 }
 
-// Máscara (exterior escurecido) e limite
+// Máscara (exterior escurecido) e limite (um anel por parte da freguesia)
 const MUNDO = [[-89, -180], [-89, 180], [89, 180], [89, -180]];
-L.polygon([MUNDO, LIMITE], { pane: 'mascara', stroke: false, fillColor: '#05070a', fillOpacity: .72, interactive: false }).addTo(map);
-L.polyline(LIMITE, { pane: 'limite', color: '#ffffff', weight: 10, opacity: .35, className: 'limite-halo', interactive: false }).addTo(map);
-L.polyline(LIMITE, { pane: 'limite', color: '#ffffff', weight: 2, opacity: .95, className: 'limite', interactive: false }).addTo(map);
+L.polygon([MUNDO, ...LIMITES], { pane: 'mascara', stroke: false, fillColor: '#05070a', fillOpacity: .72, interactive: false }).addTo(map);
+L.polyline(LIMITES.map(a => a.concat([a[0]])), { pane: 'limite', color: '#ffffff', weight: 10, opacity: .35, className: 'limite-halo', interactive: false }).addTo(map);
+L.polyline(LIMITES.map(a => a.concat([a[0]])), { pane: 'limite', color: '#ffffff', weight: 2, opacity: .95, className: 'limite', interactive: false }).addTo(map);
 
 // ---------- marcadores e geometrias dos pontos de interesse ----------
 const vista = {}; // id -> { el, camadas, marcadores, linha, halo, poligono }
@@ -724,6 +772,26 @@ function abrirPainel(abrir) {
   btnPainel.textContent = abrir ? '✕' : '☰';
 }
 btnPainel.addEventListener('click', () => abrirPainel());
+
+// ---------- mudar de freguesia (cada uma só é carregada quando se escolhe) ----------
+const FREGUESIAS = (window.FREGUESIAS || []).slice().sort((a, b) => a.nome.localeCompare(b.nome, 'pt'));
+const listaFreg = $('#lista-freguesias'), btnFreg = $('#btn-freguesia');
+listaFreg.innerHTML = FREGUESIAS.map(f => `<button type="button" role="option" data-freg="${esc(f.id)}"${f.id === FREG.id ? ' class="atual" aria-selected="true"' : ''}>${esc(f.nome)}</button>`).join('');
+btnFreg.hidden = FREGUESIAS.length < 2;
+btnFreg.addEventListener('click', () => { const abrir = listaFreg.hidden; listaFreg.hidden = !abrir; btnFreg.classList.toggle('on', abrir); btnFreg.setAttribute('aria-expanded', String(abrir)); });
+listaFreg.addEventListener('click', e => {
+  const b = e.target.closest('[data-freg]'); if (!b || b.dataset.freg === FREG.id) return;
+  if (alterado && edicao && !confirm('Há alterações por guardar nesta freguesia. Ficam na gravação automática deste browser e voltam quando regressares.\n\nMudar de freguesia?')) return;
+  alterado = false; // o trabalho em curso já está na gravação automática; não pedir confirmação ao sair
+  b.classList.add('a-carregar'); b.textContent = b.textContent + '…';
+  try { localStorage.setItem('co-freguesia', b.dataset.freg); } catch (err) { /* sem storage */ }
+  const qs = new URLSearchParams(location.search); qs.set('freguesia', b.dataset.freg);
+  location.href = location.pathname + '?' + qs.toString(); // recarrega só com os dados dessa freguesia
+});
+// rodapé com as fontes desta freguesia
+$('#rodape').innerHTML = 'Ortoimagens © DGT 2023 (CC BY 4.0) · ' + (CO
+  ? 'Limites e ruas © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> · Edificado e espaços verdes © CML'
+  : 'Limites, ruas, edificado e espaços verdes © <a href="https://geodados-cml.hub.arcgis.com/" target="_blank" rel="noopener">Câmara Municipal de Lisboa</a>');
 function construirIndice() {
   if ($('#lista-legenda')) atualizarLegenda(); // as contagens da legenda acompanham o índice
   const box = $('#indice'); box.innerHTML = '';
@@ -824,6 +892,27 @@ for (const l of ED.lotes) {
   pol.on('click', e => { if (edicao && ferramenta === 'lote') { L.DomEvent.stop(e); criarDeLote(l); } });
   grupoLotes.addLayer(pol);
 }
+// ---------- camada opcional: espaços verdes e hortas urbanas (estrutura ecológica municipal, CML) ----------
+const VERDES = window.VERDES || [];
+const rendVerdes = L.canvas({ pane: 'verdes', padding: .3 });
+const grupoVerdes = L.layerGroup();
+const estiloVerde = v => ({ renderer: rendVerdes, pane: 'verdes', color: v.t === 'horta' ? '#d7e37a' : '#8fe08a', weight: 1, opacity: .9, fillColor: v.t === 'horta' ? '#b5c94a' : '#3fa34d', fillOpacity: .4, bubblingMouseEvents: false });
+const fmtArea = a => a >= 10000 ? (a / 10000).toLocaleString('pt-PT', { maximumFractionDigits: 1 }) + ' ha' : Math.round(a).toLocaleString('pt-PT') + ' m²';
+for (const v of VERDES) {
+  const pol = L.polygon(v.p, estiloVerde(v));
+  const linhas = [`<b>${esc(v.n || (v.t === 'horta' ? 'Horta urbana' : 'Espaço verde'))}</b>`, v.t === 'horta' ? 'Horta urbana' : 'Espaço verde', fmtArea(v.a || 0) + (v.g ? ' · gestão: ' + esc(v.g.toLowerCase().replace(/^cml$/, 'Câmara Municipal').replace(/^junta de freguesia$/, 'Junta de Freguesia')) : '')];
+  pol.bindTooltip(linhas.join('<br>'), { sticky: true, className: 'rotulo verde', opacity: 1 });
+  pol.on('mouseover', () => pol.setStyle({ fillOpacity: .65, weight: 2 }));
+  pol.on('mouseout', () => pol.setStyle({ fillOpacity: .4, weight: 1 }));
+  grupoVerdes.addLayer(pol);
+}
+let verdesLigados = false;
+function ligarVerdes(ligar) {
+  verdesLigados = ligar === undefined ? !verdesLigados : ligar;
+  if (verdesLigados) grupoVerdes.addTo(map); else map.removeLayer(grupoVerdes);
+  estadoCamada('btn-verdes', verdesLigados);
+  if (verdesLigados && !VERDES.length) aviso('Não há dados de espaços verdes para esta freguesia.', 3500);
+}
 function ligarLotes(ligar) {
   lotesLigados = ligar === undefined ? !lotesLigados : ligar;
   if (lotesLigados) grupoLotes.addTo(map); else map.removeLayer(grupoLotes);
@@ -867,9 +956,11 @@ function ligarNumeros(ligar) {
 // ---------- painel de camadas, colapsável (fechado ao arrancar), junto ao zoom ----------
 const CAMADAS = [
   { id: 'btn-pontos', texto: 'Pontos nas zonas', nota: '', acao: () => ligarPontos() },
-  { id: 'btn-ruas', texto: 'Nomes das ruas', nota: 'OSM', acao: () => ligarRuas() },
+  { id: 'btn-ruas', texto: 'Nomes das ruas', nota: FONTE_RUAS, acao: () => ligarRuas() },
   { id: 'btn-numeros', texto: 'Números de polícia', nota: 'CML', acao: () => ligarNumeros() },
   { id: 'btn-lotes', texto: 'Lotes do cadastro', nota: 'CML', acao: () => ligarLotes() },
+  { id: 'btn-verdes', texto: 'Áreas verdes', nota: 'CML', acao: () => ligarVerdes() },
+  { id: 'btn-mapa', texto: 'Mapa da cidade', nota: 'fundo', acao: () => ligarMapa() },
 ];
 const CtrlCamadas = L.Control.extend({ onAdd() {
   const box = L.DomUtil.create('div'); box.id = 'camadas';
@@ -1178,7 +1269,7 @@ const DICAS = {
   lote: 'Clica num lote do cadastro para o acrescentar como zona (a camada dos lotes ficou ligada).',
 };
 function aplicarTitulo() {
-  const t = C.titulo || 'Campo de Ourique', s = C.subtitulo || '';
+  const t = C.titulo || FREG.nome, s = C.subtitulo || '';
   document.title = t; $('#titulo').childNodes[0].textContent = t + ' '; $('#subtitulo').textContent = s; $('#marca-titulo').textContent = t; $('#marca-sub').textContent = s;
 }
 function entrarEdicao(ligar) {
@@ -1229,7 +1320,8 @@ const arredLL = ll => [+ll.lat.toFixed(6), +ll.lng.toFixed(6)];
 // ---- estado: alterações, auto-save, gravação ----
 // O auto-save guarda o preset em curso neste browser (localStorage) a cada alteração e repõe-no ao abrir a página,
 // mesmo sem se ter gravado dados/conteudos.js. «Repor do ficheiro» descarta-o.
-const chaveAuto = id => 'co-autosave:' + (id || C.preset); // uma gravação automática por preset
+const chaveAuto = id => 'co-autosave:' + (CO ? '' : FREG.id + ':') + (id || C.preset); // uma gravação automática por preset (e por freguesia)
+const CHAVE_ATIVO = CO ? 'co-preset-ativo' : 'co-preset-ativo:' + FREG.id;
 function lerAutosaveDe(id) { try { const r = JSON.parse(localStorage.getItem(chaveAuto(id)) || 'null'); return r && r.dados ? r : null; } catch (err) { return null; } }
 function estado(txt, sujo) { estadoEl.textContent = txt; barra.classList.toggle('sujo', !!sujo); }
 function autoGuardar() {
@@ -1261,7 +1353,7 @@ function preencherPresets() {
 }
 function carregarPresetFicheiro(id) { // carrega dados/presets/<id>.js como script (funciona também sem servidor)
   return new Promise((resolve, reject) => {
-    const s = document.createElement('script'); s.src = 'dados/presets/' + encodeURIComponent(id) + '.js?t=' + Date.now();
+    const s = document.createElement('script'); s.src = BASE + 'presets/' + encodeURIComponent(id) + '.js?t=' + Date.now();
     s.onload = () => { const d = window.CONTEUDOS_PRESET; delete window.CONTEUDOS_PRESET; s.remove(); if (d && Array.isArray(d.elementos)) resolve(d); else reject(new Error('o ficheiro não tem dados válidos')); };
     s.onerror = () => { s.remove(); reject(new Error('não encontrei dados/presets/' + id + '.js')); };
     document.head.appendChild(s);
@@ -1275,9 +1367,9 @@ async function mudarPreset(id, silencioso) {
   const usarAuto = !!auto && (!d || JSON.stringify(auto.dados) !== JSON.stringify(d));
   carregar(clonar(usarAuto ? auto.dados : base)); C.preset = id; FICHEIRO = clonar(base); FICHEIRO.preset = id;
   alterado = usarAuto; estado(usarAuto ? 'Alterações por guardar (gravação automática de ' + new Date(auto.quando).toLocaleString('pt-PT') + ')' : 'Sem alterações', usarAuto);
-  try { localStorage.setItem('co-preset-ativo', id); } catch (err) { /* sem storage */ }
+  try { localStorage.setItem(CHAVE_ATIVO, id); } catch (err) { /* sem storage */ }
   preencherPresets();
-  if (await verificarServidor()) { try { const r = await fetch('/ativar-preset/' + encodeURIComponent(id), { method: 'POST' }); const j = await r.json(); if (j.presets) atualizarPresets(j.presets); } catch (err) { /* fica só nesta sessão */ } }
+  if (await verificarServidor()) { try { const r = await fetch('/ativar-preset/' + encodeURIComponent(id) + qsFreguesia, { method: 'POST' }); const j = await r.json(); if (j.presets) atualizarPresets(j.presets); } catch (err) { /* fica só nesta sessão */ } }
   if (!silencioso) aviso(`Preset «${C.titulo || id}» ativo.`, 2500);
 }
 function atualizarPresets(lista) { PRESETS.length = 0; PRESETS.push(...lista); if (!PRESETS.some(p => p.id === C.preset)) PRESETS.push({ id: C.preset, nome: C.titulo || C.preset, subtitulo: C.subtitulo || '', elementos: ELEMENTOS.length }); preencherPresets(); }
@@ -1288,7 +1380,7 @@ async function novoPreset() {
   if (alterado && confirm(`Guardar as alterações de «${C.titulo}» antes de criar o preset novo?`)) await guardar();
   PRESETS.push({ id, nome: limpoNome, subtitulo: '', elementos: 0 });
   carregar({ titulo: limpoNome, subtitulo: '', elementos: [], categorias: [] }); C.preset = id; FICHEIRO = clonar(serializar());
-  try { localStorage.setItem('co-preset-ativo', id); } catch (err) { /* sem storage */ }
+  try { localStorage.setItem(CHAVE_ATIVO, id); } catch (err) { /* sem storage */ }
   preencherPresets(); if (edicao) { $('#ed-titulo').value = C.titulo; $('#ed-subtitulo').value = ''; }
   if (await verificarServidor()) await guardar(); else { marcarAlterado(); aviso('Preset criado nesta sessão; sem servidor, exporta-o para o guardares.', 5000); }
 }
@@ -1300,7 +1392,7 @@ async function apagarPreset() {
   PRESETS.splice(PRESETS.findIndex(p => p.id === id), 1);
   try { localStorage.removeItem(chaveAuto(id)); } catch (err) { /* sem storage */ }
   alterado = false;
-  if (await verificarServidor()) { try { await fetch('/apagar-preset/' + encodeURIComponent(id), { method: 'POST' }); } catch (err) { /* o ficheiro fica, mas sai da lista desta sessão */ } }
+  if (await verificarServidor()) { try { await fetch('/apagar-preset/' + encodeURIComponent(id) + qsFreguesia, { method: 'POST' }); } catch (err) { /* o ficheiro fica, mas sai da lista desta sessão */ } }
   await mudarPreset(outro);
   aviso(`Preset «${nome}» apagado.`, 3000);
 }
@@ -1322,12 +1414,12 @@ function importarPreset(ficheiro) {
   leitor.readAsText(ficheiro);
 }
 function reporDoFicheiro() {
-  if (!confirm('Descartar o trabalho em curso e voltar ao que está em dados/conteudos.js?')) return;
+  if (!confirm('Descartar o trabalho em curso e voltar ao que está em ' + BASE + 'conteudos.js?')) return;
   const id = C.preset; carregar(clonar(FICHEIRO)); C.preset = id; alterado = false; try { localStorage.removeItem(chaveAuto()); } catch (err) { /* sem storage */ }
-  estado('Reposto do ficheiro'); $('#estado-auto').textContent = 'gravação automática ligada'; aviso('Reposto a partir de dados/conteudos.js.', 3000);
+  estado('Reposto do ficheiro'); $('#estado-auto').textContent = 'gravação automática ligada'; aviso('Reposto a partir de ' + BASE + 'conteudos.js.', 3000);
 }
 async function arrancarPresets() { // ao abrir: ativa o preset escolhido na sessão anterior (se for outro) e repõe a gravação automática
-  let ativo = null; try { ativo = localStorage.getItem('co-preset-ativo'); } catch (err) { /* sem storage */ }
+  let ativo = null; try { ativo = localStorage.getItem(CHAVE_ATIVO); } catch (err) { /* sem storage */ }
   if (ativo && ativo !== C.preset && (PRESETS.some(p => p.id === ativo) || lerAutosaveDe(ativo))) { await mudarPreset(ativo, true); return; }
   await restaurarAutosave();
 }
@@ -1335,13 +1427,13 @@ async function restaurarAutosave() { // repõe o preset em curso da sessão ante
   const r = lerAutosaveDe(C.preset);
   if (!r || JSON.stringify(r.dados) === JSON.stringify(FICHEIRO)) return;
   try { // se o ficheiro foi alterado depois da gravação automática (à mão ou noutro browser), vale o ficheiro
-    const h = await fetch('dados/presets/' + encodeURIComponent(C.preset) + '.js', { method: 'HEAD', cache: 'no-store' });
+    const h = await fetch(BASE + 'presets/' + encodeURIComponent(C.preset) + '.js', { method: 'HEAD', cache: 'no-store' });
     const mod = h.ok && h.headers.get('Last-Modified') ? Date.parse(h.headers.get('Last-Modified')) : 0;
     if (mod && mod > r.quando) { localStorage.removeItem(chaveAuto()); aviso('O ficheiro do preset é mais recente do que a gravação automática; ficou o ficheiro.', 6000); return; }
   } catch (err) { /* sem servidor: não há como comparar; vale a gravação automática */ }
   const id = C.preset; carregar(clonar(r.dados)); C.preset = id; alterado = true;
   estado('Alterações por guardar (recuperadas de ' + new Date(r.quando).toLocaleString('pt-PT') + ')', true);
-  aviso('Trabalho da sessão anterior recuperado; ainda não está gravado em dados/conteudos.js.', 7000);
+  aviso('Trabalho da sessão anterior recuperado; ainda não está gravado em ' + BASE + 'conteudos.js.', 7000);
   let sel = null; try { sel = POR_ID[decodeURIComponent(location.hash.slice(1))]; } catch (err) { /* ignora */ }
   if (sel) selecionar(sel, true);
 }
@@ -1358,7 +1450,7 @@ function limpo(el) {
   return c;
 }
 function serializar() {
-  const d = { preset: C.preset, titulo: C.titulo || 'Campo de Ourique', subtitulo: C.subtitulo || '', elementos: ELEMENTOS.map(limpo) };
+  const d = { preset: C.preset, titulo: C.titulo || FREG.nome, subtitulo: C.subtitulo || '', elementos: ELEMENTOS.map(limpo) };
   if (Array.isArray(C.visita)) d.visita = C.visita.filter(id => POR_ID[id]);
   if (C.categorias && C.categorias.length) d.categorias = C.categorias.map(c => ({ id: c.id, nome: c.nome, icone: c.icone || '', cor: c.cor, membros: c.membros.filter(id => POR_ID[id]) }));
   return d;
@@ -1380,7 +1472,7 @@ function carregar(d) {
 }
 async function verificarServidor() { // o servidor local (tools/serve.mjs) aceita gravação; um servidor qualquer ou file:// não
   if (servidorOk === true) return true; // se não havia servidor, volta a perguntar (pode ter sido ligado entretanto)
-  try { const r = await fetch('/guardar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"sonda":true}' }); const j = r.ok ? await r.json() : {}; servidorOk = !!j.sonda; }
+  try { const r = await fetch('/guardar' + qsFreguesia, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"sonda":true}' }); const j = r.ok ? await r.json() : {}; servidorOk = !!j.sonda; }
   catch (err) { servidorOk = false; }
   barra.classList.toggle('offline', !servidorOk);
   return servidorOk;
@@ -1389,12 +1481,12 @@ async function guardar() {
   const dados = serializar();
   if (await verificarServidor()) {
     try {
-      const r = await fetch('/guardar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) });
+      const r = await fetch('/guardar' + qsFreguesia, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j.erro || r.statusText);
       alterado = false; FICHEIRO = clonar(dados); autoGuardar();
       if (j.presets) atualizarPresets(j.presets); else preencherPresets();
-      estado('Guardado em dados/presets/' + C.preset + '.js · ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5)); aviso('Preset guardado e ativo em dados/conteudos.js.', 2500);
+      estado('Guardado em ' + BASE + 'presets/' + C.preset + '.js · ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5)); aviso('Preset guardado e ativo em ' + BASE + 'conteudos.js.', 2500);
       return;
     } catch (err) { aviso('Não foi possível gravar no servidor (' + err.message + '); a transferir o ficheiro.', 6000); }
   }
@@ -1404,7 +1496,7 @@ function transferir(dados) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([ficheiroConteudos(dados || serializar())], { type: 'text/javascript' }));
   a.download = 'conteudos.js'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-  estado('Ficheiro transferido: substitui dados/conteudos.js', alterado);
+  estado('Ficheiro transferido: substitui ' + BASE + 'conteudos.js', alterado);
 }
 
 // ---- criar, apagar, ordenar, mover ----
@@ -1674,11 +1766,12 @@ window.addEventListener('beforeunload', e => { if (alterado && edicao) { e.preve
 // ---------- arranque ----------
 construir(); construirIndice(); construirRuas(); construirPesquisa();
 FICHEIRO = clonar(serializar()); preencherPresets(); arrancarPresets();
+try { if (localStorage.getItem('co-fundo') === 'mapa') ligarMapa(true); } catch (err) { /* sem storage: fica o satélite */ }
 let inicial = null; try { inicial = POR_ID[decodeURIComponent(location.hash.slice(1))]; } catch (err) { /* hash malformado: ignora */ }
 if (inicial) map.whenReady(() => setTimeout(() => selecionar(inicial, true), 300));
 if (EDITOR) entrarEdicao(true); // ?editor abre logo em modo de edição; por predefinição arranca em visualização
-window.__mapa = { map, C, ELEMENTOS, POR_ID, RUAS_VISTA, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva, entrarEdicao, porFerramenta, serializar, guardar, carregar, lerPreset, novoPreset, apagarPreset, mudarPreset, PRESETS, importarPreset, reporDoFicheiro, largarPonto, novoPonto, criarRua, criarDeLote, novaCategoria, definirMembro, alternarCategoria, editarVisita, mostrarCategoria, categoriasAtivas, get edicao() { return edicao; }, get ferramenta() { return ferramenta; }, get passos() { return passos; } };
-})();
+window.__mapa = { map, C, FREG, ELEMENTOS, POR_ID, RUAS_VISTA, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, ligarVerdes, ligarMapa, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva, entrarEdicao, porFerramenta, serializar, guardar, carregar, lerPreset, novoPreset, apagarPreset, mudarPreset, PRESETS, importarPreset, reporDoFicheiro, largarPonto, novoPonto, criarRua, criarDeLote, novaCategoria, definirMembro, alternarCategoria, editarVisita, mostrarCategoria, categoriasAtivas, get edicao() { return edicao; }, get ferramenta() { return ferramenta; }, get passos() { return passos; } };
+});
 </script>
 </body>
 </html>

@@ -4,6 +4,22 @@ Apresentação assente num mapa de satélite da freguesia de Campo de Ourique (L
 escurecido e pontos de interesse (pontos, conjuntos de pontos, ruas inteiras e zonas com pontos dentro)
 que abrem um painel de informação.
 
+## Freguesias
+
+A apresentação cobre as 24 freguesias de Lisboa. No painel do índice (☰), o botão «⇄ Freguesia», ao lado do nome,
+abre a lista: escolher outra recarrega a página só com os dados dessa freguesia (`?freguesia=<id>` no endereço;
+a última escolhida fica lembrada neste browser). Cada freguesia tem os seus presets, a sua gravação automática e o
+seu `conteudos.js`.
+
+- **Campo de Ourique**: dados em `dados/` (limite e ruas do OpenStreetMap, edificado e espaços verdes da CML).
+- **As outras 23**: dados em `dados/freguesias/<id>/`, gerados por `node tools/freguesias.mjs` a partir dos serviços
+  abertos da Câmara Municipal de Lisboa: limite oficial («Base_Freguesias»; Alcântara tem duas partes), ruas («Vias e
+  Ruas», recortadas ao limite), lotes e números de polícia («Edificado»), espaços verdes e hortas urbanas («Ambiente
+  DMEVAE»), mais a imagem de satélite de reserva da DGT. Cada uma começa com um preset vazio com o nome da freguesia.
+- **Camadas novas** no painel «Camadas»: «Áreas verdes» (espaços verdes e hortas urbanas da estrutura ecológica
+  municipal, com nome, área e gestão ao passar o cursor) e «Mapa da cidade», que troca o satélite pelo mapa do
+  OpenStreetMap como fundo (a escolha fica lembrada).
+
 ## Como abrir
 
 ```bash
@@ -131,6 +147,8 @@ ferramentas; «⋯ Mais» abre o título, o subtítulo e os presets):
   dos presets (`dados/presets/`, cópia ativa em `dados/conteudos.js`) e das fotos em `assets/fotos/` (só a
   partir desta máquina e da própria página).
 - `tools/ruas-osm.mjs` — regenera `dados/ruas.js` a partir do OpenStreetMap (precisa de internet).
+- `tools/freguesias.mjs` — gera `dados/freguesias/` (lista e dados de cada freguesia) e `dados/verdes.js`; não apaga
+  presets que já existam. `node tools/freguesias.mjs ajuda belem` refaz só essas.
 - `tools/edificado-cml.mjs` — regenera `dados/edificado.js` a partir do serviço da CML; `tools/edificado-osm.mjs`
   é a alternativa com o edificado e os números do OpenStreetMap (escreve `dados/edificado-osm.js`).
 

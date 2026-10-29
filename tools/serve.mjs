@@ -1,8 +1,9 @@
 // Servidor local simples para a apresentação (sem dependências).
 //   node tools/serve.mjs        → http://localhost:8081
 // Além de servir os ficheiros, aceita do modo de edição (só a partir desta máquina e da própria página):
-//   POST /guardar               → escreve dados/presets/<preset>.js e a cópia ativa dados/conteudos.js (o anterior fica em
-//                                 dados/conteudos.anterior.js) e regenera dados/presets/index.js
+//   (os pedidos de presets levam ?freguesia=<id>; sem isso é Campo de Ourique, em dados/; as outras em dados/freguesias/<id>/)
+//   POST /guardar               → escreve <pasta>/presets/<preset>.js e a cópia ativa <pasta>/conteudos.js (o anterior fica em
+//                                 <pasta>/conteudos.anterior.js) e regenera <pasta>/presets/index.js
 //   POST /ativar-preset/<id>    → copia esse preset para dados/conteudos.js
 //   POST /apagar-preset/<id>    → apaga o preset (fica uma cópia .apagado.bak)
 //   GET  /presets               → lista dos presets
@@ -54,12 +55,20 @@ function lerCorpo(req) {
     req.on('error', reject);
   });
 }
-// Presets: cada um em dados/presets/<id>.js (window.CONTEUDOS_PRESET); o ativo é copiado para dados/conteudos.js (window.CONTEUDOS)
-const PASTA_PRESETS = path.join(ROOT, 'dados', 'presets');
+// Presets por freguesia: cada um em <pasta>/presets/<id>.js (window.CONTEUDOS_PRESET); o ativo é copiado para <pasta>/conteudos.js.
+// A pasta é dados/ para Campo de Ourique e dados/freguesias/<id>/ para as outras (escolhida por ?freguesia=<id>).
 const idValido = id => /^[a-z0-9][a-z0-9-]{0,60}$/.test(id);
 const agora = () => new Date().toISOString().slice(0, 16).replace('T', ' ');
-function ficheiroConteudos(dados) {
-  return '// Preset ativo (cópia de dados/presets/' + dados.preset + '.js), gravado pelo modo de edição em ' + agora() + '. Modelo dos campos: ver README.md.\n' +
+function freguesiaDe(url) {
+  const id = new URL(url, 'http://x').searchParams.get('freguesia') || 'campo-de-ourique';
+  if (!idValido(id)) return null;
+  const rel = id === 'campo-de-ourique' ? 'dados/' : 'dados/freguesias/' + id + '/';
+  const dir = path.join(ROOT, rel);
+  if (!fs.existsSync(path.join(dir, 'geo.js'))) return null; // só freguesias que existem
+  return { id, rel, dir, presets: path.join(dir, 'presets') };
+}
+function ficheiroConteudos(F, dados) {
+  return '// Preset ativo (cópia de ' + F.rel + 'presets/' + dados.preset + '.js), gravado pelo modo de edição em ' + agora() + '. Modelo dos campos: ver README.md.\n' +
     '// Para trocar de preset ou editar, abre a apresentação e carrega no lápis.\n' +
     'window.CONTEUDOS = ' + JSON.stringify(dados, null, 1) + ';\n';
 }
@@ -67,77 +76,79 @@ function ficheiroPreset(dados) {
   return '// Preset «' + (dados.titulo || dados.preset) + '», gravado pelo modo de edição em ' + agora() + '. Modelo dos campos: ver README.md.\n' +
     'window.CONTEUDOS_PRESET = ' + JSON.stringify(dados, null, 1) + ';\n';
 }
-function lerPreset(id) {
-  const t = fs.readFileSync(path.join(PASTA_PRESETS, id + '.js'), 'utf8');
+function lerPreset(F, id) {
+  const t = fs.readFileSync(path.join(F.presets, id + '.js'), 'utf8');
   const a = t.indexOf('{'), b = t.lastIndexOf('}');
   if (a < 0 || b < 0) throw new Error('preset sem dados');
   return JSON.parse(t.slice(a, b + 1)); // os presets escritos à mão como código (ex.: exemplo.js) não se leem aqui; a página carrega-os como script
 }
-function listarPresets() {
-  fs.mkdirSync(PASTA_PRESETS, { recursive: true });
-  const lista = [];
-  for (const f of fs.readdirSync(PASTA_PRESETS)) {
+const caches = new Map(); // última lista conhecida por freguesia (para presets escritos como código)
+function cacheDe(F) {
+  if (!caches.has(F.id)) { let c = []; try { c = JSON.parse(fs.readFileSync(path.join(F.presets, 'index.js'), 'utf8').replace(/^[\s\S]*?=\s*/, '').replace(/;\s*$/, '')); } catch (err) { /* sem índice */ } caches.set(F.id, c); }
+  return caches.get(F.id);
+}
+function listarPresets(F) {
+  fs.mkdirSync(F.presets, { recursive: true });
+  const antiga = cacheDe(F), lista = [];
+  for (const f of fs.readdirSync(F.presets)) {
     if (!f.endsWith('.js') || f === 'index.js') continue;
     const id = f.slice(0, -3); if (!idValido(id)) continue;
-    let d = null; try { d = lerPreset(id); } catch (err) { /* código em vez de JSON: fica só o id */ }
-    const antigo = (listarPresets.cache || []).find(p => p.id === id);
-    lista.push(d ? { id, nome: d.titulo || id, subtitulo: d.subtitulo || '', elementos: (d.elementos || []).length } : (antigo || { id, nome: id, subtitulo: '', elementos: 0 }));
+    let d = null; try { d = lerPreset(F, id); } catch (err) { /* código em vez de JSON: fica só o id */ }
+    lista.push(d ? { id, nome: d.titulo || id, subtitulo: d.subtitulo || '', elementos: (d.elementos || []).length } : (antiga.find(p => p.id === id) || { id, nome: id, subtitulo: '', elementos: 0 }));
   }
   lista.sort((a, b) => a.nome.localeCompare(b.nome, 'pt'));
-  listarPresets.cache = lista;
+  caches.set(F.id, lista);
   return lista;
 }
-function regenerarIndice(extra) {
-  const lista = listarPresets();
+function regenerarIndice(F, extra) {
+  const lista = listarPresets(F);
   if (extra) for (const e of extra) { const i = lista.findIndex(p => p.id === e.id); if (i >= 0) lista[i] = e; else lista.push(e); }
   lista.sort((a, b) => a.nome.localeCompare(b.nome, 'pt'));
-  fs.writeFileSync(path.join(PASTA_PRESETS, 'index.js'), '// Lista dos presets em dados/presets/ (regenerada pelo servidor local a cada gravação).\nwindow.PRESETS = ' + JSON.stringify(lista, null, 1) + ';\n');
+  fs.writeFileSync(path.join(F.presets, 'index.js'), '// Lista dos presets em ' + F.rel + 'presets/ (regenerada pelo servidor local a cada gravação).\nwindow.PRESETS = ' + JSON.stringify(lista, null, 1) + ';\n');
   return lista;
 }
-try { listarPresets.cache = JSON.parse(fs.readFileSync(path.join(PASTA_PRESETS, 'index.js'), 'utf8').replace(/^[\s\S]*?=\s*/, '').replace(/;\s*$/, '')); } catch (err) { /* sem índice ainda */ }
 function nomeSeguro(nome) {
   const base = path.basename(nome).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase();
   return base || 'foto';
 }
-
-async function guardar(req, res) {
+async function guardar(req, res, F) {
   const corpo = await lerCorpo(req);
   let dados;
   try { dados = JSON.parse(corpo.toString('utf8')); } catch (err) { return json(res, 400, { erro: 'JSON inválido' }); }
   if (dados && dados.sonda) return json(res, 200, { ok: true, sonda: true }); // o modo de edição pergunta se este servidor grava
   if (!dados || typeof dados !== 'object' || !Array.isArray(dados.elementos)) return json(res, 400, { erro: 'Esperava um objeto com a lista «elementos»' });
-  dados.preset = String(dados.preset || 'campo-de-ourique');
+  dados.preset = String(dados.preset || F.id);
   if (!idValido(dados.preset)) return json(res, 400, { erro: 'Id de preset inválido: ' + dados.preset });
-  fs.mkdirSync(PASTA_PRESETS, { recursive: true });
-  fs.writeFileSync(path.join(PASTA_PRESETS, dados.preset + '.js'), ficheiroPreset(dados));
-  const destino = path.join(ROOT, 'dados', 'conteudos.js');
-  if (fs.existsSync(destino)) fs.copyFileSync(destino, path.join(ROOT, 'dados', 'conteudos.anterior.js'));
-  const texto = ficheiroConteudos(dados);
+  fs.mkdirSync(F.presets, { recursive: true });
+  fs.writeFileSync(path.join(F.presets, dados.preset + '.js'), ficheiroPreset(dados));
+  const destino = path.join(F.dir, 'conteudos.js');
+  if (fs.existsSync(destino)) fs.copyFileSync(destino, path.join(F.dir, 'conteudos.anterior.js'));
+  const texto = ficheiroConteudos(F, dados);
   fs.writeFileSync(destino, texto);
-  const presets = regenerarIndice([{ id: dados.preset, nome: dados.titulo || dados.preset, subtitulo: dados.subtitulo || '', elementos: dados.elementos.length }]);
-  console.log(`guardado preset «${dados.preset}» (${dados.elementos.length} elementos) e dados/conteudos.js (${(texto.length / 1024).toFixed(0)} kB)`);
+  const presets = regenerarIndice(F, [{ id: dados.preset, nome: dados.titulo || dados.preset, subtitulo: dados.subtitulo || '', elementos: dados.elementos.length }]);
+  console.log(`[${F.id}] guardado preset «${dados.preset}» (${dados.elementos.length} elementos) e ${F.rel}conteudos.js (${(texto.length / 1024).toFixed(0)} kB)`);
   json(res, 200, { ok: true, bytes: texto.length, elementos: dados.elementos.length, presets });
 }
-// torna um preset o ativo: copia dados/presets/<id>.js para dados/conteudos.js
-function ativarPreset(res, id) {
+// torna um preset o ativo: copia <pasta>/presets/<id>.js para <pasta>/conteudos.js
+function ativarPreset(res, F, id) {
   if (!idValido(id)) return json(res, 400, { erro: 'Id inválido' });
-  const origem = path.join(PASTA_PRESETS, id + '.js');
+  const origem = path.join(F.presets, id + '.js');
   if (!fs.existsSync(origem)) return json(res, 404, { erro: 'Preset não encontrado' });
-  let dados; try { dados = lerPreset(id); } catch (err) { dados = null; }
-  const destino = path.join(ROOT, 'dados', 'conteudos.js');
-  if (fs.existsSync(destino)) fs.copyFileSync(destino, path.join(ROOT, 'dados', 'conteudos.anterior.js'));
-  if (dados) { dados.preset = id; fs.writeFileSync(destino, ficheiroConteudos(dados)); }
+  let dados; try { dados = lerPreset(F, id); } catch (err) { dados = null; }
+  const destino = path.join(F.dir, 'conteudos.js');
+  if (fs.existsSync(destino)) fs.copyFileSync(destino, path.join(F.dir, 'conteudos.anterior.js'));
+  if (dados) { dados.preset = id; fs.writeFileSync(destino, ficheiroConteudos(F, dados)); }
   else fs.writeFileSync(destino, fs.readFileSync(origem, 'utf8').replace('window.CONTEUDOS_PRESET', 'window.CONTEUDOS')); // preset escrito como código
-  console.log(`preset ativo: «${id}»`);
-  json(res, 200, { ok: true, preset: id, presets: regenerarIndice() });
+  console.log(`[${F.id}] preset ativo: «${id}»`);
+  json(res, 200, { ok: true, preset: id, presets: regenerarIndice(F) });
 }
-function apagarPreset(res, id) {
+function apagarPreset(res, F, id) {
   if (!idValido(id)) return json(res, 400, { erro: 'Id inválido' });
-  const f = path.join(PASTA_PRESETS, id + '.js');
-  if (fs.existsSync(f)) { fs.copyFileSync(f, path.join(PASTA_PRESETS, id + '.apagado.bak')); fs.unlinkSync(f); }
-  listarPresets.cache = (listarPresets.cache || []).filter(p => p.id !== id);
-  console.log(`preset apagado: «${id}» (cópia em dados/presets/${id}.apagado.bak)`);
-  json(res, 200, { ok: true, presets: regenerarIndice() });
+  const f = path.join(F.presets, id + '.js');
+  if (fs.existsSync(f)) { fs.copyFileSync(f, path.join(F.presets, id + '.apagado.bak')); fs.unlinkSync(f); }
+  caches.set(F.id, cacheDe(F).filter(p => p.id !== id));
+  console.log(`[${F.id}] preset apagado: «${id}» (cópia em ${F.rel}presets/${id}.apagado.bak)`);
+  json(res, 200, { ok: true, presets: regenerarIndice(F) });
 }
 async function guardarFoto(req, res, nome) {
   const corpo = await lerCorpo(req);
@@ -162,13 +173,14 @@ http.createServer(async (req, res) => {
     if (req.method === 'POST') {
       if (!local(req)) return json(res, 403, { erro: 'Só a partir desta máquina' });
       if (!origemPropria(req)) return json(res, 403, { erro: 'Só a partir da própria apresentação (origem ' + (req.headers.origin || 'desconhecida') + ')' });
-      if (rel === '/guardar') return await guardar(req, res);
       if (rel.startsWith('/guardar-foto/')) return await guardarFoto(req, res, rel.slice('/guardar-foto/'.length));
-      if (rel.startsWith('/ativar-preset/')) return ativarPreset(res, rel.slice('/ativar-preset/'.length));
-      if (rel.startsWith('/apagar-preset/')) return apagarPreset(res, rel.slice('/apagar-preset/'.length));
+      const F = freguesiaDe(req.url); if (!F) return json(res, 400, { erro: 'Freguesia desconhecida' });
+      if (rel === '/guardar') return await guardar(req, res, F);
+      if (rel.startsWith('/ativar-preset/')) return ativarPreset(res, F, rel.slice('/ativar-preset/'.length));
+      if (rel.startsWith('/apagar-preset/')) return apagarPreset(res, F, rel.slice('/apagar-preset/'.length));
       return json(res, 404, { erro: 'Não encontrado' });
     }
-    if (req.method === 'GET' && rel === '/presets') return json(res, 200, { presets: listarPresets() });
+    if (req.method === 'GET' && rel === '/presets') { const F = freguesiaDe(req.url); return F ? json(res, 200, { presets: listarPresets(F) }) : json(res, 400, { erro: 'Freguesia desconhecida' }); }
   } catch (err) { console.error(err.message); return json(res, err.codigo || 500, { erro: err.message }); }
   if (rel.endsWith('/')) rel += 'index.html';
   const file = path.join(ROOT, rel);

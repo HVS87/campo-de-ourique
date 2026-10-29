@@ -5,3 +5,5 @@ Thumbs.db
 .claude/settings.local.json
 dados/conteudos.anterior.js
 dados/presets/*.apagado.bak
+dados/freguesias/*/conteudos.anterior.js
+dados/freguesias/*/presets/*.apagado.bak
