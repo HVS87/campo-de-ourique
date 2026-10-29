@@ -39,9 +39,16 @@ Liga-se no lápis (canto superior direito). Barra de ferramentas no topo:
   com botões para ligação, negrito e itálico), fotos (ficheiros do computador, que o servidor grava em
   `assets/fotos/`, ou por endereço; legenda por foto), ordem no índice e no guião (↑ ↓), apagar.
 - **Guardar** escreve `dados/conteudos.js` através do servidor local (o ficheiro anterior fica em
-  `dados/conteudos.anterior.js`). **Transferir** descarrega o mesmo ficheiro, para quando a apresentação não
-  está servida por `tools/serve.mjs`; nesse caso as fotos ficam embebidas. Enquanto há alterações por guardar,
-  ficam também num rascunho no browser, que é proposto na próxima vez que se entra em edição.
+  `dados/conteudos.anterior.js`).
+- **Presets** (terceira linha da barra): **Novo** começa um preset vazio, com aviso de que elimina o atual e
+  recomendação de o guardar ou exportar antes; **Importar…** carrega um preset exportado (.json) ou um
+  `conteudos.js` gravado por esta ferramenta, com confirmação; **Exportar** descarrega o preset atual em JSON;
+  **Transferir conteudos.js** descarrega o ficheiro no formato de `dados/conteudos.js`, para quando a
+  apresentação não está servida por `tools/serve.mjs` (nesse caso as fotos ficam embebidas); **Repor do
+  ficheiro** descarta o trabalho em curso e volta ao que está em `dados/conteudos.js`.
+- **Auto-save**: cada alteração fica guardada no browser (localStorage) e é reposta automaticamente ao abrir a
+  página, mesmo que não se tenha gravado o ficheiro; a barra indica «Alterações por guardar (recuperadas de
+  …)». Só se perde com «Repor do ficheiro» ou ao limpar os dados do site.
 
 ## Ficheiros
 
