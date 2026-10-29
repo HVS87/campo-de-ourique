@@ -1,4 +1,4 @@
-// Preset ativo (cópia de dados/presets/campo-de-ourique.js), gravado em 2026-10-29 18:23. Modelo dos campos: ver README.md.
+// Preset ativo (cópia de dados/presets/campo-de-ourique.js), gravado em 2026-10-29 18:24. Modelo dos campos: ver README.md.
 // Para trocar de preset ou editar, abre a apresentação e carrega no lápis.
 window.CONTEUDOS = {
  "preset": "campo-de-ourique",
@@ -992,6 +992,58 @@ window.CONTEUDOS = {
      "legenda": "Exemplo de pictograma de crianças na faixa de rodagem junto a uma escola (Győr, Hungria). Foto: Globetrotter19, CC BY-SA 3.0, Wikimedia Commons."
     }
    ]
+  },
+  {
+   "id": "rua-do-sol-ao-rato",
+   "tipo": "rua",
+   "nome": "Rua do Sol ao Rato",
+   "icone": "🛠️",
+   "rua": "Rua do Sol ao Rato",
+   "texto": "<p>É necessário requalificar este arruamento, que tem uma inclinação acentuada, uma gritante falta de estacionamento para moradores e passeios estreitos e mal conservados.</p><p>Propõe-se:</p><ul><li>instalar almofadas berlinenses;</li><li>fazer pinturas de segurança nas passadeiras;</li><li>instalar refletores de aproximação.</li></ul>",
+   "fotos": [
+    {
+     "src": "assets/fotos/exemplos/almofada-berlinense.jpg",
+     "legenda": "Exemplo de almofada berlinense (Łódź, Polónia). Foto: Zorro2212, CC BY-SA 4.0, Wikimedia Commons."
+    },
+    {
+     "src": "assets/fotos/exemplos/passadeira-pintura-seguranca.jpg",
+     "legenda": "Exemplo de pintura de segurança de alta visibilidade numa passadeira, em aplicação (EUA). Foto: Z22, CC BY-SA 4.0, Wikimedia Commons."
+    },
+    {
+     "src": "assets/fotos/exemplos/refletores-pavimento.jpg",
+     "legenda": "Exemplo de refletores no pavimento (EUA). Foto: Shoecream, domínio público, Wikimedia Commons."
+    }
+   ]
+  },
+  {
+   "id": "rua-saraiva-de-carvalho",
+   "tipo": "rua",
+   "nome": "Rua Saraiva de Carvalho",
+   "icone": "🚸",
+   "rua": "Rua Saraiva de Carvalho",
+   "texto": "<p>É necessário completar a requalificação da rua, nomeadamente nos quarteirões entre a Rua Silva Carvalho e a Praça São João Bosco.</p><p>Devem ser revistas as condições de acessibilidade pedonal. Embora os passeios tenham uma largura adequada, o crescimento das raízes das árvores deformou-os, o que cria uma situação de perigo para seniores, para pessoas com mobilidade reduzida e para carrinhos de bebé.</p><p>Devem também ser implementadas medidas de acalmia da velocidade nesta rua, onde os automóveis atingem velocidades elevadas nas horas de menor trânsito, e que serve de acesso ao Colégio dos Salesianos.</p><p>Propõe-se:</p><ul><li>instalar almofadas berlinenses;</li><li>fazer pinturas de segurança nas passadeiras;</li><li>instalar refletores de aproximação;</li><li>pintar pictogramas na faixa de rodagem a assinalar a proximidade de um equipamento escolar.</li></ul>",
+   "fotos": [
+    {
+     "src": "assets/fotos/exemplos/almofada-berlinense.jpg",
+     "legenda": "Exemplo de almofada berlinense (Łódź, Polónia). Foto: Zorro2212, CC BY-SA 4.0, Wikimedia Commons."
+    },
+    {
+     "src": "assets/fotos/exemplos/passadeira-pintura-seguranca.jpg",
+     "legenda": "Exemplo de pintura de segurança de alta visibilidade numa passadeira, em aplicação (EUA). Foto: Z22, CC BY-SA 4.0, Wikimedia Commons."
+    },
+    {
+     "src": "assets/fotos/exemplos/refletores-pavimento.jpg",
+     "legenda": "Exemplo de refletores no pavimento (EUA). Foto: Shoecream, domínio público, Wikimedia Commons."
+    },
+    {
+     "src": "assets/fotos/exemplos/marcacao-zona-escolar.jpg",
+     "legenda": "Exemplo de marcação na faixa de rodagem a assinalar uma zona escolar (Queensland, Austrália). Foto: Kgbo, CC BY-SA 4.0, Wikimedia Commons."
+    },
+    {
+     "src": "assets/fotos/exemplos/pictograma-criancas.jpg",
+     "legenda": "Exemplo de pictograma de crianças na faixa de rodagem junto a uma escola (Győr, Hungria). Foto: Globetrotter19, CC BY-SA 3.0, Wikimedia Commons."
+    }
+   ]
   }
  ],
  "categorias": [
@@ -1004,7 +1056,9 @@ window.CONTEUDOS = {
     "rua-sampaio-bruno",
     "rua-silva-carvalho",
     "rua-maria-pia",
-    "rua-freitas-gazul"
+    "rua-freitas-gazul",
+    "rua-do-sol-ao-rato",
+    "rua-saraiva-de-carvalho"
    ]
   },
   {
@@ -1015,7 +1069,9 @@ window.CONTEUDOS = {
    "membros": [
     "rua-silva-carvalho",
     "rua-maria-pia",
-    "rua-freitas-gazul"
+    "rua-freitas-gazul",
+    "rua-do-sol-ao-rato",
+    "rua-saraiva-de-carvalho"
    ]
   }
  ]
