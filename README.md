@@ -42,12 +42,17 @@ ferramentas; «⋯ Mais» abre o título, o subtítulo e os presets):
   enquanto não for personalizada), caixas de categorias e de destaque na visita, apagar.
 - **Guardar** escreve `dados/conteudos.js` através do servidor local (o ficheiro anterior fica em
   `dados/conteudos.anterior.js`).
-- **Presets** (terceira linha da barra): **Novo** começa um preset vazio, com aviso de que elimina o atual e
-  recomendação de o guardar ou exportar antes; **Importar…** carrega um preset exportado (.json) ou um
-  `conteudos.js` gravado por esta ferramenta, com confirmação; **Exportar** descarrega o preset atual em JSON;
-  **Transferir conteudos.js** descarrega o ficheiro no formato de `dados/conteudos.js`, para quando a
-  apresentação não está servida por `tools/serve.mjs` (nesse caso as fotos ficam embebidas); **Repor do
-  ficheiro** descarta o trabalho em curso e volta ao que está em `dados/conteudos.js`.
+- **Presets** (terceira linha da barra): há vários presets, cada um em `dados/presets/<id>.js`; o seletor troca
+  o preset ativo (também existe no fundo do painel do índice, em visualização) e o ativo é copiado para
+  `dados/conteudos.js`, que é o que a apresentação abre. Ao arrancar vêm dois: **Campo de Ourique** (vazio,
+  para os conteúdos reais) e **Campo de Ourique (exemplo)** (dados de demonstração). **Novo…** cria um preset
+  vazio com o nome que escolheres; **Apagar** apaga o ativo (fica uma cópia `.apagado.bak`); **Importar…**
+  carrega um preset exportado (.json) ou um `conteudos.js` gravado por esta ferramenta para dentro do preset
+  ativo, com confirmação; **Exportar** transfere o preset ativo em JSON; **Transferir conteudos.js** transfere
+  o ficheiro no formato de `dados/conteudos.js`, para quando a apresentação não está servida por
+  `tools/serve.mjs` (nesse caso as fotos ficam embebidas); **Repor do ficheiro** descarta o trabalho em curso
+  e volta ao que está gravado. A gravação automática é independente por preset, e o preset escolhido fica
+  lembrado neste browser entre sessões.
 - **Gravação automática**: cada alteração fica guardada no browser (localStorage) e é reposta automaticamente ao
   abrir a página, mesmo que não se tenha gravado o ficheiro; a barra indica «Alterações por guardar
   (recuperadas de …)». Se `dados/conteudos.js` tiver sido alterado depois (à mão ou noutro browser), vale o
@@ -56,7 +61,8 @@ ferramentas; «⋯ Mais» abre o título, o subtítulo e os presets):
 
 ## Modelo de `dados/conteudos.js`
 
-`window.CONTEUDOS = { titulo, subtitulo, elementos, visita?, categorias? }`
+`window.CONTEUDOS = { preset, titulo, subtitulo, elementos, visita?, categorias? }` (o mesmo objeto, em
+`window.CONTEUDOS_PRESET`, em cada ficheiro de `dados/presets/`)
 
 - Elemento: `{ id, tipo, nome, icone?, texto, fotos, … }` com `tipo` em `ponto` (`pos: [lat, lon]`), `grupo`
   (`pontos: [[lat, lon], …]`), `rua` (`linhas: [[[lat, lon], …], …]` ou `rua: 'Nome'` para ir buscar o traçado
@@ -93,8 +99,11 @@ ferramentas; «⋯ Mais» abre o título, o subtítulo e os presets):
   ecrã possível, com os seus pontos à vista; o cartão encosta à direita ou em baixo, conforme o que deixa a
   zona maior, para não a tapar. Ao desselecionar a zona (clique no mapa ou Esc) o mapa volta à vista inicial
   da freguesia. Esc fecha o que estiver aberto. Cada elemento tem ligação própria: `index.html#id`.
-- `dados/conteudos.js` — título, subtítulo, lista de pontos de interesse, `visita` (ordem dos destaques, se
-  personalizada) e `categorias` ({ id, nome, icone, cor, membros }); é o ficheiro que o modo de edição grava. O modelo está explicado no cabeçalho do ficheiro. Os elementos atuais são exemplos.
+- `dados/conteudos.js` — cópia do preset ativo (`preset`, título, subtítulo, elementos, `visita`, `categorias`),
+  gravada pelo modo de edição; é o que a apresentação carrega.
+- `dados/presets/` — um ficheiro por preset (`window.CONTEUDOS_PRESET`) e `index.js` com a lista
+  (`window.PRESETS`), regenerada pelo servidor a cada gravação. `exemplo.js` tem os dados de demonstração;
+  `campo-de-ourique.js` é o preset vazio para os conteúdos reais.
 - `dados/geo.js` — limite da freguesia, ruas (Ferreira Borges, Saraiva de Carvalho, Coelho da Rocha),
   jardins e Mercado (OpenStreetMap, ODbL), em `[lat, lon]`, mais os limites da imagem fixa. Em
   `conteudos.js` uma rua ou zona pode referir-se a estes dados por nome (`rua: '...'`, `area: '...'`).
@@ -112,7 +121,8 @@ ferramentas; «⋯ Mais» abre o título, o subtítulo e os presets):
 - `prototipo.html` — protótipo com todas as alternativas comutáveis (satélite, máscara, janela,
   navegação, marcadores, editor), mantido para consulta. Usa o Leaflet do CDN.
 - `tools/serve.mjs` — servidor local simples (porta 8081), sem dependências; aceita do modo de edição a gravação
-  de `dados/conteudos.js` e das fotos em `assets/fotos/` (só a partir desta máquina).
+  dos presets (`dados/presets/`, cópia ativa em `dados/conteudos.js`) e das fotos em `assets/fotos/` (só a
+  partir desta máquina e da própria página).
 - `tools/ruas-osm.mjs` — regenera `dados/ruas.js` a partir do OpenStreetMap (precisa de internet).
 - `tools/edificado-cml.mjs` — regenera `dados/edificado.js` a partir do serviço da CML; `tools/edificado-osm.mjs`
   é a alternativa com o edificado e os números do OpenStreetMap (escreve `dados/edificado-osm.js`).

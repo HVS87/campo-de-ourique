@@ -10,6 +10,7 @@
 <script src="dados/ruas.js"></script>
 <script src="dados/edificado.js"></script>
 <script src="dados/conteudos.js"></script>
+<script src="dados/presets/index.js"></script>
 <style>
   :root {
     --bg: #0f1216; --panel: rgba(18, 22, 28, .94); --panel-border: rgba(255,255,255,.12);
@@ -73,6 +74,10 @@
   #indice .vazio { color: var(--ink-dim); padding: 8px; font-size: 12px; line-height: 1.4; }
   #indice .ico { width: 20px; text-align: center; flex: none; }
   .rodape { margin-top: auto; padding: 10px 14px 12px; border-top: 1px solid var(--panel-border); color: var(--ink-dim); font-size: 12px; line-height: 1.45; }
+  .preset-vista { margin-top: auto; padding: 8px 14px; border-top: 1px solid var(--panel-border); font-size: 12px; color: var(--ink-dim); }
+  .preset-vista label { display: flex; align-items: center; gap: 8px; }
+  .preset-vista .seletor { flex: 1; min-width: 0; }
+  .preset-vista + .rodape { margin-top: 0; }
   .rodape a { color: #ccc; }
 
   /* ---- canto inferior esquerdo: zoom e camada de ruas ---- */
@@ -344,6 +349,7 @@
     <button class="btn" id="btn-repor">Vista geral</button>
   </div>
   <nav id="indice" aria-label="Índice"></nav>
+  <div class="preset-vista" id="preset-vista" hidden><label>Preset <select id="sel-preset-vista" class="seletor" aria-label="Preset"></select></label></div>
   <div class="rodape">Ortoimagens © DGT 2023 (CC BY 4.0) · Limites e ruas © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a></div>
 </aside>
 
@@ -376,7 +382,9 @@
     <input class="titulo sub" id="ed-subtitulo" placeholder="Subtítulo" aria-label="Subtítulo">
   </div>
   <div class="row preset extra"><b>Preset</b>
-    <button class="btn" id="btn-novo-preset" title="Começar um preset vazio (elimina o atual)">Novo</button>
+    <select id="sel-preset" class="seletor" aria-label="Preset ativo"></select>
+    <button class="btn" id="btn-novo-preset" title="Criar um preset novo, vazio, com o nome que escolheres">Novo…</button>
+    <button class="btn" id="btn-apagar-preset" title="Apagar o preset ativo e o seu ficheiro">Apagar</button>
     <button class="btn" id="btn-importar" title="Carregar um preset exportado (.json) ou um conteudos.js">Importar…</button>
     <button class="btn" id="btn-exportar" title="Transferir o preset atual em JSON">Exportar</button>
     <button class="btn" id="btn-transferir" title="Transferir o ficheiro no formato de dados/conteudos.js">Transferir conteudos.js</button>
@@ -1131,10 +1139,11 @@ const arredLL = ll => [+ll.lat.toFixed(6), +ll.lng.toFixed(6)];
 // ---- estado: alterações, auto-save, gravação ----
 // O auto-save guarda o preset em curso neste browser (localStorage) a cada alteração e repõe-no ao abrir a página,
 // mesmo sem se ter gravado dados/conteudos.js. «Repor do ficheiro» descarta-o.
-const CHAVE_AUTO = 'co-autosave';
+const chaveAuto = id => 'co-autosave:' + (id || C.preset); // uma gravação automática por preset
+function lerAutosaveDe(id) { try { const r = JSON.parse(localStorage.getItem(chaveAuto(id)) || 'null'); return r && r.dados ? r : null; } catch (err) { return null; } }
 function estado(txt, sujo) { estadoEl.textContent = txt; barra.classList.toggle('sujo', !!sujo); }
 function autoGuardar() {
-  try { localStorage.setItem(CHAVE_AUTO, JSON.stringify({ quando: Date.now(), dados: serializar() })); $('#estado-auto').textContent = 'gravação automática ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5); autoFalhou = false; }
+  try { localStorage.setItem(chaveAuto(), JSON.stringify({ quando: Date.now(), dados: serializar() })); $('#estado-auto').textContent = 'gravação automática ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5); autoFalhou = false; }
   catch (err) { $('#estado-auto').textContent = 'gravação automática indisponível'; if (!autoFalhou) { autoFalhou = true; aviso('A gravação automática no browser falhou (sem espaço, provavelmente por fotos embebidas). Guarda ou exporta para não perderes o trabalho.', 8000); } }
 }
 function marcarAlterado() {
@@ -1150,15 +1159,65 @@ function lerPreset(texto) { // aceita o JSON exportado ou um ficheiro conteudos.
 }
 const clonar = d => JSON.parse(JSON.stringify(d));
 function resumoPreset(d) { const n = (d.elementos || []).length, c = (d.categorias || []).length; return `${d.titulo || 'sem título'}: ${n} elemento${n === 1 ? '' : 's'}${c ? `, ${c} categoria${c === 1 ? '' : 's'}` : ''}`; }
-function novoPreset() {
-  if (!confirm('Criar um preset novo elimina o preset atual (todos os elementos, categorias e visita) desta sessão.\n\nRecomenda-se guardar ou exportar o atual primeiro.\n\nContinuar?')) return;
-  carregar({ titulo: C.titulo || 'Campo de Ourique', subtitulo: '', elementos: [], categorias: [] });
-  marcarAlterado(); aviso('Preset novo. Guarda quando quiseres gravar em dados/conteudos.js.', 4000);
+// ---- vários presets: lista em dados/presets/index.js, cada um em dados/presets/<id>.js; o ativo é copiado para dados/conteudos.js ----
+const PRESETS = Array.isArray(window.PRESETS) ? window.PRESETS : [];
+C.preset = C.preset || 'exemplo';
+if (!PRESETS.some(p => p.id === C.preset)) PRESETS.push({ id: C.preset, nome: C.titulo || C.preset, subtitulo: C.subtitulo || '', elementos: ELEMENTOS.length });
+function preencherPresets() {
+  const opcoes = PRESETS.slice().sort((a, b) => a.nome.localeCompare(b.nome, 'pt')).map(p => `<option value="${esc(p.id)}">${esc(p.nome)}</option>`).join('');
+  for (const s of [$('#sel-preset'), $('#sel-preset-vista')]) { s.innerHTML = opcoes; s.value = C.preset; }
+  $('#preset-vista').hidden = PRESETS.length < 2;
+  $('#btn-apagar-preset').disabled = PRESETS.length < 2;
+}
+function carregarPresetFicheiro(id) { // carrega dados/presets/<id>.js como script (funciona também sem servidor)
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script'); s.src = 'dados/presets/' + encodeURIComponent(id) + '.js?t=' + Date.now();
+    s.onload = () => { const d = window.CONTEUDOS_PRESET; delete window.CONTEUDOS_PRESET; s.remove(); if (d && Array.isArray(d.elementos)) resolve(d); else reject(new Error('o ficheiro não tem dados válidos')); };
+    s.onerror = () => { s.remove(); reject(new Error('não encontrei dados/presets/' + id + '.js')); };
+    document.head.appendChild(s);
+  });
+}
+async function mudarPreset(id, silencioso) {
+  if (!id || id === C.preset) return;
+  if (alterado && confirm(`Guardar as alterações de «${C.titulo}» antes de trocar de preset?`)) await guardar();
+  let d = null; try { d = clonar(await carregarPresetFicheiro(id)); } catch (err) { if (!lerAutosaveDe(id)) { aviso('Não foi possível abrir o preset: ' + err.message, 5000); preencherPresets(); return; } }
+  const auto = lerAutosaveDe(id), base = d || auto.dados;
+  const usarAuto = !!auto && (!d || JSON.stringify(auto.dados) !== JSON.stringify(d));
+  carregar(clonar(usarAuto ? auto.dados : base)); C.preset = id; FICHEIRO = clonar(base); FICHEIRO.preset = id;
+  alterado = usarAuto; estado(usarAuto ? 'Alterações por guardar (gravação automática de ' + new Date(auto.quando).toLocaleString('pt-PT') + ')' : 'Sem alterações', usarAuto);
+  try { localStorage.setItem('co-preset-ativo', id); } catch (err) { /* sem storage */ }
+  preencherPresets();
+  if (await verificarServidor()) { try { const r = await fetch('/ativar-preset/' + encodeURIComponent(id), { method: 'POST' }); const j = await r.json(); if (j.presets) atualizarPresets(j.presets); } catch (err) { /* fica só nesta sessão */ } }
+  if (!silencioso) aviso(`Preset «${C.titulo || id}» ativo.`, 2500);
+}
+function atualizarPresets(lista) { PRESETS.length = 0; PRESETS.push(...lista); if (!PRESETS.some(p => p.id === C.preset)) PRESETS.push({ id: C.preset, nome: C.titulo || C.preset, subtitulo: C.subtitulo || '', elementos: ELEMENTOS.length }); preencherPresets(); }
+async function novoPreset() {
+  const nome = prompt('Nome do novo preset (fica vazio, pronto a encher):', 'Novo preset'); if (nome === null) return;
+  const limpoNome = nome.trim() || 'Novo preset';
+  let id = idDe(limpoNome); for (let k = 2; PRESETS.some(p => p.id === id); k++) id = idDe(limpoNome) + '-' + k;
+  if (alterado && confirm(`Guardar as alterações de «${C.titulo}» antes de criar o preset novo?`)) await guardar();
+  PRESETS.push({ id, nome: limpoNome, subtitulo: '', elementos: 0 });
+  carregar({ titulo: limpoNome, subtitulo: '', elementos: [], categorias: [] }); C.preset = id; FICHEIRO = clonar(serializar());
+  try { localStorage.setItem('co-preset-ativo', id); } catch (err) { /* sem storage */ }
+  preencherPresets(); if (edicao) { $('#ed-titulo').value = C.titulo; $('#ed-subtitulo').value = ''; }
+  if (await verificarServidor()) await guardar(); else { marcarAlterado(); aviso('Preset criado nesta sessão; sem servidor, exporta-o para o guardares.', 5000); }
+}
+async function apagarPreset() {
+  if (PRESETS.length < 2) { aviso('Não se apaga o único preset.', 3000); return; }
+  const id = C.preset, nome = C.titulo || id;
+  if (!confirm(`Apagar o preset «${nome}» e o ficheiro dados/presets/${id}.js?\n\nRecomenda-se exportá-lo antes. Fica uma cópia .apagado.bak na pasta.`)) return;
+  const outro = PRESETS.find(p => p.id !== id).id;
+  PRESETS.splice(PRESETS.findIndex(p => p.id === id), 1);
+  try { localStorage.removeItem(chaveAuto(id)); } catch (err) { /* sem storage */ }
+  alterado = false;
+  if (await verificarServidor()) { try { await fetch('/apagar-preset/' + encodeURIComponent(id), { method: 'POST' }); } catch (err) { /* o ficheiro fica, mas sai da lista desta sessão */ } }
+  await mudarPreset(outro);
+  aviso(`Preset «${nome}» apagado.`, 3000);
 }
 function exportarPreset() {
   const d = serializar(), a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([JSON.stringify(d, null, 1)], { type: 'application/json' }));
-  a.download = 'preset-' + idDe(d.titulo || 'campo-de-ourique') + '-' + new Date().toISOString().slice(0, 10) + '.json'; a.click();
+  a.download = 'preset-' + (C.preset || idDe(d.titulo || 'campo-de-ourique')) + '-' + new Date().toISOString().slice(0, 10) + '.json'; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 5000);
   aviso('Preset exportado.', 2500);
 }
@@ -1166,27 +1225,31 @@ function importarPreset(ficheiro) {
   const leitor = new FileReader();
   leitor.onload = () => {
     let d; try { d = lerPreset(leitor.result); } catch (err) { aviso('Não foi possível importar: ' + err.message, 5000); return; }
-    if (!confirm(`Importar «${resumoPreset(d)}»?\n\nSubstitui o preset atual nesta sessão. Recomenda-se exportar o atual primeiro.`)) return;
-    carregar(clonar(d)); marcarAlterado(); aviso('Preset importado: ' + resumoPreset(d) + '. Guarda para gravar no ficheiro.', 5000);
+    if (!confirm(`Importar «${resumoPreset(d)}» para o preset «${C.titulo}»?\n\nSubstitui o conteúdo deste preset nesta sessão. Recomenda-se exportar o atual primeiro.`)) return;
+    const id = C.preset; carregar(clonar(d)); C.preset = id; marcarAlterado(); preencherPresets(); aviso('Preset importado: ' + resumoPreset(d) + '. Guarda para gravar no ficheiro.', 5000);
   };
   leitor.onerror = () => aviso('Não foi possível ler o ficheiro.', 4000);
   leitor.readAsText(ficheiro);
 }
 function reporDoFicheiro() {
   if (!confirm('Descartar o trabalho em curso e voltar ao que está em dados/conteudos.js?')) return;
-  carregar(clonar(FICHEIRO)); alterado = false; try { localStorage.removeItem(CHAVE_AUTO); } catch (err) { /* sem storage */ }
+  const id = C.preset; carregar(clonar(FICHEIRO)); C.preset = id; alterado = false; try { localStorage.removeItem(chaveAuto()); } catch (err) { /* sem storage */ }
   estado('Reposto do ficheiro'); $('#estado-auto').textContent = 'gravação automática ligada'; aviso('Reposto a partir de dados/conteudos.js.', 3000);
 }
-async function restaurarAutosave() { // ao abrir a página: repõe o preset em curso da sessão anterior, se for diferente do ficheiro e mais recente
-  let r; try { r = JSON.parse(localStorage.getItem(CHAVE_AUTO) || 'null'); } catch (err) { return; }
-  if (!r || !r.dados || JSON.stringify(r.dados) === JSON.stringify(FICHEIRO)) return;
+async function arrancarPresets() { // ao abrir: ativa o preset escolhido na sessão anterior (se for outro) e repõe a gravação automática
+  let ativo = null; try { ativo = localStorage.getItem('co-preset-ativo'); } catch (err) { /* sem storage */ }
+  if (ativo && ativo !== C.preset && (PRESETS.some(p => p.id === ativo) || lerAutosaveDe(ativo))) { await mudarPreset(ativo, true); return; }
+  await restaurarAutosave();
+}
+async function restaurarAutosave() { // repõe o preset em curso da sessão anterior, se for diferente do ficheiro e mais recente
+  const r = lerAutosaveDe(C.preset);
+  if (!r || JSON.stringify(r.dados) === JSON.stringify(FICHEIRO)) return;
   try { // se o ficheiro foi alterado depois da gravação automática (à mão ou noutro browser), vale o ficheiro
-    const h = await fetch('dados/conteudos.js', { method: 'HEAD', cache: 'no-store' });
+    const h = await fetch('dados/presets/' + encodeURIComponent(C.preset) + '.js', { method: 'HEAD', cache: 'no-store' });
     const mod = h.ok && h.headers.get('Last-Modified') ? Date.parse(h.headers.get('Last-Modified')) : 0;
-    if (mod && mod > r.quando) { localStorage.removeItem(CHAVE_AUTO); aviso('O ficheiro dados/conteudos.js é mais recente do que a gravação automática; ficou o ficheiro.', 6000); return; }
+    if (mod && mod > r.quando) { localStorage.removeItem(chaveAuto()); aviso('O ficheiro do preset é mais recente do que a gravação automática; ficou o ficheiro.', 6000); return; }
   } catch (err) { /* sem servidor: não há como comparar; vale a gravação automática */ }
-  if (location.hash && POR_ID[location.hash.slice(1)] && selecionado) { /* mantém a seleção pedida no endereço */ }
-  carregar(clonar(r.dados)); alterado = true;
+  const id = C.preset; carregar(clonar(r.dados)); C.preset = id; alterado = true;
   estado('Alterações por guardar (recuperadas de ' + new Date(r.quando).toLocaleString('pt-PT') + ')', true);
   aviso('Trabalho da sessão anterior recuperado; ainda não está gravado em dados/conteudos.js.', 7000);
   let sel = null; try { sel = POR_ID[decodeURIComponent(location.hash.slice(1))]; } catch (err) { /* ignora */ }
@@ -1204,7 +1267,7 @@ function limpo(el) {
   return c;
 }
 function serializar() {
-  const d = { titulo: C.titulo || 'Campo de Ourique', subtitulo: C.subtitulo || '', elementos: ELEMENTOS.map(limpo) };
+  const d = { preset: C.preset, titulo: C.titulo || 'Campo de Ourique', subtitulo: C.subtitulo || '', elementos: ELEMENTOS.map(limpo) };
   if (Array.isArray(C.visita)) d.visita = C.visita.filter(id => POR_ID[id]);
   if (C.categorias && C.categorias.length) d.categorias = C.categorias.map(c => ({ id: c.id, nome: c.nome, icone: c.icone || '', cor: c.cor, membros: c.membros.filter(id => POR_ID[id]) }));
   return d;
@@ -1239,7 +1302,8 @@ async function guardar() {
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j.erro || r.statusText);
       alterado = false; FICHEIRO = clonar(dados); autoGuardar();
-      estado('Guardado em dados/conteudos.js · ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5)); aviso('Guardado em dados/conteudos.js.', 2500);
+      if (j.presets) atualizarPresets(j.presets); else preencherPresets();
+      estado('Guardado em dados/presets/' + C.preset + '.js · ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5)); aviso('Preset guardado e ativo em dados/conteudos.js.', 2500);
       return;
     } catch (err) { aviso('Não foi possível gravar no servidor (' + err.message + '); a transferir o ficheiro.', 6000); }
   }
@@ -1499,6 +1563,9 @@ $('#btn-mais').addEventListener('click', () => { const mais = barra.classList.to
 $('#btn-guardar').addEventListener('click', guardar);
 $('#btn-transferir').addEventListener('click', () => transferir());
 $('#btn-novo-preset').addEventListener('click', novoPreset);
+$('#btn-apagar-preset').addEventListener('click', apagarPreset);
+$('#sel-preset').addEventListener('change', e => mudarPreset(e.target.value));
+$('#sel-preset-vista').addEventListener('change', e => mudarPreset(e.target.value));
 $('#btn-exportar').addEventListener('click', exportarPreset);
 $('#btn-importar').addEventListener('click', () => { const f = $('#ficheiro-preset'); f.value = ''; f.click(); });
 $('#ficheiro-preset').addEventListener('change', e => { if (e.target.files[0]) importarPreset(e.target.files[0]); });
@@ -1510,11 +1577,11 @@ window.addEventListener('beforeunload', e => { if (alterado && edicao) { e.preve
 
 // ---------- arranque ----------
 construir(); construirIndice(); construirRuas(); construirPesquisa();
-FICHEIRO = clonar(serializar()); restaurarAutosave();
+FICHEIRO = clonar(serializar()); preencherPresets(); arrancarPresets();
 let inicial = null; try { inicial = POR_ID[decodeURIComponent(location.hash.slice(1))]; } catch (err) { /* hash malformado: ignora */ }
 if (inicial) map.whenReady(() => setTimeout(() => selecionar(inicial, true), 300));
 if (EDITOR) entrarEdicao(true); // ?editor abre logo em modo de edição; por predefinição arranca em visualização
-window.__mapa = { map, C, ELEMENTOS, POR_ID, RUAS_VISTA, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva, entrarEdicao, porFerramenta, serializar, guardar, carregar, lerPreset, novoPreset, importarPreset, reporDoFicheiro, largarPonto, novoPonto, criarRua, criarDeLote, novaCategoria, definirMembro, alternarCategoria, editarVisita, mostrarCategoria, categoriasAtivas, get edicao() { return edicao; }, get ferramenta() { return ferramenta; }, get passos() { return passos; } };
+window.__mapa = { map, C, ELEMENTOS, POR_ID, RUAS_VISTA, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva, entrarEdicao, porFerramenta, serializar, guardar, carregar, lerPreset, novoPreset, apagarPreset, mudarPreset, PRESETS, importarPreset, reporDoFicheiro, largarPonto, novoPonto, criarRua, criarDeLote, novaCategoria, definirMembro, alternarCategoria, editarVisita, mostrarCategoria, categoriasAtivas, get edicao() { return edicao; }, get ferramenta() { return ferramenta; }, get passos() { return passos; } };
 })();
 </script>
 </body>

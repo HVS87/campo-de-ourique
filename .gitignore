@@ -4,3 +4,4 @@ Thumbs.db
 *.log
 .claude/settings.local.json
 dados/conteudos.anterior.js
+dados/presets/*.apagado.bak
