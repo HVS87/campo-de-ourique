@@ -1,4 +1,4 @@
-// Preset ativo (cópia de dados/presets/campo-de-ourique.js), gravado em 2026-10-29 18:24. Modelo dos campos: ver README.md.
+// Preset ativo (cópia de dados/presets/campo-de-ourique.js), gravado em 2026-10-29 18:38. Modelo dos campos: ver README.md.
 // Para trocar de preset ou editar, abre a apresentação e carrega no lápis.
 window.CONTEUDOS = {
  "preset": "campo-de-ourique",
@@ -1044,6 +1044,229 @@ window.CONTEUDOS = {
      "legenda": "Exemplo de pictograma de crianças na faixa de rodagem junto a uma escola (Győr, Hungria). Foto: Globetrotter19, CC BY-SA 3.0, Wikimedia Commons."
     }
    ]
+  },
+  {
+   "id": "rua-de-campo-de-ourique",
+   "tipo": "rua",
+   "nome": "Rua de Campo de Ourique",
+   "icone": "🛠️",
+   "rua": "Rua de Campo de Ourique",
+   "texto": "<p>É necessário completar a requalificação da rua, nomeadamente nos quarteirões entre a Rua Ferreira Borges e a Rua Maria Pia.</p><p>A rua tem uma inclinação acentuada, uma gritante falta de estacionamento para moradores e passeios estreitos e mal conservados.</p><p>Propõe-se:</p><ul><li>instalar almofadas berlinenses;</li><li>fazer pinturas de segurança nas passadeiras;</li><li>instalar refletores de aproximação.</li></ul>",
+   "fotos": [
+    {
+     "src": "assets/fotos/exemplos/almofada-berlinense.jpg",
+     "legenda": "Exemplo de almofada berlinense (Łódź, Polónia). Foto: Zorro2212, CC BY-SA 4.0, Wikimedia Commons."
+    },
+    {
+     "src": "assets/fotos/exemplos/passadeira-pintura-seguranca.jpg",
+     "legenda": "Exemplo de pintura de segurança de alta visibilidade numa passadeira, em aplicação (EUA). Foto: Z22, CC BY-SA 4.0, Wikimedia Commons."
+    },
+    {
+     "src": "assets/fotos/exemplos/refletores-pavimento.jpg",
+     "legenda": "Exemplo de refletores no pavimento (EUA). Foto: Shoecream, domínio público, Wikimedia Commons."
+    }
+   ]
+  },
+  {
+   "id": "travessa-de-campo-de-ourique",
+   "tipo": "rua",
+   "nome": "Travessa de Campo de Ourique",
+   "icone": "🚧",
+   "rua": "Travessa de Campo de Ourique",
+   "texto": "Este arruamento está em péssimo estado, tanto na faixa de rodagem como nos passeios.",
+   "fotos": []
+  },
+  {
+   "id": "escadinhas-dos-terramotos",
+   "tipo": "rua",
+   "nome": "Escadinhas dos Terramotos",
+   "icone": "🪜",
+   "linhas": [
+    [
+     [
+      38.72161,
+      -9.167856
+     ],
+     [
+      38.721595,
+      -9.167823
+     ],
+     [
+      38.721379,
+      -9.167353
+     ],
+     [
+      38.721538,
+      -9.167259
+     ],
+     [
+      38.721542,
+      -9.167226
+     ],
+     [
+      38.72155,
+      -9.167168
+     ]
+    ]
+   ],
+   "texto": [
+    "Este arruamento em escada está em péssimo estado.",
+    "É necessário reabilitar o terreno adjacente, propriedade do Patriarcado de Lisboa, mediante um acordo de cedência, para ali criar um espaço verde ajardinado com zonas de lazer e de estadia, mantendo os estendais comunitários que o caracterizam."
+   ],
+   "fotos": []
+  },
+  {
+   "id": "envolvente-santo-condestavel",
+   "tipo": "zona",
+   "nome": "Envolvente da Igreja do Santo Condestável",
+   "icone": "⛪",
+   "poligono": [
+    [
+     38.715567,
+     -9.167928
+    ],
+    [
+     38.715598,
+     -9.167785
+    ],
+    [
+     38.71577,
+     -9.167139
+    ],
+    [
+     38.715928,
+     -9.166517
+    ],
+    [
+     38.715944,
+     -9.166408
+    ],
+    [
+     38.715092,
+     -9.166057
+    ],
+    [
+     38.715034,
+     -9.166034
+    ],
+    [
+     38.715021,
+     -9.166029
+    ],
+    [
+     38.714987,
+     -9.166163
+    ],
+    [
+     38.714961,
+     -9.166266
+    ],
+    [
+     38.714907,
+     -9.166478
+    ],
+    [
+     38.71489,
+     -9.166543
+    ],
+    [
+     38.714639,
+     -9.167526
+    ],
+    [
+     38.714652,
+     -9.167532
+    ],
+    [
+     38.714719,
+     -9.167561
+    ],
+    [
+     38.714746,
+     -9.167582
+    ],
+    [
+     38.715369,
+     -9.167839
+    ],
+    [
+     38.715477,
+     -9.167887
+    ]
+   ],
+   "texto": [
+    "Zona delimitada pela Rua Azedo Gneco, pela Rua Padre Francisco, pela Rua Francisco Metrass e pela Rua Saraiva de Carvalho, com a igreja, o adro e os relvados envolventes.",
+    "Os pontos assinalados dentro da zona identificam as intervenções propostas para a igreja e para o espaço que a rodeia."
+   ],
+   "fotos": [],
+   "filhos": [
+    {
+     "id": "condestavel-acessibilidade",
+     "tipo": "ponto",
+     "nome": "Acessibilidade da Igreja do Santo Condestável",
+     "icone": "♿",
+     "pos": [
+      38.715066,
+      -9.167096
+     ],
+     "texto": [
+      "É necessário rever as acessibilidades deste equipamento de culto.",
+      "Propõe-se apoiar a paróquia na construção de uma rampa no acesso lateral sul."
+     ],
+     "fotos": []
+    },
+    {
+     "id": "condestavel-telhado-fresco",
+     "tipo": "ponto",
+     "nome": "Telhado e fresco da Igreja do Santo Condestável",
+     "icone": "🎨",
+     "pos": [
+      38.715281,
+      -9.167086
+     ],
+     "texto": "É necessário apoiar a paróquia na recuperação do telhado e no restauro do fresco da autoria de Portela Júnior e Joaquim Rebocho, danificado pela infiltração das águas.",
+     "fotos": []
+    },
+    {
+     "id": "condestavel-quiosque",
+     "tipo": "ponto",
+     "nome": "Quiosque de apoio no adro",
+     "icone": "☕",
+     "pos": [
+      38.715681,
+      -9.166402
+     ],
+     "texto": "Propõe-se a implantação de um quiosque de apoio no canto nordeste do adro da igreja.",
+     "fotos": []
+    },
+    {
+     "id": "condestavel-parque-infantil",
+     "tipo": "ponto",
+     "nome": "Parque infantil no adro",
+     "icone": "🛝",
+     "pos": [
+      38.715195,
+      -9.166362
+     ],
+     "texto": [
+      "Propõe-se a construção de um parque infantil no canto sudeste do adro da igreja.",
+      "É fundamental para complementar a oferta de equipamentos infantis da freguesia: o parque infantil do Jardim Teófilo de Braga (o Jardim da Parada) está sobrelotado, e a sua inativação está prevista durante a intervenção do Metropolitano de Lisboa para a construção da Estação de Campo de Ourique."
+     ],
+     "fotos": []
+    },
+    {
+     "id": "condestavel-caminhos-ciclovia",
+     "tipo": "ponto",
+     "nome": "Caminhos pedonais e ciclovia",
+     "icone": "🚲",
+     "pos": [
+      38.715007,
+      -9.166322
+     ],
+     "texto": "É necessário criar caminhos de atravessamento dos relvados e uma ciclovia que complemente as ligações cicláveis do bairro, nomeadamente a ligação entre os seus estabelecimentos de ensino.",
+     "fotos": []
+    }
+   ]
   }
  ],
  "categorias": [
@@ -1058,7 +1281,10 @@ window.CONTEUDOS = {
     "rua-maria-pia",
     "rua-freitas-gazul",
     "rua-do-sol-ao-rato",
-    "rua-saraiva-de-carvalho"
+    "rua-saraiva-de-carvalho",
+    "rua-de-campo-de-ourique",
+    "travessa-de-campo-de-ourique",
+    "escadinhas-dos-terramotos"
    ]
   },
   {
@@ -1071,7 +1297,20 @@ window.CONTEUDOS = {
     "rua-maria-pia",
     "rua-freitas-gazul",
     "rua-do-sol-ao-rato",
-    "rua-saraiva-de-carvalho"
+    "rua-saraiva-de-carvalho",
+    "rua-de-campo-de-ourique",
+    "travessa-de-campo-de-ourique",
+    "escadinhas-dos-terramotos"
+   ]
+  },
+  {
+   "id": "cat-equipamentos",
+   "nome": "Equipamentos",
+   "icone": "🏛️",
+   "cor": "#e58cff",
+   "membros": [
+    "condestavel-acessibilidade",
+    "condestavel-telhado-fresco"
    ]
   }
  ]
