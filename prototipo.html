@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Campo de Ourique — protótipo de alternativas</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="dados/geo.js"></script>
+<style>
+  :root {
+    --bg: #0f1216; --panel: rgba(18, 22, 28, .92); --panel-border: rgba(255,255,255,.12);
+    --ink: #eef1f5; --ink-dim: #a6afbb; --accent: #f3c35b; --accent-ink: #1a1405;
+    --ponto: #f3c35b; --grupo: #7ad3ff; --rua: #ff8a5b; --zona: #9be38a;
+    --radius: 12px; --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: var(--font); }
+  #map { position: absolute; inset: 0; background: #0b0d10; }
+
+  /* ---- painel de alternativas ---- */
+  #painel {
+    position: absolute; top: 12px; left: 12px; z-index: 1000; width: 300px; max-height: calc(100% - 24px);
+    overflow: auto; background: var(--panel); border: 1px solid var(--panel-border); border-radius: var(--radius);
+    backdrop-filter: blur(8px); box-shadow: 0 10px 30px rgba(0,0,0,.45); font-size: 13px;
+  }
+  #painel h1 { font-size: 15px; margin: 0; padding: 12px 14px 4px; letter-spacing: .3px; }
+  #painel h1 small { display: block; font-weight: 400; color: var(--ink-dim); font-size: 11.5px; margin-top: 2px; }
+  #painel details { border-top: 1px solid var(--panel-border); }
+  #painel summary { cursor: pointer; padding: 9px 14px; font-weight: 600; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+  #painel summary::after { content: "▸"; color: var(--ink-dim); transition: transform .15s; }
+  #painel details[open] summary::after { transform: rotate(90deg); }
+  #painel summary .val { font-weight: 400; color: var(--accent); font-size: 12px; margin-left: 8px; text-align: right; }
+  .opts { padding: 0 10px 10px; display: grid; gap: 4px; }
+  .opt { display: flex; gap: 8px; align-items: flex-start; padding: 7px 8px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; }
+  .opt:hover { background: rgba(255,255,255,.05); }
+  .opt input { margin: 3px 0 0; accent-color: var(--accent); }
+  .opt b { display: block; font-weight: 600; }
+  .opt span { color: var(--ink-dim); font-size: 12px; line-height: 1.35; }
+  .opt.sel { border-color: rgba(243,195,91,.45); background: rgba(243,195,91,.08); }
+  .note { color: var(--ink-dim); font-size: 11.5px; padding: 0 14px 10px; line-height: 1.4; }
+  .row { display: flex; gap: 6px; padding: 0 10px 10px; flex-wrap: wrap; }
+  button.btn { font: inherit; font-size: 12px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--panel-border); background: rgba(255,255,255,.06); color: var(--ink); cursor: pointer; }
+  button.btn:hover { background: rgba(255,255,255,.12); }
+  button.btn.on { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 600; }
+  textarea.export { width: calc(100% - 20px); margin: 0 10px 10px; height: 90px; font: 11px/1.3 ui-monospace, Consolas, monospace; background: #0b0d10; color: #cfd6df; border: 1px solid var(--panel-border); border-radius: 8px; resize: vertical; }
+
+  /* índice de elementos */
+  .indice { padding: 0 10px 10px; display: grid; gap: 3px; }
+  .indice button { text-align: left; font: inherit; font-size: 12.5px; padding: 6px 8px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--ink); cursor: pointer; display: flex; gap: 8px; align-items: center; }
+  .indice button:hover { background: rgba(255,255,255,.06); }
+  .indice button.sel { border-color: rgba(255,255,255,.25); background: rgba(255,255,255,.08); }
+  .indice button.filho { padding-left: 26px; font-size: 12px; color: var(--ink-dim); }
+  .tag { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .tag.ponto { background: var(--ponto); } .tag.grupo { background: var(--grupo); } .tag.rua { background: var(--rua); border-radius: 2px; } .tag.zona { background: var(--zona); border-radius: 2px; }
+
+  /* ---- máscara / limite ---- */
+  .limite { filter: drop-shadow(0 0 6px rgba(255,255,255,.55)); }
+  .limite-halo { filter: blur(6px); }
+  .sat-filtro { filter: grayscale(1) brightness(.42) blur(1.5px); }
+
+  /* ---- marcadores ---- */
+  .mk { position: relative; }
+  .mk-pino { width: 28px; height: 28px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid #1a1405; box-shadow: 0 2px 6px rgba(0,0,0,.5); display: grid; place-items: center; background: var(--c, var(--ponto)); }
+  .mk-pino i { transform: rotate(45deg); font-style: normal; font-weight: 700; font-size: 12px; color: #1a1405; }
+  .mk-circ { width: 18px; height: 18px; border-radius: 50%; background: var(--c, var(--ponto)); border: 2px solid #111; box-shadow: 0 0 0 3px rgba(255,255,255,.35); }
+  .mk-circ::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid var(--c, var(--ponto)); animation: pulso 1.8s ease-out infinite; }
+  @keyframes pulso { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(1.6); opacity: 0; } }
+  .mk-icone { width: 32px; height: 32px; border-radius: 50%; background: #fff; border: 2px solid var(--c, var(--ponto)); box-shadow: 0 2px 6px rgba(0,0,0,.5); display: grid; place-items: center; font-size: 17px; }
+  .mk.sel .mk-pino, .mk.sel .mk-circ, .mk.sel .mk-icone { outline: 3px solid #fff; outline-offset: 1px; }
+  .mk.filho .mk-pino { width: 20px; height: 20px; } .mk.filho .mk-pino i { font-size: 10px; }
+  .mk.filho .mk-circ { width: 12px; height: 12px; } .mk.filho .mk-icone { width: 24px; height: 24px; font-size: 13px; }
+  .rotulo { background: rgba(10,12,16,.8); color: #fff; padding: 2px 7px; border-radius: 6px; font-size: 11.5px; white-space: nowrap; border: 1px solid rgba(255,255,255,.15); pointer-events: none; }
+
+  /* ---- janelas de informação ---- */
+  .leaflet-popup-content-wrapper { background: var(--panel); color: var(--ink); border-radius: var(--radius); border: 1px solid var(--panel-border); box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+  .leaflet-popup-tip { background: var(--panel); }
+  .leaflet-popup-content { margin: 12px 14px; font-family: var(--font); font-size: 13px; line-height: 1.4; width: 260px !important; }
+  .leaflet-popup-close-button { color: var(--ink-dim) !important; }
+  .info h2 { margin: 0 0 2px; font-size: 16px; }
+  .info .tipo { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: var(--ink-dim); margin-bottom: 8px; }
+  .info .foto { height: 110px; border-radius: 8px; margin: 8px 0; background: linear-gradient(135deg, #2b3340, #1a1f27); display: grid; place-items: center; color: var(--ink-dim); font-size: 12px; border: 1px dashed rgba(255,255,255,.2); }
+  .info p { margin: 6px 0; color: #d8dde5; }
+  .info ul { margin: 6px 0 0; padding-left: 18px; color: #d8dde5; }
+  .info ul a { color: var(--accent); cursor: pointer; }
+  #lateral { position: absolute; top: 12px; right: 12px; bottom: 12px; width: 340px; z-index: 1000; background: var(--panel); border: 1px solid var(--panel-border); border-radius: var(--radius); backdrop-filter: blur(8px); padding: 16px 18px; overflow: auto; transform: translateX(380px); transition: transform .25s; box-shadow: 0 10px 30px rgba(0,0,0,.45); }
+  #lateral.aberto { transform: none; }
+  #lateral .info .foto { height: 170px; }
+  #modal { position: absolute; inset: 0; z-index: 1100; background: rgba(0,0,0,.55); display: none; place-items: center; }
+  #modal.aberto { display: grid; }
+  #modal .cartao { width: min(520px, 92vw); background: var(--panel); border: 1px solid var(--panel-border); border-radius: 16px; padding: 20px 22px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+  #modal .cartao .info .foto { height: 220px; }
+  .fechar { float: right; font: inherit; background: transparent; border: 0; color: var(--ink-dim); font-size: 18px; cursor: pointer; }
+
+  /* ---- guião ---- */
+  #guiao { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 1000; display: none; gap: 8px; align-items: center; background: var(--panel); border: 1px solid var(--panel-border); border-radius: 999px; padding: 6px 8px; backdrop-filter: blur(8px); }
+  #guiao.aberto { display: flex; }
+  #guiao button { font: inherit; width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-ink); font-weight: 700; cursor: pointer; }
+  #guiao span { min-width: 220px; text-align: center; font-size: 13px; }
+  #guiao span small { display: block; color: var(--ink-dim); font-size: 11px; }
+
+  /* ---- editor ---- */
+  #map.editor { cursor: crosshair; }
+  #dica { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 1000; background: var(--accent); color: var(--accent-ink); padding: 6px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 600; display: none; }
+  #dica.aberto { display: block; }
+  .leaflet-control-attribution { background: rgba(0,0,0,.55) !important; color: #bbb !important; font-size: 10px; }
+  .leaflet-control-attribution a { color: #ddd !important; }
+  @media (max-width: 760px) { #painel { width: calc(100% - 24px); max-height: 46%; } #lateral { width: calc(100% - 24px); top: auto; height: 55%; transform: translateY(120%); } #lateral.aberto { transform: none; } }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<svg width="0" height="0" style="position:absolute"><defs><clipPath id="clipFreg" clipPathUnits="userSpaceOnUse"><path id="clipPath" d=""></path></clipPath></defs></svg>
+
+<aside id="painel">
+  <h1>Campo de Ourique <small>Protótipo de alternativas · dados de exemplo, textos por preencher</small></h1>
+
+  <details open><summary>1 · Imagem de satélite <span class="val" data-val="sat"></span></summary>
+    <div class="opts" data-grupo="sat">
+      <label class="opt"><input type="radio" name="sat" value="dgt" checked><div><b>DGT OrtoSat 2023 (em direto)</b><span>Serviço oficial português, 2023, ~0,3 m/píxel, gratuito. Muito nítido; depende do servidor da DGT.</span></div></label>
+      <label class="opt"><input type="radio" name="sat" value="esri"><div><b>Esri World Imagery</b><span>Mosaico mundial em mosaicos rápidos, data variável (2020–2024). Gratuito com atribuição.</span></div></label>
+      <label class="opt"><input type="radio" name="sat" value="fixa"><div><b>Imagem fixa descarregada (DGT)</b><span>Uma só imagem de 4096×3061 px (3,7 MB) guardada no projeto: sem servidores externos, funciona offline, zoom limitado.</span></div></label>
+    </div>
+    <div class="note">Google Maps, Mapbox e MapTiler são também possíveis mas precisam de chave de API e têm limites de uso; não estão aqui.</div>
+  </details>
+
+  <details open><summary>2 · Fora da freguesia <span class="val" data-val="mascara"></span></summary>
+    <div class="opts" data-grupo="mascara">
+      <label class="opt"><input type="radio" name="mascara" value="escuro" checked><div><b>Escurecer</b><span>Véu escuro a 72 % sobre o exterior; ainda se percebe o contexto (Estrela, Amoreiras, Campolide).</span></div></label>
+      <label class="opt"><input type="radio" name="mascara" value="preto"><div><b>Recortar a preto</b><span>Só a freguesia é visível, com contorno luminoso. Efeito de «ilha».</span></div></label>
+      <label class="opt"><input type="radio" name="mascara" value="cinza"><div><b>Cinzento desfocado</b><span>O exterior fica a preto-e-branco, escuro e desfocado; a freguesia a cores. Mais elegante, mais pesado.</span></div></label>
+    </div>
+  </details>
+
+  <details open><summary>3 · Janela de informação <span class="val" data-val="janela"></span></summary>
+    <div class="opts" data-grupo="janela">
+      <label class="opt"><input type="radio" name="janela" value="popup" checked><div><b>Balão no mapa</b><span>Abre junto ao elemento. Rápido, mas pouco espaço para fotos e texto longo.</span></div></label>
+      <label class="opt"><input type="radio" name="janela" value="lateral"><div><b>Painel lateral</b><span>Desliza da direita; o mapa continua visível e navegável. Bom para texto e várias fotos.</span></div></label>
+      <label class="opt"><input type="radio" name="janela" value="modal"><div><b>Cartão central</b><span>Cartão grande por cima do mapa escurecido. Mais «apresentação», menos «mapa».</span></div></label>
+    </div>
+  </details>
+
+  <details open><summary>4 · Navegação <span class="val" data-val="nav"></span></summary>
+    <div class="opts" data-grupo="nav">
+      <label class="opt"><input type="radio" name="nav" value="livre" checked><div><b>Exploração livre + índice</b><span>Clica-se nos elementos do mapa ou na lista abaixo.</span></div></label>
+      <label class="opt"><input type="radio" name="nav" value="guiao"><div><b>Guião passo a passo</b><span>Setas ‹ › (ou teclado) percorrem os elementos por ordem; o mapa voa até cada um e abre a janela.</span></div></label>
+    </div>
+    <div class="note">Uma terceira via, «scrollytelling» (o texto desliza e o mapa acompanha), é possível mas não está demonstrada.</div>
+    <div class="indice" id="indice"></div>
+  </details>
+
+  <details><summary>5 · Estilo dos marcadores <span class="val" data-val="marc"></span></summary>
+    <div class="opts" data-grupo="marc">
+      <label class="opt"><input type="radio" name="marc" value="pino" checked><div><b>Pinos numerados</b><span>Clássico; a numeração liga ao guião.</span></div></label>
+      <label class="opt"><input type="radio" name="marc" value="circ"><div><b>Círculos pulsantes</b><span>Discretos, chamam a atenção com animação.</span></div></label>
+      <label class="opt"><input type="radio" name="marc" value="icone"><div><b>Ícones</b><span>Um símbolo por tipo de lugar.</span></div></label>
+    </div>
+  </details>
+
+  <details><summary>6 · Editor de zonas (pintar) <span class="val" data-val="editor"></span></summary>
+    <div class="row">
+      <button class="btn" data-tool="poligono">Polígono por vértices</button>
+      <button class="btn" data-tool="pincel">Pincel livre</button>
+      <button class="btn" data-tool="ponto">Ponto</button>
+      <button class="btn" data-tool="apagar">Apagar último</button>
+    </div>
+    <div class="note">Polígono: clique para cada vértice, duplo clique termina. Pincel: arrastar com o rato. Ponto: um clique; dentro de uma zona selecionada fica como filho dela. O resultado sai como JSON (abaixo), pronto para passar para o ficheiro de dados.</div>
+    <textarea class="export" id="export" readonly placeholder="Os elementos que desenhares aparecem aqui em JSON."></textarea>
+  </details>
+</aside>
+
+<div id="dica"></div>
+<aside id="lateral"><button class="fechar" onclick="fecharJanelas()">✕</button><div id="lateral-conteudo"></div></aside>
+<div id="modal" onclick="if(event.target===this)fecharJanelas()"><div class="cartao"><button class="fechar" onclick="fecharJanelas()">✕</button><div id="modal-conteudo"></div></div></div>
+<div id="guiao"><button id="g-prev">‹</button><span id="g-texto"></span><button id="g-next">›</button></div>
+
+<script>
+const D = window.MAPA_DADOS;
+const LIMITE = D.limite;
+
+// ---------- elementos de exemplo (conteúdo real vem num passo seguinte) ----------
+function centro(pts) { let a = 0, b = 0; for (const p of pts) { a += p[0]; b += p[1]; } return [a / pts.length, b / pts.length]; }
+const cMercado = centro(D.areas['Mercado de Campo de Ourique']);
+const cParada = centro(D.areas['Jardim da Parada']);
+const coelho = [...new Map(D.ruas['Rua Coelho da Rocha'].flat().map(p => [p.join(), p])).values()].sort((a, b) => a[1] - b[1]); // pontos únicos, de oeste para leste
+const ELEMENTOS = [
+  { id: 'mercado', tipo: 'ponto', nome: 'Mercado de Campo de Ourique', icone: '🛒', pos: cMercado,
+    texto: 'Ponto singular: um marcador, uma janela. Aqui entra o texto que me deres, com fotos e, se quiseres, datas.' },
+  { id: 'cafes', tipo: 'grupo', nome: 'Os cafés da Coelho da Rocha', icone: '☕',
+    pontos: [coelho[Math.floor(coelho.length * .15)], coelho[Math.floor(coelho.length * .5)], coelho[Math.floor(coelho.length * .85)]],
+    texto: 'Conjunto de pontos: três marcadores partilham a mesma janela e acendem-se juntos quando se seleciona qualquer um deles. Posições de exemplo.' },
+  { id: 'ferreira', tipo: 'rua', nome: 'Rua Ferreira Borges', icone: '🛣️', linhas: D.ruas['Rua Ferreira Borges'],
+    texto: 'Rua em toda a extensão: o traçado vem do OpenStreetMap (todos os troços com este nome dentro da freguesia) e ilumina-se ao selecionar.' },
+  { id: 'saraiva', tipo: 'rua', nome: 'Rua Saraiva de Carvalho', icone: '🛣️', linhas: D.ruas['Rua Saraiva de Carvalho'],
+    texto: 'Segunda rua, para ver duas ruas lado a lado com cores diferentes de seleção.' },
+  { id: 'parada', tipo: 'zona', nome: 'Jardim da Parada', icone: '🌳', poligono: D.areas['Jardim da Parada'],
+    texto: 'Zona: polígono «pintado» (aqui tirado do OSM). Ao destacar, a zona preenche-se e aparecem os pontos singulares que contém.',
+    filhos: [
+      { id: 'parada-coreto', tipo: 'ponto', nome: 'Coreto (exemplo)', icone: '🎶', pos: [cParada[0] + 0.00008, cParada[1] - 0.00025], texto: 'Ponto dentro da zona. Posição de exemplo.' },
+      { id: 'parada-quiosque', tipo: 'ponto', nome: 'Quiosque (exemplo)', icone: '🥐', pos: [cParada[0] - 0.00012, cParada[1] + 0.00028], texto: 'Outro ponto dentro da zona. Posição de exemplo.' },
+    ] },
+  { id: 'quarteirao', tipo: 'zona', nome: 'Quarteirão do Mercado (zona pintada)', icone: '🧱',
+    poligono: [[cMercado[0] + 0.00075, cMercado[1] - 0.0011], [cMercado[0] + 0.00085, cMercado[1] + 0.0009], [cMercado[0] - 0.0008, cMercado[1] + 0.001], [cMercado[0] - 0.0009, cMercado[1] - 0.001]],
+    texto: 'Zona desenhada à mão (um retângulo de exemplo), para ver como ficaria uma zona que não existe no OSM: um bairro, um quarteirão, «a nossa rua e arredores».',
+    filhos: [ { id: 'q-1', tipo: 'ponto', nome: 'Ponto dentro do quarteirão', icone: '📍', pos: [cMercado[0] - 0.0004, cMercado[1] + 0.0005], texto: 'Exemplo.' } ] },
+];
+
+// ---------- mapa ----------
+const map = L.map('map', { zoomControl: false, attributionControl: true, maxZoom: 20, minZoom: 13 });
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+map.createPane('satFiltro').style.zIndex = 190;   // exterior filtrado (alternativa «cinzento desfocado»)
+map.createPane('sat').style.zIndex = 200;         // satélite principal
+map.createPane('mascara').style.zIndex = 390;
+map.createPane('zonas').style.zIndex = 400;
+map.createPane('ruas').style.zIndex = 410;
+map.createPane('limite').style.zIndex = 420;
+const limiteBounds = L.latLngBounds(LIMITE);
+map.fitBounds(limiteBounds, { padding: [20, 20] });
+
+// Camadas de satélite
+const DGT_URL = 'https://ortos.dgterritorio.gov.pt/wms/ortosat2023';
+const camadas = {
+  dgt: () => L.tileLayer.wms(DGT_URL, { layers: 'ortoSat2023-CorVerdadeira', format: 'image/jpeg', version: '1.3.0', crs: L.CRS.EPSG3857, maxZoom: 20, maxNativeZoom: 20, tileSize: 512, attribution: 'Ortoimagens © <a href="https://www.dgterritorio.gov.pt">DGT</a> 2023' }),
+  esri: () => L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 20, maxNativeZoom: 19, attribution: 'Imagery © Esri, Maxar, Earthstar Geographics' }),
+  fixa: () => L.imageOverlay(D.imagem.ficheiro, D.imagem.bounds, { attribution: D.imagem.fonte }),
+};
+let satPrincipal = null, satFiltro = null, satNome = 'dgt';
+function porSatelite(nome) {
+  satNome = nome;
+  if (satPrincipal) map.removeLayer(satPrincipal);
+  if (satFiltro) { map.removeLayer(satFiltro); satFiltro = null; }
+  satPrincipal = camadas[nome](); satPrincipal.options.pane = 'sat'; satPrincipal.addTo(map);
+  if (nome === 'fixa') map.setMaxZoom(18); else map.setMaxZoom(20);
+}
+function satFiltroLigar(ligar) { // segunda cópia do satélite, só para a alternativa «cinzento desfocado»
+  if (ligar && !satFiltro) { satFiltro = camadas[satNome](); satFiltro.options.pane = 'satFiltro'; satFiltro.addTo(map); }
+  if (!ligar && satFiltro) { map.removeLayer(satFiltro); satFiltro = null; }
+}
+
+// Máscara e limite
+const MUNDO = [[-89, -180], [-89, 180], [89, 180], [89, -180]];
+const mascara = L.polygon([MUNDO, LIMITE], { pane: 'mascara', stroke: false, fillColor: '#05070a', fillOpacity: .72, interactive: false }).addTo(map);
+const limiteHalo = L.polyline(LIMITE, { pane: 'limite', color: '#ffffff', weight: 10, opacity: .35, className: 'limite-halo', interactive: false }).addTo(map);
+const limiteLinha = L.polyline(LIMITE, { pane: 'limite', color: '#ffffff', weight: 2, opacity: .95, className: 'limite', interactive: false }).addTo(map);
+const panePrincipal = map.getPane('sat');
+function atualizarClip() {
+  const d = LIMITE.map((p, i) => { const q = map.latLngToLayerPoint(p); return (i ? 'L' : 'M') + q.x.toFixed(1) + ' ' + q.y.toFixed(1); }).join('') + 'Z';
+  document.getElementById('clipPath').setAttribute('d', d);
+}
+map.on('zoom move viewreset', atualizarClip);
+function porMascara(nome) {
+  satFiltroLigar(nome === 'cinza');
+  panePrincipal.style.clipPath = '';
+  mascara.setStyle({ fillOpacity: nome === 'preto' ? 1 : .72 });
+  if (nome === 'cinza') {
+    mascara.setStyle({ fillOpacity: 0 });
+    map.getPane('satFiltro').classList.add('sat-filtro');
+    atualizarClip();
+    panePrincipal.style.clipPath = 'url(#clipFreg)';
+  }
+  limiteHalo.setStyle({ opacity: nome === 'preto' ? .6 : .35 });
+}
+
+// ---------- marcadores e geometrias ----------
+const COR = { ponto: '#f3c35b', grupo: '#7ad3ff', rua: '#ff8a5b', zona: '#9be38a' };
+let estiloMarc = 'pino';
+let numero = 0;
+const vista = {}; // id -> {camadas, marcadores, el, pai}
+function icone(el, n, filho) {
+  const cor = COR[el.pai ? 'ponto' : el.tipo];
+  const html = estiloMarc === 'pino' ? `<div class="mk-pino" style="--c:${cor}"><i>${filho ? '' : n}</i></div>`
+             : estiloMarc === 'circ' ? `<div class="mk-circ" style="--c:${cor}"></div>`
+             : `<div class="mk-icone" style="--c:${cor}">${el.icone || '📍'}</div>`;
+  const s = estiloMarc === 'pino' ? [28, 28] : estiloMarc === 'circ' ? [18, 18] : [32, 32];
+  const anchor = estiloMarc === 'pino' ? [4, 26] : [s[0] / 2, s[1] / 2];
+  return L.divIcon({ className: 'mk' + (filho ? ' filho' : ''), html, iconSize: s, iconAnchor: anchor, popupAnchor: estiloMarc === 'pino' ? [10, -24] : [0, -s[1] / 2] });
+}
+function marcador(el, pos, n, filho) {
+  const m = L.marker(pos, { icon: icone(el, n, filho), riseOnHover: true });
+  m.bindTooltip(el.nome, { direction: 'top', offset: [estiloMarc === 'pino' ? 10 : 0, -14], className: 'rotulo', opacity: 1 });
+  m.on('click', () => selecionar(el));
+  return m;
+}
+function construir() {
+  for (const id in vista) { vista[id].camadas.forEach(c => map.removeLayer(c)); delete vista[id]; }
+  numero = 0;
+  for (const el of ELEMENTOS) construirElemento(el, null);
+}
+function construirElemento(el, pai) {
+  el.pai = pai;
+  const n = pai ? '' : ++numero;
+  el.numero = n;
+  const v = { el, camadas: [], marcadores: [] };
+  vista[el.id] = v;
+  if (el.tipo === 'ponto') {
+    const m = marcador(el, el.pos, n, !!pai); v.marcadores.push(m); v.camadas.push(m);
+    if (!pai) m.addTo(map);
+  } else if (el.tipo === 'grupo') {
+    el.pontos.forEach((p, i) => { const m = marcador(el, p, n, false).addTo(map); v.marcadores.push(m); v.camadas.push(m); });
+  } else if (el.tipo === 'rua') {
+    const halo = L.polyline(el.linhas, { pane: 'ruas', color: COR.rua, weight: 14, opacity: .18, lineCap: 'round' }).addTo(map);
+    const linha = L.polyline(el.linhas, { pane: 'ruas', color: COR.rua, weight: 4, opacity: .85, lineCap: 'round' }).addTo(map);
+    linha.bindTooltip(el.nome, { sticky: true, className: 'rotulo', opacity: 1 });
+    linha.on('click', () => selecionar(el)); halo.on('click', () => selecionar(el));
+    v.camadas.push(halo, linha); v.linha = linha; v.halo = halo;
+  } else if (el.tipo === 'zona') {
+    const pol = L.polygon(el.poligono, { pane: 'zonas', color: COR.zona, weight: 2, opacity: .9, fillColor: COR.zona, fillOpacity: .12, dashArray: '6 5' }).addTo(map);
+    pol.bindTooltip(el.nome, { sticky: true, className: 'rotulo', opacity: 1 });
+    pol.on('click', () => selecionar(el));
+    v.camadas.push(pol); v.poligono = pol;
+    for (const f of el.filhos || []) construirElemento(f, el);
+  }
+}
+
+// ---------- seleção ----------
+let selecionado = null;
+function limparSelecao() {
+  if (!selecionado) return;
+  const v = vista[selecionado.id];
+  v.marcadores.forEach(m => m.getElement() && m.getElement().classList.remove('sel'));
+  if (v.linha) { v.linha.setStyle({ weight: 4, opacity: .85, color: COR.rua }); v.halo.setStyle({ opacity: .18, weight: 14 }); }
+  if (v.poligono) { v.poligono.setStyle({ fillOpacity: .12, weight: 2, dashArray: '6 5' }); (selecionado.filhos || []).forEach(f => map.removeLayer(vista[f.id].marcadores[0])); }
+  if (selecionado.pai) { const vp = vista[selecionado.pai.id]; vp.poligono.setStyle({ fillOpacity: .12, weight: 2, dashArray: '6 5' }); }
+  document.querySelectorAll('#indice button.sel').forEach(b => b.classList.remove('sel'));
+  selecionado = null;
+}
+function selecionar(el, voar) {
+  limparSelecao();
+  selecionado = el;
+  const v = vista[el.id];
+  v.marcadores.forEach(m => m.getElement() && m.getElement().classList.add('sel'));
+  if (v.linha) { v.linha.setStyle({ weight: 6, opacity: 1, color: '#ffd166' }); v.halo.setStyle({ opacity: .45, weight: 22 }); }
+  if (v.poligono) { v.poligono.setStyle({ fillOpacity: .35, weight: 3, dashArray: null }); (el.filhos || []).forEach(f => vista[f.id].marcadores[0].addTo(map)); }
+  if (el.pai) { vista[el.pai.id].poligono.setStyle({ fillOpacity: .3, weight: 3, dashArray: null }); (el.pai.filhos || []).forEach(f => vista[f.id].marcadores[0].addTo(map)); v.marcadores[0].getElement().classList.add('sel'); }
+  const b = document.querySelector(`#indice button[data-id="${el.id}"]`); if (b) b.classList.add('sel');
+  if (voar) { const bb = limitesDe(el); if (bb) map.flyToBounds(bb, { padding: [80, 80], maxZoom: 18, duration: .9 }); }
+  mostrarInfo(el);
+}
+function limitesDe(el) {
+  if (el.tipo === 'ponto') return L.latLngBounds([el.pos, el.pos]);
+  if (el.tipo === 'grupo') return L.latLngBounds(el.pontos);
+  if (el.tipo === 'rua') return L.latLngBounds(el.linhas.flat());
+  if (el.tipo === 'zona') return L.latLngBounds(el.poligono);
+}
+function posicaoDe(el) { return limitesDe(el).getCenter(); }
+
+// ---------- janelas ----------
+const TIPO = { ponto: 'Ponto', grupo: 'Conjunto de pontos', rua: 'Rua', zona: 'Zona' };
+function htmlInfo(el) {
+  let h = `<div class="info"><h2>${el.numero ? el.numero + ' · ' : ''}${el.nome}</h2><div class="tipo">${TIPO[el.tipo]}${el.pai ? ' · dentro de ' + el.pai.nome : ''}</div><div class="foto">foto / vídeo</div><p>${el.texto || ''}</p>`;
+  if (el.filhos && el.filhos.length) h += `<ul>${el.filhos.map(f => `<li><a onclick="selecionar(ELEMENTOS_POR_ID['${f.id}'], true)">${f.icone || ''} ${f.nome}</a></li>`).join('')}</ul>`;
+  if (el.pai) h += `<ul><li><a onclick="selecionar(ELEMENTOS_POR_ID['${el.pai.id}'], true)">↩ ${el.pai.nome}</a></li></ul>`;
+  return h + '</div>';
+}
+const ELEMENTOS_POR_ID = {};
+(function indexar(lista) { for (const e of lista) { ELEMENTOS_POR_ID[e.id] = e; if (e.filhos) indexar(e.filhos); } })(ELEMENTOS);
+let modoJanela = 'popup';
+let popup = null;
+function fecharJanelas() {
+  if (popup) { map.closePopup(popup); popup = null; }
+  document.getElementById('lateral').classList.remove('aberto');
+  document.getElementById('modal').classList.remove('aberto');
+}
+function mostrarInfo(el) {
+  fecharJanelas();
+  const h = htmlInfo(el);
+  if (modoJanela === 'popup') {
+    popup = L.popup({ maxWidth: 300, autoPanPadding: [40, 40] }).setLatLng(el.tipo === 'ponto' ? el.pos : posicaoDe(el)).setContent(h).openOn(map);
+    popup.on('remove', () => { popup = null; });
+  } else if (modoJanela === 'lateral') {
+    document.getElementById('lateral-conteudo').innerHTML = h; document.getElementById('lateral').classList.add('aberto');
+  } else {
+    document.getElementById('modal-conteudo').innerHTML = h; document.getElementById('modal').classList.add('aberto');
+  }
+}
+map.on('popupclose', () => { if (modoJanela === 'popup') { /* mantém a seleção */ } });
+
+// ---------- índice e guião ----------
+function construirIndice() {
+  const box = document.getElementById('indice'); box.innerHTML = '';
+  for (const el of ELEMENTOS) {
+    box.insertAdjacentHTML('beforeend', `<button data-id="${el.id}"><i class="tag ${el.tipo}"></i>${el.numero}. ${el.nome}</button>`);
+    for (const f of el.filhos || []) box.insertAdjacentHTML('beforeend', `<button data-id="${f.id}" class="filho"><i class="tag ponto"></i>${f.nome}</button>`);
+  }
+  box.querySelectorAll('button').forEach(b => b.addEventListener('click', () => selecionar(ELEMENTOS_POR_ID[b.dataset.id], true)));
+}
+let passo = -1;
+function irPasso(i) {
+  passo = (i + ELEMENTOS.length) % ELEMENTOS.length;
+  const el = ELEMENTOS[passo];
+  selecionar(el, true);
+  document.getElementById('g-texto').innerHTML = `${el.nome}<small>${passo + 1} de ${ELEMENTOS.length} · ${TIPO[el.tipo]}</small>`;
+}
+document.getElementById('g-prev').onclick = () => irPasso(passo - 1);
+document.getElementById('g-next').onclick = () => irPasso(passo + 1);
+document.addEventListener('keydown', e => {
+  if (ferramenta && e.key === 'Escape') { cancelarDesenho(); return; }
+  if (!document.getElementById('guiao').classList.contains('aberto')) return;
+  if (e.key === 'ArrowRight' || e.key === ' ') irPasso(passo + 1);
+  if (e.key === 'ArrowLeft') irPasso(passo - 1);
+});
+function porNavegacao(nome) {
+  const g = document.getElementById('guiao');
+  if (nome === 'guiao') { g.classList.add('aberto'); irPasso(0); }
+  else { g.classList.remove('aberto'); limparSelecao(); fecharJanelas(); map.flyToBounds(limiteBounds, { padding: [20, 20] }); }
+}
+
+// ---------- editor ----------
+let ferramenta = null, desenho = [], tempLinha = null, tempPontos = [], aPintar = false, criados = 0;
+const dica = document.getElementById('dica');
+function porFerramenta(nome) {
+  cancelarDesenho();
+  ferramenta = ferramenta === nome ? null : nome;
+  document.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === ferramenta));
+  document.getElementById('map').classList.toggle('editor', !!ferramenta);
+  const txt = { poligono: 'Clique para cada vértice · duplo clique termina · Esc cancela', pincel: 'Arraste com o rato para pintar a zona · Esc cancela', ponto: 'Clique no mapa para colocar um ponto' }[ferramenta];
+  dica.textContent = txt || ''; dica.classList.toggle('aberto', !!txt);
+  if (ferramenta === 'pincel') map.dragging.disable(); else map.dragging.enable();
+  map.doubleClickZoom[ferramenta === 'poligono' ? 'disable' : 'enable']();
+}
+function cancelarDesenho() {
+  desenho = []; tempPontos.forEach(m => map.removeLayer(m)); tempPontos = [];
+  if (tempLinha) { map.removeLayer(tempLinha); tempLinha = null; }
+  aPintar = false;
+}
+function atualizarTemp() {
+  if (!tempLinha) tempLinha = L.polygon(desenho, { color: '#fff', weight: 2, dashArray: '4 4', fillColor: '#fff', fillOpacity: .15, interactive: false }).addTo(map);
+  else tempLinha.setLatLngs(desenho);
+}
+function terminarZona(pts) {
+  cancelarDesenho();
+  if (pts.length < 3) return;
+  const nome = 'Zona nova ' + (++criados);
+  const el = { id: 'nova-' + criados, tipo: 'zona', nome, icone: '✏️', poligono: pts.map(p => [+p.lat.toFixed(6), +p.lng.toFixed(6)]), texto: 'Zona desenhada no editor. Substitui este texto pelo conteúdo real.', filhos: [] };
+  ELEMENTOS.push(el); ELEMENTOS_POR_ID[el.id] = el;
+  construir(); construirIndice(); selecionar(el, false); exportar();
+}
+function dentro(pt, poligono) { // ray casting
+  let d = false; for (let i = 0, j = poligono.length - 1; i < poligono.length; j = i++) {
+    const a = poligono[i], b = poligono[j];
+    if ((a[1] > pt.lng) !== (b[1] > pt.lng) && pt.lat < (b[0] - a[0]) * (pt.lng - a[1]) / (b[1] - a[1]) + a[0]) d = !d;
+  } return d;
+}
+function novoPonto(ll) {
+  const pai = (selecionado && selecionado.tipo === 'zona' && dentro(ll, selecionado.poligono)) ? selecionado : null;
+  const n = ++criados;
+  const el = { id: 'novo-' + n, tipo: 'ponto', nome: 'Ponto novo ' + n, icone: '📍', pos: [+ll.lat.toFixed(6), +ll.lng.toFixed(6)], texto: 'Ponto colocado no editor.' };
+  if (pai) pai.filhos.push(el); else ELEMENTOS.push(el);
+  ELEMENTOS_POR_ID[el.id] = el;
+  construir(); construirIndice(); selecionar(el, false); exportar();
+}
+function exportar() {
+  const lista = ELEMENTOS.filter(e => e.id.startsWith('nov')).concat(ELEMENTOS.filter(e => (e.filhos || []).some(f => f.id.startsWith('nov'))));
+  const limpo = o => { const c = { ...o }; delete c.pai; delete c.numero; if (c.filhos) c.filhos = c.filhos.map(limpo); return c; };
+  document.getElementById('export').value = JSON.stringify(lista.map(limpo), null, 1);
+}
+map.on('click', e => {
+  if (ferramenta === 'poligono') { desenho.push(e.latlng); tempPontos.push(L.circleMarker(e.latlng, { radius: 5, color: '#fff', fillColor: '#f3c35b', fillOpacity: 1, interactive: false }).addTo(map)); atualizarTemp(); }
+  else if (ferramenta === 'ponto') novoPonto(e.latlng);
+});
+map.on('dblclick', e => { if (ferramenta === 'poligono') { L.DomEvent.stop(e); terminarZona(desenho.slice(0, -1)); } });
+map.on('mousedown', e => { if (ferramenta === 'pincel') { aPintar = true; desenho = [e.latlng]; } });
+map.on('mousemove', e => { if (aPintar) { desenho.push(e.latlng); atualizarTemp(); } });
+map.on('mouseup', () => {
+  if (!aPintar) return; aPintar = false;
+  const pts = L.LineUtil.simplify(desenho.map(ll => map.latLngToLayerPoint(ll)), 4).map(p => map.layerPointToLatLng(p));
+  terminarZona(pts);
+});
+document.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => {
+  if (b.dataset.tool === 'apagar') { apagarUltimo(); return; }
+  porFerramenta(b.dataset.tool);
+}));
+function apagarUltimo() {
+  let i = ELEMENTOS.length - 1; while (i >= 0 && !ELEMENTOS[i].id.startsWith('nov')) i--;
+  if (i < 0) { for (const e of ELEMENTOS) if (e.filhos) { const j = e.filhos.findIndex(f => f.id.startsWith('nov')); if (j >= 0) { e.filhos.splice(j, 1); break; } } }
+  else ELEMENTOS.splice(i, 1);
+  limparSelecao(); fecharJanelas(); construir(); construirIndice(); exportar();
+}
+
+// ---------- painel ----------
+function rotular() {
+  for (const g of document.querySelectorAll('.opts')) {
+    const sel = g.querySelector('input:checked');
+    g.querySelectorAll('.opt').forEach(o => o.classList.toggle('sel', o.contains(sel)));
+    const v = document.querySelector(`.val[data-val="${g.dataset.grupo}"]`); if (v && sel) v.textContent = sel.closest('.opt').querySelector('b').textContent;
+  }
+}
+document.getElementById('painel').addEventListener('change', e => {
+  const r = e.target; if (r.type !== 'radio') return;
+  if (r.name === 'sat') { porSatelite(r.value); porMascara(document.querySelector('input[name=mascara]:checked').value); }
+  if (r.name === 'mascara') porMascara(r.value);
+  if (r.name === 'janela') { modoJanela = r.value; fecharJanelas(); if (selecionado) mostrarInfo(selecionado); }
+  if (r.name === 'nav') porNavegacao(r.value);
+  if (r.name === 'marc') { estiloMarc = r.value; const s = selecionado; limparSelecao(); construir(); if (s) selecionar(s, false); }
+  rotular();
+});
+
+// arranque
+porSatelite('dgt'); porMascara('escuro'); construir(); construirIndice(); rotular();
+window.__mapa = { map, ELEMENTOS, selecionar, porSatelite, porMascara, porNavegacao, irPasso, vista };
+</script>
+</body>
+</html>
