@@ -80,12 +80,12 @@
   .leaflet-bar { border: 1px solid var(--panel-border) !important; border-radius: 12px !important; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,.45) !important; }
   .leaflet-bar a { width: 36px !important; height: 36px !important; line-height: 36px !important; background: var(--panel) !important; color: var(--ink) !important; border-color: var(--panel-border) !important; backdrop-filter: blur(10px); }
   .leaflet-bar a:hover { background: rgba(40,46,56,.96) !important; }
-  #btn-ruas { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px 0 12px; border-radius: 19px; color: var(--ink); cursor: pointer; font-size: 12.5px; white-space: nowrap; }
-  #btn-ruas:hover { background: rgba(40,46,56,.96); }
-  #btn-ruas.on { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 600; }
-  #btn-ruas .inter { width: 26px; height: 14px; border-radius: 7px; background: rgba(255,255,255,.18); position: relative; flex: none; }
-  #btn-ruas .inter::after { content: ""; position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; border-radius: 50%; background: #fff; transition: left .15s; }
-  #btn-ruas.on .inter { background: rgba(0,0,0,.25); } #btn-ruas.on .inter::after { left: 14px; background: #1a1405; }
+  .camada { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px 0 12px; border-radius: 19px; color: var(--ink); cursor: pointer; font-size: 12.5px; white-space: nowrap; }
+  .camada:hover { background: rgba(40,46,56,.96); }
+  .camada.on { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 600; }
+  .camada .inter { width: 26px; height: 14px; border-radius: 7px; background: rgba(255,255,255,.18); position: relative; flex: none; }
+  .camada .inter::after { content: ""; position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; border-radius: 50%; background: #fff; transition: left .15s; }
+  .camada.on .inter { background: rgba(0,0,0,.25); } .camada.on .inter::after { left: 14px; background: #1a1405; }
   .leaflet-control-attribution { background: rgba(0,0,0,.55) !important; color: #bbb !important; font-size: 10px; }
   .leaflet-control-attribution a { color: #ddd !important; }
 
@@ -119,6 +119,9 @@
   /* ---- cartão central ---- */
   #modal { position: absolute; inset: 0; z-index: 1100; background: rgba(0,0,0,.42); display: none; place-items: center; padding: 20px 20px 90px; }
   #modal.aberto { display: grid; }
+  #modal.lado { background: transparent; pointer-events: none; justify-items: end; padding: 70px 14px 14px; }
+  #modal.lado .cartao { pointer-events: auto; width: min(400px, 100%); animation-name: surgir-lado; }
+  @keyframes surgir-lado { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
   #modal .cartao { position: relative; width: min(600px, 100%); max-height: 100%; overflow: auto; border-radius: 18px; padding: 22px 26px 24px; box-shadow: 0 24px 70px rgba(0,0,0,.65); animation: surgir .22s ease-out; }
   @keyframes surgir { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
   .fechar { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.06); border: 0; color: var(--ink-dim); font-size: 16px; cursor: pointer; }
@@ -170,6 +173,10 @@
   #map.desenhar { cursor: crosshair; }
 
   /* ---- ecrãs médios (tablet) e estreitos (telemóvel) ---- */
+  @media (max-width: 1000px) {
+    #modal.lado { justify-items: center; align-items: end; padding: 12px 12px 80px; }
+    #modal.lado .cartao { width: min(600px, 100%); max-height: 42vh; }
+  }
   @media (max-width: 900px) {
     #marca small { display: none; }
     #pesquisa-box { width: 230px; }
@@ -183,12 +190,14 @@
     #pesquisa-box:not(:focus-within):not(.com-texto) #pesquisa::placeholder { color: transparent; }
     #pesquisa-box:not(:focus-within):not(.com-texto) #ghost { display: none; }
     #modal { padding: 12px 12px 80px; align-items: end; }
+    #modal.lado { justify-items: stretch; padding: 12px 12px 80px; }
+    #modal.lado .cartao { width: 100%; max-height: 50vh; }
     #modal .cartao { padding: 18px 18px 20px; border-radius: 16px; }
     .info h2 { font-size: 19px; }
     .info .texto { font-size: 14px; }
     #guiao .texto { min-width: 140px; font-size: 12.5px; }
-    #btn-ruas span.txt { display: none; }
-    #btn-ruas { padding: 0 12px; }
+    .camada span.txt { display: none; }
+    .camada { padding: 0 12px; }
   }
   @media (pointer: coarse) { .mk-circ { border-width: 2px; } }
 </style>
@@ -361,7 +370,7 @@ function construirElemento(el) {
   } else if (el.tipo === 'zona') {
     const pol = L.polygon(el.poligono, { pane: 'zonas', color: COR.zona, weight: 2, opacity: .9, fillColor: COR.zona, fillOpacity: .12, dashArray: '6 5' }).addTo(map);
     pol.bindTooltip(el.nome, { sticky: true, className: 'rotulo', opacity: 1 });
-    pol.on('click', () => selecionar(el, false));
+    pol.on('click', () => selecionar(el, true));
     v.camadas.push(pol); v.poligono = pol;
     for (const f of el.filhos) construirElemento(f);
   }
@@ -372,15 +381,27 @@ function limitesDe(el) {
   if (el.tipo === 'rua') return L.latLngBounds(el.linhas.flat());
   return L.latLngBounds(el.poligono);
 }
-// margens do voo: o cartão fica ao centro, por isso o alvo sobe um pouco; em ecrãs estreitos o cartão ocupa a parte de baixo
-function margensVoo() {
-  return estreito() ? { paddingTopLeft: [20, 70], paddingBottomRight: [20, Math.round(window.innerHeight * .55)] } : { paddingTopLeft: [80, 80], paddingBottomRight: [80, 120] };
+// margens do voo. Pontos e ruas: o cartão fica ao centro, por isso o alvo sobe um pouco.
+// Zonas (e pontos dentro delas): o cartão encosta à direita e a zona cresce até ocupar grande parte do espaço livre.
+// Em ecrãs estreitos o cartão ocupa a parte de baixo.
+function margensVoo(el) {
+  const W = window.innerWidth, H = window.innerHeight, zona = !!(el && (el.tipo === 'zona' || el.pai));
+  if (estreito()) return { paddingTopLeft: [20, 70], paddingBottomRight: [20, Math.round(H * .55)] };
+  if (zona && W < 1000) return { paddingTopLeft: [40, 80], paddingBottomRight: [40, Math.round(H * .46)], maxZoom: 19.5 }; // cartão em baixo
+  if (zona) return { paddingTopLeft: [Math.round(W * .08), 90], paddingBottomRight: [Math.round(W * .06) + 420, 60], maxZoom: 19.5 }; // cartão à direita
+  return { paddingTopLeft: [80, 80], paddingBottomRight: [80, 120] };
 }
 
 // ---------- seleção ----------
 let selecionado = null;
-const estiloZona = { normal: { fillOpacity: .12, weight: 2, dashArray: '6 5' }, ativa: { fillOpacity: .35, weight: 3, dashArray: null } };
-function mostrarFilhos(zona, mostrar) { for (const f of zona.filhos) { const m = vista[f.id].marcadores[0]; if (mostrar) m.addTo(map); else map.removeLayer(m); } }
+const estiloZona = { normal: { fillOpacity: .12, weight: 2, dashArray: '6 5' }, ativa: { fillOpacity: .16, weight: 3, dashArray: null } };
+let todosPontos = false; // camada «Pontos nas zonas»: mostra sempre os pontos escondidos dentro das zonas
+function mostrarFilhos(zona, mostrar) { for (const f of zona.filhos) { const m = vista[f.id].marcadores[0]; if (mostrar || todosPontos) m.addTo(map); else map.removeLayer(m); } }
+function ligarPontos(ligar) {
+  todosPontos = ligar === undefined ? !todosPontos : ligar;
+  for (const el of ELEMENTOS) if (el.tipo === 'zona') mostrarFilhos(el, selecionado === el || (selecionado && selecionado.pai === el));
+  const b = $('#btn-pontos'); b.classList.toggle('on', todosPontos); b.setAttribute('aria-pressed', String(todosPontos));
+}
 function limparSelecao() {
   if (!selecionado) return;
   const el = selecionado, v = vista[el.id];
@@ -401,7 +422,7 @@ function selecionar(el, voar, semCartao) {
   if (el.pai) { vista[el.pai.id].poligono.setStyle(estiloZona.ativa); mostrarFilhos(el.pai, true); }
   v.marcadores.forEach(m => m.getElement() && m.getElement().classList.add('sel'));
   const b = document.querySelector(`#indice button[data-id="${el.id}"]`); if (b) { b.classList.add('sel'); b.scrollIntoView({ block: 'nearest' }); }
-  if (voar) map.flyToBounds(limitesDe(el), Object.assign({ maxZoom: 18.5, duration: .9 }, margensVoo()));
+  if (voar) map.flyToBounds(limitesDe(el), Object.assign({ maxZoom: 18.5, duration: .9 }, margensVoo(el)));
   history.replaceState(null, '', '#' + el.id);
   if (!semCartao) mostrarInfo(el);
   if (estreito()) abrirPainel(false);
@@ -430,6 +451,7 @@ function htmlInfo(el) {
 }
 const modal = $('#modal'), modalConteudo = $('#modal-conteudo');
 function mostrarInfo(el) {
+  modal.classList.toggle('lado', el.tipo === 'zona' || !!el.pai);
   modalConteudo.innerHTML = htmlInfo(el);
   modal.querySelector('.cartao').scrollTop = 0;
   modal.classList.add('aberto');
@@ -533,14 +555,18 @@ function destacarRua(r, voar) {
   if (voar) map.flyToBounds(L.latLngBounds(r.rua.trocos.flat()), { paddingTopLeft: [60, 80], paddingBottomRight: [60, 60], maxZoom: 18, duration: .9 });
 }
 function limparRuaDestaque() { if (ruaDestaque) classeRua(ruaDestaque, 'destaque', false); ruaDestaque = null; }
-// botão da camada, junto ao zoom
-const CtrlRuas = L.Control.extend({ onAdd() {
-  const b = L.DomUtil.create('button', 'vidro'); b.id = 'btn-ruas'; b.type = 'button'; b.setAttribute('aria-pressed', 'false');
-  b.innerHTML = '<span class="inter"></span><span class="txt">Nomes das ruas</span>';
-  L.DomEvent.disableClickPropagation(b); b.addEventListener('click', () => ligarRuas());
-  return b;
-} });
-new CtrlRuas({ position: 'bottomleft' }).addTo(map);
+// botões das camadas, junto ao zoom
+function botaoCamada(id, texto, acao) {
+  const Ctrl = L.Control.extend({ onAdd() {
+    const b = L.DomUtil.create('button', 'vidro camada'); b.id = id; b.type = 'button'; b.setAttribute('aria-pressed', 'false');
+    b.innerHTML = '<span class="inter"></span><span class="txt">' + texto + '</span>';
+    L.DomEvent.disableClickPropagation(b); b.addEventListener('click', () => acao());
+    return b;
+  } });
+  new Ctrl({ position: 'bottomleft' }).addTo(map);
+}
+botaoCamada('btn-pontos', 'Pontos nas zonas', () => ligarPontos());
+botaoCamada('btn-ruas', 'Nomes das ruas', () => ligarRuas());
 
 // ---------- pesquisa com escrita predicativa ----------
 const INDICE_PESQUISA = [];
@@ -736,7 +762,7 @@ function apagarUltimo() {
 map.on('click', e => {
   if (ferramenta === 'poligono') { desenho.push(e.latlng); tempPontos.push(L.circleMarker(e.latlng, { radius: 5, color: '#fff', fillColor: '#f3c35b', fillOpacity: 1, interactive: false }).addTo(map)); atualizarTemp(); }
   else if (ferramenta === 'ponto') novoPonto(e.latlng);
-  else if (!ferramenta) { if (selecionado) limparSelecao(); limparRuaDestaque(); if (estreito()) abrirPainel(false); }
+  else if (!ferramenta) { if (selecionado) limparSelecao(); limparRuaDestaque(); fecharCartao(); if (estreito()) abrirPainel(false); }
 });
 if (EDITOR) {
   $('#editor').classList.add('aberto');
@@ -759,7 +785,7 @@ if (EDITOR) {
 construir(); construirIndice(); construirRuas(); construirPesquisa();
 const inicial = POR_ID[decodeURIComponent(location.hash.slice(1))];
 if (inicial) map.whenReady(() => setTimeout(() => selecionar(inicial, true), 300));
-window.__mapa = { map, ELEMENTOS, POR_ID, RUAS_VISTA, selecionar, irPasso, ligarGuiao, ligarRuas, destacarRua, abrirPainel, vista, dgt, reserva };
+window.__mapa = { map, ELEMENTOS, POR_ID, RUAS_VISTA, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, destacarRua, abrirPainel, vista, dgt, reserva };
 })();
 </script>
 </body>

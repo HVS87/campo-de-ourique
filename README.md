@@ -26,8 +26,11 @@ de satélite em direto precisa de internet.
   com escrita predicativa (a conclusão aparece a cinzento; Tab ou → aceita; ↑ ↓ e Enter escolhem na lista).
   Em baixo à esquerda, o interruptor «Nomes das ruas» liga uma camada opcional (desligada por predefinição)
   com o traçado de todas as ruas da freguesia: ao passar o cursor a rua ilumina-se e o nome surge ao longo da
-  via; a partir do zoom 17 aparecem os nomes de todas as que têm comprimento para isso. Esc fecha o que
-  estiver aberto. Cada elemento tem ligação própria: `index.html#id`.
+  via; a partir do zoom 17 aparecem os nomes de todas as que têm comprimento para isso. Os pontos dentro
+  de uma zona ficam escondidos até se selecionar a zona (ou um deles, pelo índice ou pela pesquisa), ou até
+  se ligar o interruptor «Pontos nas zonas». Carregar numa zona faz o mapa voar até ela ocupar grande parte
+  do ecrã, com os seus pontos à vista; nesse caso o cartão encosta à direita (ou em baixo, em ecrãs mais
+  pequenos) para não tapar a zona. Esc fecha o que estiver aberto. Cada elemento tem ligação própria: `index.html#id`.
 - `index.html?editor` — mostra a barra do editor (só para preparar conteúdos, só com rato): polígono por
   vértices, pincel livre, ponto (fica filho da zona selecionada se cair dentro dela), apagar último,
   copiar JSON. Nada é guardado: o JSON copia-se para `dados/conteudos.js`.
