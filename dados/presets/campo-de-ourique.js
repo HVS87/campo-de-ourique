@@ -1,4 +1,4 @@
-// Preset «Campo de Ourique», gravado em 2026-10-29 18:13. Modelo dos campos: ver README.md.
+// Preset «Campo de Ourique», gravado em 2026-10-29 18:23. Modelo dos campos: ver README.md.
 window.CONTEUDOS_PRESET = {
  "preset": "campo-de-ourique",
  "titulo": "Campo de Ourique",
@@ -686,7 +686,336 @@ window.CONTEUDOS_PRESET = {
      "fotos": []
     }
    ]
+  },
+  {
+   "id": "rua-sampaio-bruno",
+   "tipo": "rua",
+   "nome": "Rua Sampaio Bruno",
+   "icone": "🚸",
+   "rua": "Rua Sampaio Bruno",
+   "texto": "<p>É necessário implementar medidas de acalmia da velocidade nesta rua, onde os automóveis atingem velocidades elevadas nas horas de menor trânsito.</p><p>A rua serve de acesso à Escola Manuel da Maia, sede do agrupamento de escolas da freguesia.</p><p>Propõe-se:</p><ul><li>instalar almofadas berlinenses;</li><li>fazer pinturas de segurança nas passadeiras;</li><li>instalar refletores de aproximação;</li><li>pintar pictogramas na faixa de rodagem a assinalar a proximidade de um equipamento escolar.</li></ul>",
+   "fotos": [
+    {
+     "src": "assets/fotos/exemplos/almofada-berlinense.jpg",
+     "legenda": "Exemplo de almofada berlinense (Łódź, Polónia). Foto: Zorro2212, CC BY-SA 4.0, Wikimedia Commons."
+    },
+    {
+     "src": "assets/fotos/exemplos/passadeira-pintura-seguranca.jpg",
+     "legenda": "Exemplo de pintura de segurança de alta visibilidade numa passadeira, em aplicação (EUA). Foto: Z22, CC BY-SA 4.0, Wikimedia Commons."
+    },
+    {
+     "src": "assets/fotos/exemplos/refletores-pavimento.jpg",
+     "legenda": "Exemplo de refletores no pavimento (EUA). Foto: Shoecream, domínio público, Wikimedia Commons."
+    },
+    {
+     "src": "assets/fotos/exemplos/marcacao-zona-escolar.jpg",
+     "legenda": "Exemplo de marcação na faixa de rodagem a assinalar uma zona escolar (Queensland, Austrália). Foto: Kgbo, CC BY-SA 4.0, Wikimedia Commons."
+    },
+    {
+     "src": "assets/fotos/exemplos/pictograma-criancas.jpg",
+     "legenda": "Exemplo de pictograma de crianças na faixa de rodagem junto a uma escola (Győr, Hungria). Foto: Globetrotter19, CC BY-SA 3.0, Wikimedia Commons."
+    }
+   ]
+  },
+  {
+   "id": "rua-silva-carvalho",
+   "tipo": "rua",
+   "nome": "Rua Silva Carvalho",
+   "icone": "🛠️",
+   "linhas": [
+    [
+     [
+      38.723462,
+      -9.159526
+     ],
+     [
+      38.723498,
+      -9.159592
+     ],
+     [
+      38.723513,
+      -9.159632
+     ],
+     [
+      38.72352,
+      -9.15966
+     ],
+     [
+      38.723514,
+      -9.159694
+     ],
+     [
+      38.723498,
+      -9.159727
+     ],
+     [
+      38.723438,
+      -9.159798
+     ],
+     [
+      38.723207,
+      -9.160069
+     ],
+     [
+      38.723166,
+      -9.160117
+     ],
+     [
+      38.723118,
+      -9.160164
+     ],
+     [
+      38.723053,
+      -9.160212
+     ],
+     [
+      38.722997,
+      -9.160242
+     ],
+     [
+      38.722913,
+      -9.160273
+     ],
+     [
+      38.722875,
+      -9.160286
+     ],
+     [
+      38.722836,
+      -9.160297
+     ],
+     [
+      38.7228,
+      -9.160308
+     ],
+     [
+      38.722714,
+      -9.160332
+     ],
+     [
+      38.722471,
+      -9.16039
+     ],
+     [
+      38.722141,
+      -9.160483
+     ],
+     [
+      38.721692,
+      -9.160662
+     ],
+     [
+      38.721434,
+      -9.160769
+     ],
+     [
+      38.721233,
+      -9.160849
+     ],
+     [
+      38.721065,
+      -9.160918
+     ],
+     [
+      38.720966,
+      -9.160959
+     ],
+     [
+      38.720947,
+      -9.160967
+     ],
+     [
+      38.720854,
+      -9.161005
+     ],
+     [
+      38.72077,
+      -9.161038
+     ],
+     [
+      38.720471,
+      -9.161157
+     ],
+     [
+      38.720256,
+      -9.161243
+     ],
+     [
+      38.720209,
+      -9.161264
+     ],
+     [
+      38.720166,
+      -9.161283
+     ],
+     [
+      38.7198,
+      -9.161446
+     ],
+     [
+      38.719762,
+      -9.161463
+     ],
+     [
+      38.719586,
+      -9.161677
+     ],
+     [
+      38.71956,
+      -9.161734
+     ],
+     [
+      38.719495,
+      -9.161794
+     ],
+     [
+      38.718934,
+      -9.16206
+     ],
+     [
+      38.71837,
+      -9.162281
+     ],
+     [
+      38.718159,
+      -9.162364
+     ],
+     [
+      38.718092,
+      -9.162384
+     ],
+     [
+      38.71799,
+      -9.162415
+     ],
+     [
+      38.717865,
+      -9.162447
+     ],
+     [
+      38.717588,
+      -9.162479
+     ],
+     [
+      38.717545,
+      -9.162479
+     ],
+     [
+      38.717475,
+      -9.162429
+     ],
+     [
+      38.717275,
+      -9.162286
+     ],
+     [
+      38.716793,
+      -9.16194
+     ],
+     [
+      38.716725,
+      -9.161893
+     ],
+     [
+      38.716653,
+      -9.16186
+     ],
+     [
+      38.716626,
+      -9.161845
+     ],
+     [
+      38.716601,
+      -9.161821
+     ],
+     [
+      38.716582,
+      -9.161798
+     ]
+    ]
+   ],
+   "texto": "<p>É necessário completar a requalificação da rua, nomeadamente nos quarteirões entre a Rua da Estrela e a Rua Dom João V e entre o Largo António Viana e a Rua Saraiva de Carvalho, incluindo a requalificação do Largo Duque de Wellington (toponímia informal).</p><p>É também necessário implementar medidas de acalmia da velocidade, porque os automóveis atingem velocidades elevadas nas horas de menor trânsito.</p><p>Propõe-se:</p><ul><li>instalar novas almofadas berlinenses nos troços a intervencionar;</li><li>fazer pinturas de segurança nas passadeiras;</li><li>instalar refletores de aproximação.</li></ul><p>Deve ter-se particular cuidado com o atravessamento em frente à Fundação Lar dos Cegos, por ser um equipamento usado por utentes seniores e invisuais.</p>",
+   "fotos": [
+    {
+     "src": "assets/fotos/exemplos/almofada-berlinense.jpg",
+     "legenda": "Exemplo de almofada berlinense (Łódź, Polónia). Foto: Zorro2212, CC BY-SA 4.0, Wikimedia Commons."
+    },
+    {
+     "src": "assets/fotos/exemplos/passadeira-pintura-seguranca.jpg",
+     "legenda": "Exemplo de pintura de segurança de alta visibilidade numa passadeira, em aplicação (EUA). Foto: Z22, CC BY-SA 4.0, Wikimedia Commons."
+    },
+    {
+     "src": "assets/fotos/exemplos/refletores-pavimento.jpg",
+     "legenda": "Exemplo de refletores no pavimento (EUA). Foto: Shoecream, domínio público, Wikimedia Commons."
+    }
+   ]
+  },
+  {
+   "id": "rua-maria-pia",
+   "tipo": "rua",
+   "nome": "Rua Maria Pia",
+   "icone": "🚶",
+   "rua": "Rua Maria Pia",
+   "texto": [
+    "É necessário requalificar este arruamento, retirando-lhe um sentido de trânsito para alargar os passeios e criar estacionamento para moradores.",
+    "A rua está sobrecarregada de trânsito automóvel, os passeios são estreitos e a falta de estacionamento é gritante."
+   ],
+   "fotos": []
+  },
+  {
+   "id": "rua-freitas-gazul",
+   "tipo": "rua",
+   "nome": "Rua Freitas Gazul",
+   "icone": "🚸",
+   "rua": "Rua Freitas Gazul",
+   "texto": "<p>É necessário requalificar este arruamento, retirando-lhe um sentido de trânsito para alargar os passeios e criar estacionamento para moradores.</p><p>A rua tem uma inclinação acentuada, a falta de estacionamento é gritante e os passeios são estreitos e estão mal conservados. Estes passeios servem também de acesso à Escola Manuel da Maia, sede do agrupamento de escolas da freguesia.</p><p>Propõe-se:</p><ul><li>instalar almofadas berlinenses;</li><li>fazer pinturas de segurança nas passadeiras;</li><li>instalar refletores de aproximação;</li><li>pintar pictogramas na faixa de rodagem a assinalar a proximidade de um equipamento escolar.</li></ul>",
+   "fotos": [
+    {
+     "src": "assets/fotos/exemplos/almofada-berlinense.jpg",
+     "legenda": "Exemplo de almofada berlinense (Łódź, Polónia). Foto: Zorro2212, CC BY-SA 4.0, Wikimedia Commons."
+    },
+    {
+     "src": "assets/fotos/exemplos/passadeira-pintura-seguranca.jpg",
+     "legenda": "Exemplo de pintura de segurança de alta visibilidade numa passadeira, em aplicação (EUA). Foto: Z22, CC BY-SA 4.0, Wikimedia Commons."
+    },
+    {
+     "src": "assets/fotos/exemplos/refletores-pavimento.jpg",
+     "legenda": "Exemplo de refletores no pavimento (EUA). Foto: Shoecream, domínio público, Wikimedia Commons."
+    },
+    {
+     "src": "assets/fotos/exemplos/marcacao-zona-escolar.jpg",
+     "legenda": "Exemplo de marcação na faixa de rodagem a assinalar uma zona escolar (Queensland, Austrália). Foto: Kgbo, CC BY-SA 4.0, Wikimedia Commons."
+    },
+    {
+     "src": "assets/fotos/exemplos/pictograma-criancas.jpg",
+     "legenda": "Exemplo de pictograma de crianças na faixa de rodagem junto a uma escola (Győr, Hungria). Foto: Globetrotter19, CC BY-SA 3.0, Wikimedia Commons."
+    }
+   ]
   }
  ],
- "categorias": []
+ "categorias": [
+  {
+   "id": "cat-acessibilidades-e-seguranca",
+   "nome": "Acessibilidades e Segurança",
+   "icone": "🚸",
+   "cor": "#ff6b8b",
+   "membros": [
+    "rua-sampaio-bruno",
+    "rua-silva-carvalho",
+    "rua-maria-pia",
+    "rua-freitas-gazul"
+   ]
+  },
+  {
+   "id": "cat-requalificacao-urbana",
+   "nome": "Requalificação Urbana",
+   "icone": "🏗️",
+   "cor": "#7ad3ff",
+   "membros": [
+    "rua-silva-carvalho",
+    "rua-maria-pia",
+    "rua-freitas-gazul"
+   ]
+  }
+ ]
 };
