@@ -82,7 +82,8 @@ ferramentas; «⋯ Mais» abre o título, o subtítulo e os presets):
   estreitos o zoom faz-se com os dedos e os controlos saem da frente do cartão e da visita). Satélite
   DGT OrtoSat 2023 em direto por WMS, com a imagem fixa por baixo (aparece logo e fica como reserva automática
   se o servidor da DGT falhar ou não houver rede); exterior da freguesia escurecido a 72 %. Os pontos de
-  interesse são círculos coloridos por tipo, que pulsam ao passar o cursor; a informação abre num cartão
+  interesse são círculos com a cor da prioridade, que pulsam ao passar o cursor, tal como as ruas destacadas
+  e as zonas, de onde saem ondas da mesma cor; a informação abre num cartão
   central. À esquerda, um painel colapsável (fechado ao arrancar, botão ☰) com as categorias (chips que
   filtram o mapa e o índice; combinam-se; ▶ visita a categoria; «Mostrar tudo» limpa), o índice por tipo,
   o botão «Visita guiada» (setas ‹ › ou teclado: ←, →, Espaço, Home, End; um seletor na barra troca entre a

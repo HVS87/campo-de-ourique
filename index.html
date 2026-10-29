@@ -130,6 +130,17 @@
   .mk.pri-urgente .mk-circ::before, .mk.pri-urgente .mk-circ::after { border-color: #fff; }
   .mk.pri-urgente.sel .mk-circ { box-shadow: 0 0 0 3px #fff, 0 0 0 5px #000, 0 2px 10px rgba(0,0,0,.7); }
   .mk.pri-sugestao .mk-circ, .mk.pri-preocupante .mk-circ { border-color: rgba(0,0,0,.85); }
+  /* ondas de ruas e zonas ao passar o cursor (como o pulsar dos pontos) */
+  path.eco { pointer-events: none; }
+  path.eco-rua.pulsar { animation: eco-rua 1.6s ease-out infinite; }
+  path.eco-zona.pulsar { animation: eco-zona 1.6s ease-out infinite; }
+  path.eco.eco-1.pulsar { animation-delay: .8s; }
+  @keyframes eco-rua { 0% { stroke-opacity: .85; stroke-width: 5px; } 100% { stroke-opacity: 0; stroke-width: 34px; } }
+  @keyframes eco-zona { 0% { stroke-opacity: .9; stroke-width: 2px; } 100% { stroke-opacity: 0; stroke-width: 26px; } }
+  @media (prefers-reduced-motion: reduce) {
+    path.eco.pulsar { animation: none; stroke-opacity: .45; stroke-width: 12px; }
+    .mk:hover .mk-circ::before, .mk:hover .mk-circ::after, .mk.sel .mk-circ::before, .mk.sel .mk-circ::after { animation: none; }
+  }
   path.pri-urgente { filter: drop-shadow(0 0 1.5px rgba(255,255,255,.95)) drop-shadow(0 0 3px rgba(255,255,255,.5)); }
   path.pri-sugestao, path.pri-preocupante { filter: drop-shadow(0 0 1.5px rgba(0,0,0,.85)); }
   .pri-etq { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--c); color: #1a1405; font-weight: 700; letter-spacing: .4px; }
@@ -552,18 +563,36 @@ function construirElemento(el) {
     el.pontos.forEach((p, i) => { const m = marcador(el, p, false, i).addTo(map); v.marcadores.push(m); v.camadas.push(m); });
   } else if (el.tipo === 'rua') {
     const e = estiloRua(el), cls = 'pri-' + priDe(el).id;
+    const ecos = criarEcos(L.polyline, el.linhas, 'ruas', el, 'eco-rua'); // por baixo da linha: as ondas saem dela
     const halo = L.polyline(el.linhas, { pane: 'ruas', ...e.halo, lineCap: 'round', bubblingMouseEvents: false }).addTo(map);
     const linha = L.polyline(el.linhas, { pane: 'ruas', ...e.linha, className: cls, lineCap: 'round', bubblingMouseEvents: false }).addTo(map);
     halo.bindTooltip(el.nome, { sticky: true, className: 'rotulo', opacity: 1 }); linha.bindTooltip(el.nome, { sticky: true, className: 'rotulo', opacity: 1 });
     linha.on('click', () => selecionar(el, false)); halo.on('click', () => selecionar(el, false));
-    v.camadas.push(halo, linha); v.linha = linha; v.halo = halo;
+    ligarPulsar(v, [halo, linha]);
+    v.camadas.push(...ecos, halo, linha); v.linha = linha; v.halo = halo; v.ecos = ecos;
   } else if (el.tipo === 'zona') {
     const cz = corDe(el);
+    const ecos = criarEcos(L.polygon, el.poligono, 'zonas', el, 'eco-zona');
     const pol = L.polygon(el.poligono, { pane: 'zonas', color: cz, weight: 2, opacity: .95, fillColor: cz, fillOpacity: .12, dashArray: '6 5', className: 'pri-' + priDe(el).id, bubblingMouseEvents: false }).addTo(map);
     pol.bindTooltip(el.nome, { sticky: true, className: 'rotulo', opacity: 1 });
     pol.on('click', () => selecionar(el, !edicao));
-    v.camadas.push(pol); v.poligono = pol;
+    ligarPulsar(v, [pol]);
+    v.camadas.push(...ecos, pol); v.poligono = pol; v.ecos = ecos;
     for (const f of el.filhos) construirElemento(f);
+  }
+}
+// ondas ao passar o cursor numa rua ou zona destacada, como os anéis dos pontos: dois traçados invisíveis
+// que só são animados (por CSS) enquanto o cursor está por cima; o preto pulsa a branco para se ver
+function criarEcos(Tipo, geometria, pane, el, classe) {
+  const p = priDe(el), cor = p.id === 'urgente' ? '#ffffff' : p.cor;
+  return [0, 1].map(i => Tipo(geometria, { pane, color: cor, weight: 4, opacity: 0, fill: false, interactive: false, lineCap: 'round', lineJoin: 'round', className: `eco ${classe} eco-${i}` }).addTo(map));
+}
+function ligarPulsar(v, partes) {
+  let dentro = 0, temporizador = null;
+  const aplicar = () => { const on = dentro > 0; for (const e of v.ecos || []) if (e._path) e._path.classList.toggle('pulsar', on); };
+  for (const parte of partes) {
+    parte.on('mouseover', () => { dentro++; clearTimeout(temporizador); aplicar(); });
+    parte.on('mouseout', () => { dentro = Math.max(0, dentro - 1); clearTimeout(temporizador); temporizador = setTimeout(aplicar, 60); }); // passar da linha para o halo não reinicia a onda
   }
 }
 function limitesDe(el) {
@@ -1470,7 +1499,7 @@ function mostrarVertices(el) {
   verticesGrupo.clearLayers();
   if (!edicao || !el || el.tipo !== 'zona') return;
   const pts = el.poligono, pol = vista[el.id].poligono;
-  const alterarGeometria = () => { delete el.area; pol.setLatLngs(pts); };
+  const alterarGeometria = () => { delete el.area; pol.setLatLngs(pts); for (const e of vista[el.id].ecos || []) e.setLatLngs(pts); }; // as ondas seguem o contorno
   pts.forEach((p, i) => {
     const h = L.marker(p, { icon: L.divIcon({ className: 'vertice', iconSize: [12, 12], iconAnchor: [6, 6] }), draggable: true, bubblingMouseEvents: false, keyboard: false });
     h.on('drag', () => { pts[i] = arredLL(h.getLatLng()); alterarGeometria(); });
