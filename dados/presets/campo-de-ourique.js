@@ -9,6 +9,7 @@ window.CONTEUDOS_PRESET = {
    "tipo": "zona",
    "nome": "Bairro da Quinta do Loureiro",
    "icone": "🏘️",
+   "prioridade": "urgente",
    "texto": [
     "Zona delimitada pela Rua Maria Pia, pela Rua do Arco do Carvalhão, pela Avenida de Ceuta e pela fronteira da freguesia entre a Rua Maria Pia e a Avenida de Ceuta.",
     "Os pontos assinalados dentro da zona identificam os principais problemas do bairro e as propostas para os resolver."
@@ -598,6 +599,7 @@ window.CONTEUDOS_PRESET = {
      "tipo": "ponto",
      "nome": "Sala de Consumo Assistido",
      "icone": "🏥",
+     "prioridade": "importante",
      "pos": [
       38.71372,
       -9.17508
@@ -614,6 +616,7 @@ window.CONTEUDOS_PRESET = {
      "tipo": "ponto",
      "nome": "Degradação do parque habitacional",
      "icone": "🏚️",
+     "prioridade": "importante",
      "pos": [
       38.715718,
       -9.175003
@@ -629,6 +632,7 @@ window.CONTEUDOS_PRESET = {
      "tipo": "ponto",
      "nome": "Consumo e tráfico de estupefacientes",
      "icone": "⚠️",
+     "prioridade": "urgente",
      "pos": [
       38.717,
       -9.1743
@@ -645,6 +649,7 @@ window.CONTEUDOS_PRESET = {
      "tipo": "ponto",
      "nome": "Falta de limpeza e manutenção",
      "icone": "🧹",
+     "prioridade": "urgente",
      "pos": [
       38.71545,
       -9.17395
@@ -660,6 +665,7 @@ window.CONTEUDOS_PRESET = {
      "tipo": "ponto",
      "nome": "Campo de jogos",
      "icone": "🏀",
+     "prioridade": "preocupante",
      "pos": [
       38.716278,
       -9.174445
@@ -675,6 +681,7 @@ window.CONTEUDOS_PRESET = {
      "tipo": "ponto",
      "nome": "Linha férrea a descoberto",
      "icone": "🚆",
+     "prioridade": "preocupante",
      "pos": [
       38.716003,
       -9.174052
@@ -692,6 +699,7 @@ window.CONTEUDOS_PRESET = {
    "tipo": "rua",
    "nome": "Rua Sampaio Bruno",
    "icone": "🚸",
+   "prioridade": "importante",
    "rua": "Rua Sampaio Bruno",
    "texto": "<p>É necessário implementar medidas de acalmia da velocidade nesta rua, onde os automóveis atingem velocidades elevadas nas horas de menor trânsito.</p><p>A rua serve de acesso à Escola Manuel da Maia, sede do agrupamento de escolas da freguesia.</p><p>Propõe-se:</p><ul><li>instalar almofadas berlinenses;</li><li>fazer pinturas de segurança nas passadeiras;</li><li>instalar refletores de aproximação;</li><li>pintar pictogramas na faixa de rodagem a assinalar a proximidade de um equipamento escolar.</li></ul>",
    "fotos": [
@@ -722,6 +730,7 @@ window.CONTEUDOS_PRESET = {
    "tipo": "rua",
    "nome": "Rua Silva Carvalho",
    "icone": "🛠️",
+   "prioridade": "preocupante",
    "linhas": [
     [
      [
@@ -955,6 +964,7 @@ window.CONTEUDOS_PRESET = {
    "tipo": "rua",
    "nome": "Rua Maria Pia",
    "icone": "🚶",
+   "prioridade": "preocupante",
    "rua": "Rua Maria Pia",
    "texto": [
     "É necessário requalificar este arruamento, retirando-lhe um sentido de trânsito para alargar os passeios e criar estacionamento para moradores.",
@@ -967,6 +977,7 @@ window.CONTEUDOS_PRESET = {
    "tipo": "rua",
    "nome": "Rua Freitas Gazul",
    "icone": "🚸",
+   "prioridade": "importante",
    "rua": "Rua Freitas Gazul",
    "texto": "<p>É necessário requalificar este arruamento, retirando-lhe um sentido de trânsito para alargar os passeios e criar estacionamento para moradores.</p><p>A rua tem uma inclinação acentuada, a falta de estacionamento é gritante e os passeios são estreitos e estão mal conservados. Estes passeios servem também de acesso à Escola Manuel da Maia, sede do agrupamento de escolas da freguesia.</p><p>Propõe-se:</p><ul><li>instalar almofadas berlinenses;</li><li>fazer pinturas de segurança nas passadeiras;</li><li>instalar refletores de aproximação;</li><li>pintar pictogramas na faixa de rodagem a assinalar a proximidade de um equipamento escolar.</li></ul>",
    "fotos": [
@@ -997,6 +1008,7 @@ window.CONTEUDOS_PRESET = {
    "tipo": "rua",
    "nome": "Rua do Sol ao Rato",
    "icone": "🛠️",
+   "prioridade": "preocupante",
    "rua": "Rua do Sol ao Rato",
    "texto": "<p>É necessário requalificar este arruamento, que tem uma inclinação acentuada, uma gritante falta de estacionamento para moradores e passeios estreitos e mal conservados.</p><p>Propõe-se:</p><ul><li>instalar almofadas berlinenses;</li><li>fazer pinturas de segurança nas passadeiras;</li><li>instalar refletores de aproximação.</li></ul>",
    "fotos": [
@@ -1019,6 +1031,7 @@ window.CONTEUDOS_PRESET = {
    "tipo": "rua",
    "nome": "Rua Saraiva de Carvalho",
    "icone": "🚸",
+   "prioridade": "importante",
    "rua": "Rua Saraiva de Carvalho",
    "texto": "<p>É necessário completar a requalificação da rua, nomeadamente nos quarteirões entre a Rua Silva Carvalho e a Praça São João Bosco.</p><p>Devem ser revistas as condições de acessibilidade pedonal. Embora os passeios tenham uma largura adequada, o crescimento das raízes das árvores deformou-os, o que cria uma situação de perigo para seniores, para pessoas com mobilidade reduzida e para carrinhos de bebé.</p><p>Devem também ser implementadas medidas de acalmia da velocidade nesta rua, onde os automóveis atingem velocidades elevadas nas horas de menor trânsito, e que serve de acesso ao Colégio dos Salesianos.</p><p>Propõe-se:</p><ul><li>instalar almofadas berlinenses;</li><li>fazer pinturas de segurança nas passadeiras;</li><li>instalar refletores de aproximação;</li><li>pintar pictogramas na faixa de rodagem a assinalar a proximidade de um equipamento escolar.</li></ul>",
    "fotos": [
@@ -1049,6 +1062,7 @@ window.CONTEUDOS_PRESET = {
    "tipo": "rua",
    "nome": "Rua de Campo de Ourique",
    "icone": "🛠️",
+   "prioridade": "preocupante",
    "rua": "Rua de Campo de Ourique",
    "texto": "<p>É necessário completar a requalificação da rua, nomeadamente nos quarteirões entre a Rua Ferreira Borges e a Rua Maria Pia.</p><p>A rua tem uma inclinação acentuada, uma gritante falta de estacionamento para moradores e passeios estreitos e mal conservados.</p><p>Propõe-se:</p><ul><li>instalar almofadas berlinenses;</li><li>fazer pinturas de segurança nas passadeiras;</li><li>instalar refletores de aproximação.</li></ul>",
    "fotos": [
@@ -1071,6 +1085,7 @@ window.CONTEUDOS_PRESET = {
    "tipo": "rua",
    "nome": "Travessa de Campo de Ourique",
    "icone": "🚧",
+   "prioridade": "preocupante",
    "rua": "Travessa de Campo de Ourique",
    "texto": "Este arruamento está em péssimo estado, tanto na faixa de rodagem como nos passeios.",
    "fotos": []
@@ -1080,6 +1095,7 @@ window.CONTEUDOS_PRESET = {
    "tipo": "rua",
    "nome": "Escadinhas dos Terramotos",
    "icone": "🪜",
+   "prioridade": "preocupante",
    "linhas": [
     [
      [
@@ -1119,6 +1135,7 @@ window.CONTEUDOS_PRESET = {
    "tipo": "zona",
    "nome": "Envolvente da Igreja do Santo Condestável",
    "icone": "⛪",
+   "prioridade": "pouco",
    "poligono": [
     [
      38.715567,
@@ -1204,6 +1221,7 @@ window.CONTEUDOS_PRESET = {
      "tipo": "ponto",
      "nome": "Acessibilidade da Igreja do Santo Condestável",
      "icone": "♿",
+     "prioridade": "importante",
      "pos": [
       38.715066,
       -9.167096
@@ -1219,6 +1237,7 @@ window.CONTEUDOS_PRESET = {
      "tipo": "ponto",
      "nome": "Telhado e fresco da Igreja do Santo Condestável",
      "icone": "🎨",
+     "prioridade": "preocupante",
      "pos": [
       38.715281,
       -9.167086
@@ -1231,6 +1250,7 @@ window.CONTEUDOS_PRESET = {
      "tipo": "ponto",
      "nome": "Quiosque de apoio no adro",
      "icone": "☕",
+     "prioridade": "sugestao",
      "pos": [
       38.715681,
       -9.166402
@@ -1243,6 +1263,7 @@ window.CONTEUDOS_PRESET = {
      "tipo": "ponto",
      "nome": "Parque infantil no adro",
      "icone": "🛝",
+     "prioridade": "preocupante",
      "pos": [
       38.715195,
       -9.166362
@@ -1258,6 +1279,7 @@ window.CONTEUDOS_PRESET = {
      "tipo": "ponto",
      "nome": "Caminhos pedonais e ciclovia",
      "icone": "🚲",
+     "prioridade": "sugestao",
      "pos": [
       38.715007,
       -9.166322
