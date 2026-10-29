@@ -24,6 +24,9 @@ const TYPES = {
   '.gif': 'image/gif',
   '.avif': 'image/avif',
   '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.txt': 'text/plain; charset=utf-8',
+  '.md': 'text/markdown; charset=utf-8',
   '.mp4': 'video/mp4',
   '.woff2': 'font/woff2',
 };
@@ -31,11 +34,18 @@ const IMAGENS = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.avif'];
 const LIMITE_CORPO = 40 * 1024 * 1024; // 40 MB
 
 const local = req => ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress);
+// só a própria página pode gravar: a origem do pedido tem de ser este servidor (outra página aberta no browser não pode)
+function origemPropria(req) {
+  const origem = req.headers.origin, host = req.headers.host;
+  if (!origem) return false;
+  try { const u = new URL(origem); return ['localhost', '127.0.0.1', '[::1]'].includes(u.hostname) && (u.host === host || u.port === String(PORT)); } catch (err) { return false; }
+}
 const json = (res, codigo, obj) => { res.writeHead(codigo, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(obj)); };
+class CorpoGrande extends Error { constructor() { super('Pedido demasiado grande (máximo 40 MB)'); this.codigo = 413; } }
 function lerCorpo(req) {
   return new Promise((resolve, reject) => {
     const partes = []; let total = 0;
-    req.on('data', c => { total += c.length; if (total > LIMITE_CORPO) { reject(new Error('Pedido demasiado grande')); req.destroy(); } else partes.push(c); });
+    req.on('data', c => { total += c.length; if (total > LIMITE_CORPO) { partes.length = 0; req.pause(); reject(new CorpoGrande()); } else partes.push(c); });
     req.on('end', () => resolve(Buffer.concat(partes)));
     req.on('error', reject);
   });
@@ -71,8 +81,9 @@ async function guardarFoto(req, res, nome) {
   if (!corpo.length) return json(res, 400, { erro: 'Ficheiro vazio' });
   const pasta = path.join(ROOT, 'assets', 'fotos');
   fs.mkdirSync(pasta, { recursive: true });
+  const base = seguro.slice(0, -ext.length); // «fachada-1920.jpg» mantém o seu número; só o sufixo acrescentado aqui muda
   let destino = path.join(pasta, seguro), k = 2;
-  while (fs.existsSync(destino)) { seguro = seguro.replace(new RegExp(ext.replace('.', '\\.') + '$'), '') .replace(/-\d+$/, '') + '-' + (k++) + ext; destino = path.join(pasta, seguro); }
+  while (fs.existsSync(destino)) { seguro = base + '-' + (k++) + ext; destino = path.join(pasta, seguro); }
   fs.writeFileSync(destino, corpo);
   console.log(`foto guardada em assets/fotos/${seguro} (${(corpo.length / 1024).toFixed(0)} kB)`);
   json(res, 200, { ok: true, caminho: 'assets/fotos/' + seguro });
@@ -84,17 +95,22 @@ http.createServer(async (req, res) => {
   try {
     if (req.method === 'POST') {
       if (!local(req)) return json(res, 403, { erro: 'Só a partir desta máquina' });
+      if (!origemPropria(req)) return json(res, 403, { erro: 'Só a partir da própria apresentação (origem ' + (req.headers.origin || 'desconhecida') + ')' });
       if (rel === '/guardar') return await guardar(req, res);
       if (rel.startsWith('/guardar-foto/')) return await guardarFoto(req, res, rel.slice('/guardar-foto/'.length));
       return json(res, 404, { erro: 'Não encontrado' });
     }
-  } catch (err) { console.error(err); return json(res, 500, { erro: err.message }); }
+  } catch (err) { console.error(err.message); return json(res, err.codigo || 500, { erro: err.message }); }
   if (rel.endsWith('/')) rel += 'index.html';
   const file = path.join(ROOT, rel);
   if (!file.startsWith(ROOT + path.sep)) { res.writeHead(403).end('Proibido'); return; }
-  fs.readFile(file, (err, data) => {
-    if (err) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Não encontrado'); return; }
-    res.writeHead(200, { 'Content-Type': TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream', 'Cache-Control': 'no-store' });
-    res.end(data);
+  fs.stat(file, (errStat, st) => {
+    if (errStat || !st.isFile()) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Não encontrado'); return; }
+    const cabecalhos = { 'Content-Type': TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream', 'Cache-Control': 'no-store', 'Last-Modified': st.mtime.toUTCString(), 'Content-Length': st.size };
+    if (req.method === 'HEAD') { res.writeHead(200, cabecalhos); res.end(); return; } // a página compara a data do ficheiro com a gravação automática
+    fs.readFile(file, (err, data) => {
+      if (err) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Não encontrado'); return; }
+      res.writeHead(200, cabecalhos); res.end(data);
+    });
   });
 }).listen(PORT, '0.0.0.0', () => console.log(`Apresentação disponível em http://localhost:${PORT} (modo de edição grava em dados/conteudos.js)`));

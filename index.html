@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt">
+<html lang="pt-PT">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -14,12 +14,12 @@
   :root {
     --bg: #0f1216; --panel: rgba(18, 22, 28, .94); --panel-border: rgba(255,255,255,.12);
     --ink: #eef1f5; --ink-dim: #a6afbb; --accent: #f3c35b; --accent-ink: #1a1405;
-    --ponto: #f3c35b; --grupo: #7ad3ff; --rua: #ff8a5b; --zona: #9be38a;
+    --ponto: #f3c35b; /* as cores por tipo estão no mapa COR do script */
     --radius: 14px; --font: "Segoe UI", system-ui, -apple-system, sans-serif;
     --painel-w: 320px;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: var(--font); overflow: hidden; }
+  html, body { margin: 0; height: 100%; height: 100dvh; background: var(--bg); color: var(--ink); font-family: var(--font); overflow: hidden; }
   #map { position: absolute; inset: 0; background: #0b0d10; }
   button { font: inherit; }
   .vidro { background: var(--panel); border: 1px solid var(--panel-border); backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(0,0,0,.45); }
@@ -32,7 +32,7 @@
   #marca { position: absolute; top: 14px; left: 66px; z-index: 1000; height: 42px; display: flex; align-items: center; padding: 0 16px 0 14px; border-radius: 21px; pointer-events: none; }
   #marca b { font-size: 15px; letter-spacing: .3px; }
   #marca small { color: var(--ink-dim); font-size: 12px; margin-left: 8px; }
-  #pesquisa-box { position: absolute; top: 14px; right: 66px; z-index: 1002; width: 300px; transition: width .2s; }
+  #pesquisa-box { position: absolute; top: 14px; right: 66px; z-index: 1060; width: 300px; transition: width .2s; }
   #pesquisa-box .campo { position: relative; height: 42px; border-radius: 21px; display: flex; align-items: center; }
   #pesquisa-box .lupa { position: absolute; left: 13px; top: 11px; width: 18px; height: 18px; color: var(--ink-dim); pointer-events: none; }
   #pesquisa, #ghost { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0 38px 0 40px; border: 0; border-radius: 21px; font: inherit; font-size: 14px; background: transparent; }
@@ -43,12 +43,12 @@
   #pesquisa-limpar { position: absolute; right: 8px; top: 7px; width: 28px; height: 28px; border-radius: 50%; border: 0; background: transparent; color: var(--ink-dim); cursor: pointer; display: none; z-index: 3; }
   #pesquisa-box.com-texto #pesquisa-limpar { display: block; }
   #pesquisa-limpar:hover { background: rgba(255,255,255,.1); color: var(--ink); }
-  #sugestoes { margin-top: 6px; border-radius: var(--radius); overflow: hidden; display: none; max-height: min(60vh, 420px); overflow-y: auto; }
+  #sugestoes { margin-top: 6px; border-radius: var(--radius); display: none; max-height: min(60vh, 420px); overflow-y: auto; }
   #sugestoes.aberto { display: block; }
   #sugestoes button { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 9px 14px; border: 0; background: transparent; color: var(--ink); cursor: pointer; font-size: 13.5px; }
   #sugestoes button:hover, #sugestoes button.ativo { background: rgba(255,255,255,.08); }
   #sugestoes button b { font-weight: 600; color: var(--accent); }
-  #sugestoes .etq { margin-left: auto; font-size: 10.5px; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-dim); flex: none; }
+  #sugestoes .etq { margin-left: auto; font-size: 11.5px; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-dim); flex: none; }
   #sugestoes .nada { padding: 10px 14px; color: var(--ink-dim); font-size: 13px; }
   .pinta { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--c); }
   .pinta.rua, .pinta.zona { border-radius: 2px; }
@@ -65,18 +65,18 @@
   .btn:hover { background: rgba(255,255,255,.12); }
   .btn.on { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 600; }
   #indice { padding: 8px 10px 16px; display: grid; gap: 2px; overflow: auto; align-content: start; }
-  #indice h3 { margin: 10px 8px 4px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px; color: var(--ink-dim); font-weight: 600; }
+  #indice h3 { margin: 10px 8px 4px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .6px; color: var(--ink-dim); font-weight: 600; }
   #indice button { text-align: left; font-size: 13px; padding: 7px 8px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--ink); cursor: pointer; display: flex; gap: 10px; align-items: center; }
   #indice button:hover { background: rgba(255,255,255,.06); }
   #indice button.sel { border-color: rgba(255,255,255,.25); background: rgba(255,255,255,.08); }
   #indice button.filho { padding-left: 28px; font-size: 12.5px; color: var(--ink-dim); }
   #indice .vazio { color: var(--ink-dim); padding: 8px; font-size: 12px; line-height: 1.4; }
   #indice .ico { width: 20px; text-align: center; flex: none; }
-  .rodape { margin-top: auto; padding: 10px 14px 12px; border-top: 1px solid var(--panel-border); color: var(--ink-dim); font-size: 11px; line-height: 1.45; }
+  .rodape { margin-top: auto; padding: 10px 14px 12px; border-top: 1px solid var(--panel-border); color: var(--ink-dim); font-size: 12px; line-height: 1.45; }
   .rodape a { color: #ccc; }
 
   /* ---- canto inferior esquerdo: zoom e camada de ruas ---- */
-  .leaflet-bottom.leaflet-left { margin: 0 0 14px 14px; display: flex; flex-direction: column-reverse; gap: 8px; }
+  .leaflet-bottom.leaflet-left { margin: 0 0 calc(14px + env(safe-area-inset-bottom, 0px)) 14px; display: flex; flex-direction: column-reverse; gap: 8px; }
   .leaflet-bottom.leaflet-left .leaflet-control { margin: 0; }
   .leaflet-bar { border: 1px solid var(--panel-border) !important; border-radius: 12px !important; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,.45) !important; }
   .leaflet-bar a { width: 36px !important; height: 36px !important; line-height: 36px !important; background: var(--panel) !important; color: var(--ink) !important; border-color: var(--panel-border) !important; backdrop-filter: blur(10px); }
@@ -87,7 +87,7 @@
   #btn-camadas:hover { background: rgba(40,46,56,.96); }
   #btn-camadas.on { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 600; }
   #btn-camadas svg { width: 16px; height: 16px; }
-  #btn-camadas .conta { min-width: 18px; height: 18px; border-radius: 9px; padding: 0 5px; font-size: 11px; font-weight: 700; display: none; place-items: center; background: var(--accent); color: var(--accent-ink); }
+  #btn-camadas .conta { min-width: 20px; height: 20px; border-radius: 10px; padding: 0 6px; font-size: 12px; font-weight: 700; display: none; place-items: center; background: var(--accent); color: var(--accent-ink); }
   #btn-camadas.algumas .conta { display: grid; } #btn-camadas.on .conta { background: #1a1405; color: var(--accent); }
   #lista-camadas { display: none; flex-direction: column; border-radius: var(--radius); padding: 6px; min-width: 230px; }
   #lista-camadas.aberto { display: flex; }
@@ -100,13 +100,14 @@
   .camada.on .inter { background: var(--accent); } .camada.on .inter::after { left: 14px; background: #1a1405; }
   .camada small { color: var(--ink-dim); font-size: 11px; margin-left: auto; padding-left: 10px; }
   /* números de polícia e lotes */
-  .num-policia { font: 700 11px/1 var(--font); color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000, 0 1px 2px #000; white-space: nowrap; pointer-events: none; text-align: center; letter-spacing: .2px; }
   .leaflet-numeros-pane { pointer-events: none; }
-  .leaflet-control-attribution { background: rgba(0,0,0,.55) !important; color: #bbb !important; font-size: 10px; }
-  .leaflet-control-attribution a { color: #ddd !important; }
+  .num-canvas { position: absolute; left: 0; top: 0; }
+  .leaflet-control-attribution { background: rgba(0,0,0,.75) !important; color: #ccc !important; font-size: 11px; }
+  .leaflet-control-attribution a { color: #e8e8e8 !important; }
 
   /* ---- limite ---- */
-  .leaflet-interactive:focus { outline: none; }
+  .leaflet-interactive:focus:not(:focus-visible) { outline: none; }
+  .leaflet-interactive:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
   .limite { filter: drop-shadow(0 0 6px rgba(255,255,255,.55)); }
   .limite-halo { filter: blur(6px); }
 
@@ -166,11 +167,12 @@
   .chip-wrap { display: inline-flex; align-items: stretch; border-radius: 999px; overflow: hidden; border: 1px solid var(--panel-border); background: rgba(255,255,255,.04); }
   .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 8px; border: 0; background: transparent; color: var(--ink); cursor: pointer; font-size: 12.5px; border-radius: 999px; white-space: nowrap; }
   .chip::before { content: ""; width: 9px; height: 9px; border-radius: 3px; background: var(--c, var(--accent)); flex: none; }
-  .chip small { color: var(--ink-dim); font-size: 11px; }
+  .chip small { color: var(--ink-dim); font-size: 12px; }
   .chip-wrap .chip { border-radius: 0; }
   .chip:hover { background: rgba(255,255,255,.08); }
-  .chip.on { background: var(--c, var(--accent)); color: #1a1405; font-weight: 600; } .chip.on small { color: rgba(26,20,5,.7); }
-  .chip-acao { border: 0; border-left: 1px solid var(--panel-border); background: transparent; color: var(--ink-dim); cursor: pointer; padding: 0 9px; font-size: 11px; }
+  .chip.on { background: var(--c, var(--accent)); color: #1a1405; font-weight: 600; } .chip.on small { color: rgba(26,20,5,.8); }
+  .chip.on.clara { color: #fff; } .chip.on.clara small { color: rgba(255,255,255,.85); } /* cor escura escolhida pelo utilizador: texto claro */
+  .chip-acao { border: 0; border-left: 1px solid var(--panel-border); background: transparent; color: var(--ink-dim); cursor: pointer; padding: 0 10px; min-width: 34px; font-size: 12px; }
   .chip-acao:hover { background: rgba(255,255,255,.1); color: var(--ink); }
   .chip.nova, .chip.limpar { border: 1px dashed var(--panel-border); color: var(--ink-dim); } .chip.nova::before, .chip.limpar::before { display: none; }
   .chip.mini { font-size: 11.5px; padding: 3px 9px 3px 7px; border: 1px solid var(--panel-border); margin: 0 6px 10px 0; }
@@ -185,8 +187,8 @@
   .visita-ed li button:hover { background: rgba(255,255,255,.1); color: var(--ink); }
   .visita-ed li.nota { color: var(--ink-dim); } .visita-ed li.nota::before { display: none; }
   .linha-ed { display: flex; gap: 6px; padding: 0 8px 8px; align-items: center; }
-  .sel { font: inherit; font-size: 12.5px; background: rgba(255,255,255,.06); border: 1px solid var(--panel-border); color: var(--ink); border-radius: 8px; padding: 6px 8px; max-width: 100%; }
-  .sel option { background: #1a1f27; color: var(--ink); }
+  .seletor { font: inherit; font-size: 12.5px; background: rgba(255,255,255,.06); border: 1px solid var(--panel-border); color: var(--ink); border-radius: 8px; padding: 6px 8px; max-width: 100%; }
+  .seletor option { background: #1a1f27; color: var(--ink); }
   .checks { display: flex; flex-wrap: wrap; gap: 4px 14px; }
   .check { display: inline-flex !important; align-items: center; gap: 6px; font-size: 13px !important; color: var(--ink) !important; margin: 4px 0 !important; cursor: pointer; }
   .check input { width: auto !important; margin: 0 !important; accent-color: var(--accent); }
@@ -196,7 +198,7 @@
   .membro .fechar { position: static; width: 28px; height: 28px; }
   .form-edicao .cor input { width: 44px; height: 32px; padding: 2px; display: inline-block; cursor: pointer; }
   .form-edicao .sel { margin-top: 8px; width: 100%; }
-  #guiao .sel { padding: 5px 8px; border-radius: 999px; font-size: 12px; max-width: 160px; }
+  #guiao .seletor { padding: 5px 8px; border-radius: 999px; font-size: 12px; max-width: 160px; }
   .nota { color: var(--ink-dim); font-size: 12px; line-height: 1.4; }
 
   /* ---- lightbox ---- */
@@ -206,17 +208,17 @@
   #lightbox figcaption { position: absolute; left: 0; right: 0; bottom: 20px; text-align: center; color: #ddd; font-size: 14px; padding: 0 20px; }
 
   /* ---- guião ---- */
-  #guiao { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 1200; display: none; gap: 8px; align-items: center; border-radius: 999px; padding: 6px 8px; }
+  #guiao { position: absolute; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 1200; display: none; gap: 8px; align-items: center; border-radius: 999px; padding: 6px 8px; max-width: calc(100vw - 16px); }
   #guiao.aberto { display: flex; }
   #guiao .seta { width: 38px; height: 38px; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 18px; cursor: pointer; }
   #guiao .seta:hover { filter: brightness(1.08); }
   #guiao .texto { min-width: 240px; text-align: center; font-size: 13.5px; padding: 0 6px; }
-  #guiao .texto small { display: block; color: var(--ink-dim); font-size: 11px; }
+  #guiao .texto small { display: block; color: var(--ink-dim); font-size: 12px; }
   #guiao .sair { width: 30px; height: 30px; border-radius: 50%; border: 0; background: transparent; color: var(--ink-dim); cursor: pointer; font-size: 14px; }
   #guiao .sair:hover { background: rgba(255,255,255,.1); color: var(--ink); }
 
   /* ---- avisos ---- */
-  #aviso { position: absolute; left: 50%; bottom: 76px; transform: translateX(-50%); z-index: 1250; color: var(--ink); padding: 8px 14px; border-radius: 999px; font-size: 12.5px; display: none; max-width: 90vw; text-align: center; }
+  #aviso { position: absolute; left: 50%; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 1250; color: var(--ink); padding: 8px 14px; border-radius: 999px; font-size: 12.5px; display: none; max-width: 90vw; text-align: center; }
   #aviso.aberto { display: block; }
 
   /* ---- modo de edição ---- */
@@ -240,7 +242,7 @@
   .btn:disabled { opacity: .45; cursor: default; }
   #map.desenhar { cursor: crosshair; }
   body.edicao .mk { cursor: grab; }
-  body.edicao .mk.leaflet-drag-target { cursor: grabbing; }
+  body.edicao .leaflet-drag-target { cursor: grabbing; }
   /* o ponto «mergulha» na zona sobre a qual está a ser arrastado */
   .mk.mergulhar .mk-circ { transform: scale(.5); opacity: .75; transition: transform .25s, opacity .25s; box-shadow: 0 0 0 2px rgba(255,255,255,.3), 0 0 14px 4px rgba(155,227,138,.6); }
   .mk.mergulhar .mk-circ::before { animation: pulso .7s ease-out infinite; }
@@ -258,7 +260,8 @@
   .form-edicao input:not([type=file]), .form-edicao textarea { display: block; width: 100%; margin-top: 4px; font: inherit; font-size: 14px; background: rgba(255,255,255,.06); border: 1px solid var(--panel-border); color: var(--ink); border-radius: 8px; padding: 7px 9px; }
   .form-edicao input:focus, .form-edicao textarea:focus { outline: none; border-color: rgba(243,195,91,.6); }
   .form-edicao textarea { resize: vertical; min-height: 130px; font-size: 13.5px; line-height: 1.45; }
-  .form-edicao .linha { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
+  .linha { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
+  .info .linha { margin: 0 0 12px; }
   .form-edicao .curto { display: inline-block; margin-right: 10px; }
   .form-edicao .curto input { width: 84px; display: inline-block; }
   .fotos-ed { margin-top: 14px; border-top: 1px solid var(--panel-border); padding-top: 10px; }
@@ -276,7 +279,10 @@
   @media (max-width: 900px) {
     #marca small { display: none; }
     #pesquisa-box { width: 230px; }
+    body.cartao-aberto #camadas, body.visita-aberta #camadas { visibility: hidden; } /* o cartão fica em baixo nestes ecrãs */
   }
+  /* em edição, o cartão à direita começa abaixo da barra de ferramentas para não lhe tapar o fim das linhas */
+  body.edicao #modal.lado { padding-top: 240px; }
   @media (max-width: 640px) {
     :root { --painel-w: min(86vw, 340px); }
     #marca { display: none; }
@@ -285,16 +291,34 @@
     #pesquisa-box:not(:focus-within):not(.com-texto) #pesquisa { padding: 0; color: transparent; }
     #pesquisa-box:not(:focus-within):not(.com-texto) #pesquisa::placeholder { color: transparent; }
     #pesquisa-box:not(:focus-within):not(.com-texto) #ghost { display: none; }
-    #modal { padding: 12px 12px 80px; align-items: end; }
-    #modal.baixo { justify-items: stretch; padding: 12px 12px 80px; }
+    #modal { padding: 12px 12px 92px; align-items: end; }
+    #modal.baixo { justify-items: stretch; padding: 12px 12px 92px; }
     #modal.baixo .cartao { width: 100%; max-height: 50vh; }
     #modal .cartao { padding: 18px 18px 20px; border-radius: 16px; }
     .info h2 { font-size: 19px; }
     .info .texto { font-size: 14px; }
-    #guiao .texto { min-width: 140px; font-size: 12.5px; }
+    #guiao { width: calc(100vw - 16px); gap: 6px; }
+    #guiao .texto { flex: 1; min-width: 0; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #guiao .seletor { max-width: 96px; }
     #btn-camadas span.txt { display: none; }
+    /* em ecrãs estreitos o zoom faz-se com os dedos; o botão das camadas sai de cena enquanto há cartão ou visita em baixo */
+    .leaflet-control-zoom { display: none; }
+    /* barra de edição compacta: só as ferramentas; «Mais» mostra título e presets */
+    #barra-edicao { top: 62px; padding: 6px 8px; width: calc(100vw - 16px); }
+    #barra-edicao .row.extra { display: none; }
+    #barra-edicao.mais .row.extra { display: flex; }
+    #barra-edicao .btn { padding: 6px 8px; font-size: 12px; }
+    #barra-edicao .estado:not(.auto) { width: 100%; margin: 2px 0 0; }
+    #barra-edicao #btn-mais { display: inline-block; }
   }
-  @media (pointer: coarse) { .mk-circ { border-width: 2px; } }
+  #btn-mais { display: none; }
+  /* dedo: alvos maiores (área de toque invisível à volta de botões pequenos e marcadores) */
+  @media (pointer: coarse) {
+    .mk::before { content: ""; position: absolute; inset: -11px; border-radius: 50%; }
+    .vertice::before { content: ""; position: absolute; inset: -12px; border-radius: 50%; }
+    .visita-ed li button, #pesquisa-limpar, .fechar, #guiao .sair, .chip-acao, .foto-ed .fechar, .membro .fechar { min-width: 40px; min-height: 40px; }
+    .btn, .camada, .chip { min-height: 40px; }
+  }
 </style>
 </head>
 <body>
@@ -325,7 +349,7 @@
 
 <div id="modal"><div class="cartao vidro"><button class="fechar" id="btn-fechar" aria-label="Fechar">✕</button><div id="modal-conteudo"></div></div></div>
 
-<div id="guiao" class="vidro"><button class="seta" id="g-prev" aria-label="Anterior">‹</button><span class="texto" id="g-texto"></span><button class="seta" id="g-next" aria-label="Seguinte">›</button><select id="g-sel" class="sel" aria-label="Visita"></select><button class="sair" id="g-sair" aria-label="Sair da visita">✕</button></div>
+<div id="guiao" class="vidro"><button class="seta" id="g-prev" aria-label="Anterior">‹</button><span class="texto" id="g-texto"></span><button class="seta" id="g-next" aria-label="Seguinte">›</button><select id="g-sel" class="seletor" aria-label="Visita"></select><button class="sair" id="g-sair" aria-label="Sair da visita">✕</button></div>
 
 <div id="aviso" class="vidro"></div>
 <div id="lightbox"><figure><img alt=""><figcaption></figcaption></figure></div>
@@ -343,21 +367,22 @@
     <span class="sep"></span>
     <button class="btn on" id="btn-guardar" title="Gravar em dados/conteudos.js">Guardar</button>
     <button class="btn" id="btn-sair-edicao">Sair</button>
+    <button class="btn" id="btn-mais" aria-expanded="false" title="Título, subtítulo e presets">⋯ Mais</button>
     <span class="estado" id="estado-edicao">Sem alterações</span>
   </div>
-  <div class="row">
+  <div class="dica" id="dica"></div>
+  <div class="row extra">
     <input class="titulo" id="ed-titulo" placeholder="Título" aria-label="Título">
     <input class="titulo sub" id="ed-subtitulo" placeholder="Subtítulo" aria-label="Subtítulo">
-    <span class="dica" id="dica"></span>
   </div>
-  <div class="row preset"><b>Preset</b>
+  <div class="row preset extra"><b>Preset</b>
     <button class="btn" id="btn-novo-preset" title="Começar um preset vazio (elimina o atual)">Novo</button>
     <button class="btn" id="btn-importar" title="Carregar um preset exportado (.json) ou um conteudos.js">Importar…</button>
-    <button class="btn" id="btn-exportar" title="Descarregar o preset atual em JSON">Exportar</button>
-    <button class="btn" id="btn-transferir" title="Descarregar como dados/conteudos.js">Transferir conteudos.js</button>
+    <button class="btn" id="btn-exportar" title="Transferir o preset atual em JSON">Exportar</button>
+    <button class="btn" id="btn-transferir" title="Transferir o ficheiro no formato de dados/conteudos.js">Transferir conteudos.js</button>
     <button class="btn" id="btn-repor-ficheiro" title="Descartar o trabalho em curso e voltar ao que está em dados/conteudos.js">Repor do ficheiro</button>
     <input type="file" id="ficheiro-preset" accept=".json,.js,application/json,text/javascript" hidden>
-    <span class="estado auto" id="estado-auto" title="O trabalho em curso fica guardado neste browser e é reposto ao abrir a página">auto-save ligado</span>
+    <span class="estado auto" id="estado-auto" title="O trabalho em curso fica guardado neste browser e é reposto ao abrir a página">gravação automática ligada</span>
   </div>
   <div id="sem-servidor">Sem servidor local: «Guardar» transfere o ficheiro conteudos.js para substituíres em dados/, e as fotos ficam embebidas.</div>
 </aside>
@@ -374,14 +399,11 @@ const TIPO = { ponto: 'Ponto', grupo: 'Conjunto de pontos', rua: 'Rua', zona: 'Z
 const EDITOR = new URLSearchParams(location.search).has('editor');
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const normalizar = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const normalizar = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); // sem acentos nem maiúsculas
+const corEscura = hex => { const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex || ''); if (!m) return false; const [r, g, b] = m.slice(1).map(h => parseInt(h, 16) / 255); return .2126 * r + .7152 * g + .0722 * b < .45; }; // para pôr texto claro em chips de cor escura
 const estreito = () => window.innerWidth <= 640;
 
-document.title = C.titulo || 'Campo de Ourique';
-$('#titulo').childNodes[0].textContent = (C.titulo || 'Campo de Ourique') + ' ';
-$('#subtitulo').textContent = C.subtitulo || '';
-$('#marca-titulo').textContent = C.titulo || 'Campo de Ourique';
-$('#marca-sub').textContent = C.subtitulo || '';
+aplicarTitulo(); // definida mais abaixo (as declarações de função sobem)
 
 // ---------- elementos ----------
 function centro(pts) { let a = 0, b = 0; for (const p of pts) { a += p[0]; b += p[1]; } return [a / pts.length, b / pts.length]; }
@@ -392,11 +414,14 @@ function preparar(el, pai) {
   if (POR_ID[el.id]) console.warn('Id repetido:', el.id);
   if (pai && el.tipo !== 'ponto') { console.warn('Só pontos podem ser filhos de uma zona:', el.id); return null; }
   el.pai = pai || null;
+  // geometrias vindas de geo.js / ruas.js são copiadas, para a edição não alterar os dados partilhados
   if (el.tipo === 'rua' && !el.linhas) {
-    el.linhas = D.ruas[el.rua || el.nome];
-    if (!el.linhas) { const r = RUAS.find(x => x.nome === (el.rua || el.nome)); if (r) el.linhas = r.trocos; }
+    let linhas = D.ruas[el.rua || el.nome];
+    if (!linhas) { const r = RUAS.find(x => x.nome === (el.rua || el.nome)); if (r) linhas = r.trocos; }
+    if (linhas) el.linhas = linhas.map(l => l.map(p => p.slice()));
   }
-  if (el.tipo === 'zona' && !el.poligono) el.poligono = D.areas[el.area || el.nome];
+  if (el.tipo === 'zona' && !el.poligono && D.areas[el.area || el.nome]) el.poligono = D.areas[el.area || el.nome].map(p => p.slice());
+  el.fotos = Array.isArray(el.fotos) ? el.fotos : []; el.texto = el.texto || '';
   if (el.tipo === 'ponto' && !el.pos && el.area && D.areas[el.area]) el.pos = centro(D.areas[el.area]);
   const ok = el.tipo === 'ponto' ? !!el.pos : el.tipo === 'grupo' ? !!(el.pontos && el.pontos.length) : el.tipo === 'rua' ? !!(el.linhas && el.linhas.length) : !!(el.poligono && el.poligono.length >= 3);
   if (!ok) { console.warn('Elemento sem geometria:', el.id); return null; }
@@ -436,7 +461,7 @@ function reserva(motivo) {
   console.info('Satélite em direto indisponível (' + motivo + '); a usar a imagem guardada.');
   aviso('Sem ligação ao satélite em direto da DGT: a usar a imagem guardada (DGT 2023, zoom limitado).', 6000);
 }
-if (navigator.onLine === false) reserva('offline');
+if (navigator.onLine === false) setTimeout(() => reserva('offline'), 0); // adiado: o resto da página ainda está a ser montado
 else {
   dgt.on('tileload', () => { dgtOk = true; });
   dgt.on('tileerror', () => { dgtErros++; if (!dgtOk && dgtErros >= 2) reserva('erro'); });
@@ -452,7 +477,6 @@ L.polyline(LIMITE, { pane: 'limite', color: '#ffffff', weight: 2, opacity: .95, 
 
 // ---------- marcadores e geometrias dos pontos de interesse ----------
 const vista = {}; // id -> { el, camadas, marcadores, linha, halo, poligono }
-let numero = 0;
 function icone(el, filho) {
   const cor = COR[filho ? 'ponto' : el.tipo], s = filho ? 13 : 18;
   return L.divIcon({ className: 'mk' + (filho ? ' filho' : ''), html: `<div class="mk-circ" style="--c:${cor}"></div>`, iconSize: [s, s], iconAnchor: [s / 2, s / 2] });
@@ -466,12 +490,10 @@ function marcador(el, pos, filho, idx) {
 }
 function construir() {
   for (const id in vista) { vista[id].camadas.forEach(c => map.removeLayer(c)); delete vista[id]; }
-  numero = 0;
   for (const el of ELEMENTOS) construirElemento(el);
-  if (typeof aplicarFiltro === 'function' && C.categorias) aplicarFiltro();
+  aplicarFiltro();
 }
 function construirElemento(el) {
-  el.numero = el.pai ? '' : ++numero;
   const v = { el, camadas: [], marcadores: [] };
   vista[el.id] = v;
   if (el.tipo === 'ponto') {
@@ -482,7 +504,7 @@ function construirElemento(el) {
   } else if (el.tipo === 'rua') {
     const halo = L.polyline(el.linhas, { pane: 'ruas', color: COR.rua, weight: 16, opacity: .18, lineCap: 'round', bubblingMouseEvents: false }).addTo(map);
     const linha = L.polyline(el.linhas, { pane: 'ruas', color: COR.rua, weight: 4, opacity: .85, lineCap: 'round', bubblingMouseEvents: false }).addTo(map);
-    halo.bindTooltip(el.nome, { sticky: true, className: 'rotulo', opacity: 1 });
+    halo.bindTooltip(el.nome, { sticky: true, className: 'rotulo', opacity: 1 }); linha.bindTooltip(el.nome, { sticky: true, className: 'rotulo', opacity: 1 });
     linha.on('click', () => selecionar(el, false)); halo.on('click', () => selecionar(el, false));
     v.camadas.push(halo, linha); v.linha = linha; v.halo = halo;
   } else if (el.tipo === 'zona') {
@@ -570,17 +592,17 @@ function htmlFotos(fotos) {
   if (!fotos || !fotos.length) return '';
   return '<div class="fotos">' + fotos.map(f => {
     const o = typeof f === 'string' ? { src: f } : f;
-    return `<figure><img src="${esc(o.src)}" alt="${esc(o.legenda || '')}" loading="lazy" data-legenda="${esc(o.legenda || '')}">${o.legenda ? `<figcaption>${o.legenda}</figcaption>` : ''}</figure>`;
+    return `<figure><img src="${esc(o.src)}" alt="${esc(o.legenda || '')}" loading="lazy" data-legenda="${esc(o.legenda || '')}">${o.legenda ? `<figcaption>${esc(o.legenda)}</figcaption>` : ''}</figure>`;
   }).join('') + '</div>';
 }
 function htmlInfo(el) {
   const cor = COR[el.pai ? 'ponto' : el.tipo];
-  let h = `<div class="info"><h2><span class="pinta ${el.tipo}" style="--c:${cor}"></span><span>${el.icone ? el.icone + ' ' : ''}${esc(el.nome)}</span></h2>`;
+  let h = `<div class="info"><h2><span class="pinta ${el.tipo}" style="--c:${cor}"></span><span>${el.icone ? esc(el.icone) + ' ' : ''}${esc(el.nome)}</span></h2>`;
   h += `<div class="tipo">${TIPO[el.tipo]}${el.pai ? ` · dentro de <a data-ir="${el.pai.id}">${esc(el.pai.nome)}</a>` : ''}</div>`;
   const cats = categoriasDe(el);
-  if (cats.length) h += `<div class="cats">${cats.map(c => `<button class="chip mini" data-so-cat="${c.id}" style="--c:${c.cor}" title="Ver a categoria">${c.icone ? c.icone + ' ' : ''}${esc(c.nome)}</button>`).join('')}</div>`;
+  if (cats.length) h += `<div class="cats">${cats.map(c => `<button class="chip mini" data-so-cat="${c.id}" style="--c:${c.cor}" title="Ver a categoria">${c.icone ? esc(c.icone) + ' ' : ''}${esc(c.nome)}</button>`).join('')}</div>`;
   h += htmlFotos(el.fotos) + `<div class="texto">${htmlTexto(el.texto)}</div>`;
-  if (el.filhos.length) h += `<div class="filhos"><h3>Nesta zona</h3>${el.filhos.map(f => `<button data-ir="${f.id}"><span>${f.icone || '📍'}</span>${esc(f.nome)}</button>`).join('')}</div>`;
+  if (el.filhos.length) h += `<div class="filhos"><h3>Nesta zona</h3>${el.filhos.map(f => `<button data-ir="${f.id}"><span>${esc(f.icone || '📍')}</span>${esc(f.nome)}</button>`).join('')}</div>`;
   return h + '</div>';
 }
 const modal = $('#modal'), modalConteudo = $('#modal-conteudo');
@@ -590,15 +612,18 @@ function mostrarInfo(el, modo) {
   modal.classList.toggle('baixo', encostado && modo !== 'lado');
   modalConteudo.innerHTML = edicao ? htmlForm(el) : htmlInfo(el);
   modal.querySelector('.cartao').scrollTop = 0;
-  modal.classList.add('aberto');
+  modal.classList.add('aberto'); document.body.classList.add('cartao-aberto');
 }
-function fecharCartao() { modal.classList.remove('aberto'); }
+function fecharCartao() { modal.classList.remove('aberto'); document.body.classList.remove('cartao-aberto'); }
 function cartaoAberto() { return modal.classList.contains('aberto'); }
 modalConteudo.addEventListener('click', e => {
   if (edicao) return;
   const ir = e.target.closest('[data-ir]'); if (ir) { selecionar(POR_ID[ir.dataset.ir], true); return; }
   const vis = e.target.closest('[data-visitar]'); if (vis) { ligarGuiao(true, vis.dataset.visitar); return; }
-  const so = e.target.closest('[data-so-cat]'); if (so) { const c = catPorId(so.dataset.soCat); if (!c) return; if (categoriasAtivas.has(c.id) && categoriasAtivas.size === 1) { categoriasAtivas.clear(); aplicarFiltro(); } else alternarCategoria(c.id, true); mostrarCategoria(c); const b = limitesCategoria(c); if (b) map.flyToBounds(b, Object.assign({ duration: .9 }, margensGerais())); return; }
+  const so = e.target.closest('[data-so-cat]'); if (so) { const c = catPorId(so.dataset.soCat); if (!c) return;
+    if (so.classList.contains('mini')) { mostrarCategoria(c); return; } // chip no cartão de um elemento: só abre o cartão da categoria
+    if (categoriasAtivas.has(c.id) && categoriasAtivas.size === 1) { categoriasAtivas.clear(); aplicarFiltro(); } else alternarCategoria(c.id, true);
+    mostrarCategoria(c); const b = limitesCategoria(c); if (b) map.flyToBounds(b, Object.assign({ duration: .9 }, margensGerais())); return; }
   const img = e.target.closest('.fotos img'); if (img) abrirLightbox(img.src, img.dataset.legenda);
 });
 $('#btn-fechar').addEventListener('click', fecharCartao);
@@ -615,7 +640,7 @@ function abrirPainel(abrir) {
   if (abrir === undefined) abrir = !painel.classList.contains('aberto');
   painel.classList.toggle('aberto', abrir);
   btnPainel.classList.toggle('on', abrir);
-  btnPainel.setAttribute('aria-expanded', String(abrir));
+  btnPainel.setAttribute('aria-expanded', String(abrir)); btnPainel.setAttribute('aria-label', abrir ? 'Fechar índice' : 'Abrir índice');
   btnPainel.textContent = abrir ? '✕' : '☰';
 }
 btnPainel.addEventListener('click', () => abrirPainel());
@@ -623,12 +648,12 @@ function construirIndice() {
   const box = $('#indice'); box.innerHTML = '';
   // categorias: interruptores que filtram o mapa e o índice; ▶ visita a categoria; em edição, ✎ edita e «+ Nova»
   if (C.categorias.length || edicao) {
-    box.insertAdjacentHTML('beforeend', `<h3>Categorias</h3><div class="chips">${C.categorias.map(c => `<span class="chip-wrap"><button class="chip" data-cat="${c.id}" style="--c:${c.cor}" aria-pressed="false" title="Mostrar só esta categoria (combina com outras)">${c.icone ? c.icone + ' ' : ''}${esc(c.nome)}<small>${c.membros.length}</small></button><button class="chip-acao" data-visitar="${c.id}" title="Visitar esta categoria">▶</button>${edicao ? `<button class="chip-acao" data-edit-cat="${c.id}" title="Editar categoria">✎</button>` : ''}</span>`).join('')}<button class="chip limpar oculto" id="chip-todas">Mostrar tudo</button>${edicao ? '<button class="chip nova" data-nova-cat>+ Nova categoria</button>' : ''}</div>`);
+    box.insertAdjacentHTML('beforeend', `<h3>Categorias</h3><div class="chips">${C.categorias.map(c => `<span class="chip-wrap"><button class="chip${corEscura(c.cor) ? ' clara' : ''}" data-cat="${c.id}" style="--c:${c.cor}" aria-pressed="false" title="Filtrar por esta categoria (acumula com outras)">${c.icone ? esc(c.icone) + ' ' : ''}${esc(c.nome)}<small>${c.membros.length}</small></button><button class="chip-acao" data-visitar="${c.id}" title="Visitar esta categoria">▶</button>${edicao ? `<button class="chip-acao" data-edit-cat="${c.id}" title="Editar categoria">✎</button>` : ''}</span>`).join('')}<button class="chip limpar oculto" id="chip-todas">Mostrar tudo</button>${edicao ? '<button class="chip nova" data-nova-cat>+ Nova categoria</button>' : ''}</div>`);
   }
   // visita guiada editável (só em edição): ordem dos destaques, tirar, acrescentar
   if (edicao) {
     const ids = visitaIds(), fora = todosElementos().filter(e => !ids.includes(e.id));
-    box.insertAdjacentHTML('beforeend', `<h3>Visita guiada <small>ordem dos destaques</small></h3><ol class="visita-ed">${ids.map((id, i) => `<li data-id="${id}"><span>${esc(POR_ID[id].nome)}</span><button data-vis="cima" title="Subir">↑</button><button data-vis="baixo" title="Descer">↓</button><button data-vis="tirar" title="Tirar da visita">✕</button></li>`).join('') || '<li class="nota">Sem destaques.</li>'}</ol><div class="linha-ed"><select data-vis-add class="sel"><option value="">+ Acrescentar destaque…</option>${fora.map(e => `<option value="${e.id}">${esc(e.nome)}</option>`).join('')}</select>${Array.isArray(C.visita) ? '<button class="btn" data-vis="repor" title="Voltar à ordem natural: todos os elementos de topo">Repor</button>' : ''}</div>`);
+    box.insertAdjacentHTML('beforeend', `<h3>Visita guiada <small>ordem dos destaques</small></h3><ol class="visita-ed">${ids.map((id, i) => `<li data-id="${id}"><span>${esc(POR_ID[id].nome)}</span><button data-vis="cima" title="Subir">↑</button><button data-vis="baixo" title="Descer">↓</button><button data-vis="tirar" title="Tirar da visita">✕</button></li>`).join('') || '<li class="nota">Sem destaques.</li>'}</ol><div class="linha-ed"><select data-vis-add class="seletor"><option value="">+ Acrescentar destaque…</option>${fora.map(e => `<option value="${e.id}">${esc(e.nome)}</option>`).join('')}</select>${Array.isArray(C.visita) ? '<button class="btn" data-vis="repor" title="Voltar à ordem natural: todos os elementos de topo">Repor</button>' : ''}</div>`);
   }
   if (!ELEMENTOS.length) { box.insertAdjacentHTML('beforeend', '<div class="vazio">Ainda não há pontos de interesse. Liga o modo de edição (lápis) para os criar.</div>'); return; }
   const grupos = [['ponto', 'Lugares'], ['grupo', 'Conjuntos'], ['rua', 'Ruas'], ['zona', 'Zonas']];
@@ -636,8 +661,8 @@ function construirIndice() {
     const lista = ELEMENTOS.filter(e => e.tipo === tipo); if (!lista.length) continue;
     box.insertAdjacentHTML('beforeend', `<h3>${titulo}</h3>`);
     for (const el of lista) {
-      box.insertAdjacentHTML('beforeend', `<button data-id="${el.id}"><span class="pinta ${el.tipo}" style="--c:${COR[el.tipo]}"></span><span class="ico">${el.icone || ''}</span>${esc(el.nome)}</button>`);
-      for (const f of el.filhos) box.insertAdjacentHTML('beforeend', `<button data-id="${f.id}" class="filho"><span class="pinta" style="--c:${COR.ponto}"></span><span class="ico">${f.icone || ''}</span>${esc(f.nome)}</button>`);
+      box.insertAdjacentHTML('beforeend', `<button data-id="${el.id}"><span class="pinta ${el.tipo}" style="--c:${COR[el.tipo]}"></span><span class="ico">${esc(el.icone || '')}</span>${esc(el.nome)}</button>`);
+      for (const f of el.filhos) box.insertAdjacentHTML('beforeend', `<button data-id="${f.id}" class="filho"><span class="pinta" style="--c:${COR.ponto}"></span><span class="ico">${esc(f.icone || '')}</span>${esc(f.nome)}</button>`);
     }
   }
   box.querySelectorAll('button[data-id]').forEach(b => b.addEventListener('click', () => selecionar(POR_ID[b.dataset.id], true)));
@@ -723,19 +748,34 @@ function ligarLotes(ligar) {
   if (lotesLigados) grupoLotes.addTo(map); else map.removeLayer(grupoLotes);
   estadoCamada('btn-lotes', lotesLigados);
 }
-// os números só se desenham para o que está no ecrã, a partir do zoom 17,5 (são mais de 2500)
-const grupoNumeros = L.layerGroup().addTo(map);
+// os números desenham-se num único canvas (são mais de 2500; marcadores DOM custavam ~45 ms por movimento), a partir do zoom 17,5
 const ZOOM_NUMEROS = 17.5;
-function desenharNumeros() {
-  grupoNumeros.clearLayers();
-  if (!numerosLigados || map.getZoom() < ZOOM_NUMEROS) return;
-  const b = map.getBounds().pad(.1);
-  for (const n of ED.numeros) {
-    if (n[0] < b.getSouth() || n[0] > b.getNorth() || n[1] < b.getWest() || n[1] > b.getEast()) continue;
-    grupoNumeros.addLayer(L.marker([n[0], n[1]], { pane: 'numeros', interactive: false, keyboard: false, icon: L.divIcon({ className: 'num-policia', html: esc(n[2]), iconSize: null }) }));
-  }
-}
-map.on('moveend zoomend', desenharNumeros);
+const CamadaNumeros = L.Layer.extend({
+  onAdd(mapa) {
+    this._canvas = L.DomUtil.create('canvas', 'leaflet-zoom-hide num-canvas', mapa.getPane('numeros'));
+    this._ctx = this._canvas.getContext('2d');
+    mapa.on('moveend viewreset resize', this.desenhar, this); // moveend dispara também depois de cada zoom
+    this.desenhar();
+  },
+  onRemove(mapa) { mapa.off('moveend viewreset resize', this.desenhar, this); L.DomUtil.remove(this._canvas); },
+  desenhar() {
+    const c = this._canvas, ctx = this._ctx, tam = map.getSize(), dpr = window.devicePixelRatio || 1;
+    if (c.width !== Math.round(tam.x * dpr) || c.height !== Math.round(tam.y * dpr)) { c.width = Math.round(tam.x * dpr); c.height = Math.round(tam.y * dpr); c.style.width = tam.x + 'px'; c.style.height = tam.y + 'px'; }
+    L.DomUtil.setPosition(c, map.containerPointToLayerPoint([0, 0]));
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, tam.x, tam.y);
+    if (map.getZoom() < ZOOM_NUMEROS) return;
+    const b = map.getBounds().pad(.05);
+    ctx.font = '700 12px ' + getComputedStyle(document.body).fontFamily; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineJoin = 'round'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.85)'; ctx.fillStyle = '#fff';
+    for (const n of ED.numeros) {
+      if (n[0] < b.getSouth() || n[0] > b.getNorth() || n[1] < b.getWest() || n[1] > b.getEast()) continue;
+      const p = map.latLngToContainerPoint([n[0], n[1]]);
+      ctx.strokeText(n[2], p.x, p.y); ctx.fillText(n[2], p.x, p.y);
+    }
+  },
+});
+const camadaNumeros = new CamadaNumeros();
+function desenharNumeros() { if (numerosLigados) { if (!map.hasLayer(camadaNumeros)) camadaNumeros.addTo(map); else camadaNumeros.desenhar(); } else if (map.hasLayer(camadaNumeros)) map.removeLayer(camadaNumeros); }
 function ligarNumeros(ligar) {
   numerosLigados = ligar === undefined ? !numerosLigados : ligar;
   desenharNumeros();
@@ -753,7 +793,8 @@ const CAMADAS = [
 const CtrlCamadas = L.Control.extend({ onAdd() {
   const box = L.DomUtil.create('div'); box.id = 'camadas';
   const b = L.DomUtil.create('button', 'vidro', box); b.id = 'btn-camadas'; b.type = 'button'; b.setAttribute('aria-expanded', 'false');
-  b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5 9-5z"/><path d="m3 12 9 5 9-5"/><path d="m3 16 9 5 9-5"/></svg><span class="txt">Camadas</span><span class="conta">0</span>';
+  b.setAttribute('aria-label', 'Camadas');
+  b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5z"/><path d="m3 12 9 5 9-5"/><path d="m3 16 9 5 9-5"/></svg><span class="txt">Camadas</span><span class="conta">0</span>';
   const lista = L.DomUtil.create('div', 'vidro', box); lista.id = 'lista-camadas'; lista.setAttribute('role', 'group'); lista.setAttribute('aria-label', 'Camadas');
   lista.innerHTML = '<h4>Camadas</h4>' + CAMADAS.map(c => `<button type="button" class="camada" id="${c.id}" aria-pressed="false"><span class="inter"></span>${c.texto}${c.nota ? `<small>${c.nota}</small>` : ''}</button>`).join('');
   L.DomEvent.disableClickPropagation(box); L.DomEvent.disableScrollPropagation(box);
@@ -773,12 +814,12 @@ function estadoCamada(id, ligada) {
   $('#btn-camadas .conta').textContent = n; $('#btn-camadas').classList.toggle('algumas', n > 0);
 }
 
-// ---------- pesquisa com escrita predicativa ----------
+// ---------- pesquisa com escrita preditiva ----------
 const INDICE_PESQUISA = [];
 function construirPesquisa() {
   INDICE_PESQUISA.length = 0;
   // cada entrada tem o nome completo e, nas vias, um alias sem o tipo («Saraiva de Carvalho» para «Rua Saraiva de Carvalho»)
-  const PREFIXO = /^(rua|avenida|av.|travessa|largo|praca|jardim|beco|calcada|estrada|alameda|escadinhas|patio|azinhaga|campo|rotunda|parque|mercado|igreja) (d[aeo]s? )?/;
+  const PREFIXO = /^(rua|avenida|av\.|travessa|largo|praca|jardim|beco|calcada|estrada|alameda|escadinhas|patio|azinhaga|campo|rotunda|parque|mercado|igreja) (d[aeo]s? )?/;
   const add = (nome, tipo, acao, cor) => {
     const chave = normalizar(nome), m = chave.match(PREFIXO);
     const nomes = [nome], chaves = [chave];
@@ -814,7 +855,7 @@ function atualizarPesquisa() {
   const q = inp.value;
   pesquisaBox.classList.toggle('com-texto', q.length > 0);
   resultados = procurar(q); ativo = -1;
-  // escrita predicativa: completa em cinzento com o primeiro resultado que começa pelo texto escrito
+  // escrita preditiva: completa em cinzento com o primeiro resultado que começa pelo texto escrito
   let comp = null;
   if (q && !q.endsWith(' ')) for (const r of resultados) { const k = r.chaves.findIndex(c => c.startsWith(normalizar(q)) && c.length > q.length); if (k >= 0) { comp = r.nomes[k]; break; } }
   ghost.innerHTML = comp ? `<span>${esc(q)}</span>${esc(comp.slice(q.length))}` : '';
@@ -845,7 +886,6 @@ inp.addEventListener('keydown', e => {
 });
 sug.addEventListener('mousedown', e => { const b = e.target.closest('button[data-i]'); if (b) { e.preventDefault(); escolher(+b.dataset.i); } });
 $('#pesquisa-limpar').addEventListener('click', () => { inp.value = ''; atualizarPesquisa(); inp.focus(); });
-document.addEventListener('click', e => { if (!pesquisaBox.contains(e.target)) sug.classList.remove('aberto'); });
 inp.addEventListener('blur', () => setTimeout(() => sug.classList.remove('aberto'), 150));
 
 // ---------- categorias (agrupam pontos, ruas e zonas) e visita guiada ----------
@@ -911,10 +951,10 @@ function definirMembro(cat, el, membro) {
 // ---- cartão de categoria (leitura e edição) ----
 function htmlCategoria(cat) {
   const membros = cat.membros.map(id => POR_ID[id]).filter(Boolean);
-  return `<div class="info"><h2><span class="pinta categoria" style="--c:${cat.cor}"></span><span>${cat.icone ? cat.icone + ' ' : ''}${esc(cat.nome)}</span></h2>
+  return `<div class="info"><h2><span class="pinta categoria" style="--c:${cat.cor}"></span><span>${cat.icone ? esc(cat.icone) + ' ' : ''}${esc(cat.nome)}</span></h2>
     <div class="tipo">Categoria · ${membros.length} elemento${membros.length === 1 ? '' : 's'}</div>
     <div class="linha"><button type="button" class="btn on" data-visitar="${cat.id}">▶ Visitar esta categoria</button><button type="button" class="btn" data-so-cat="${cat.id}">${categoriasAtivas.has(cat.id) && categoriasAtivas.size === 1 ? 'Mostrar tudo' : 'Mostrar só esta no mapa'}</button></div>
-    <div class="filhos"><h3>Nesta categoria</h3>${membros.map(e => `<button data-ir="${e.id}"><span class="pinta ${e.pai ? 'ponto' : e.tipo}" style="--c:${COR[e.pai ? 'ponto' : e.tipo]}"></span><span>${e.icone ? e.icone + ' ' : ''}${esc(e.nome)}</span></button>`).join('') || '<div class="nota">Ainda sem elementos.</div>'}</div></div>`;
+    <div class="filhos"><h3>Nesta categoria</h3>${membros.map(e => `<button data-ir="${e.id}"><span class="pinta ${e.pai ? 'ponto' : e.tipo}" style="--c:${COR[e.pai ? 'ponto' : e.tipo]}"></span><span>${e.icone ? esc(e.icone) + ' ' : ''}${esc(e.nome)}</span></button>`).join('') || '<div class="nota">Ainda sem elementos.</div>'}</div></div>`;
 }
 function htmlFormCategoria(cat) {
   const membros = cat.membros.map(id => POR_ID[id]).filter(Boolean), fora = todosElementos().filter(e => !cat.membros.includes(e.id));
@@ -922,8 +962,8 @@ function htmlFormCategoria(cat) {
     <label>Nome<input name="cat-nome" value="${esc(cat.nome)}"></label>
     <div class="linha"><label class="curto">Símbolo<input name="cat-icone" value="${esc(cat.icone)}" maxlength="4"></label><label class="curto cor">Cor<input type="color" name="cat-cor" value="${esc(cat.cor)}"></label></div>
     <div class="fotos-ed"><h3>Elementos nesta categoria</h3>
-      ${membros.map(e => `<div class="membro"><span class="pinta ${e.pai ? 'ponto' : e.tipo}" style="--c:${COR[e.pai ? 'ponto' : e.tipo]}"></span><span>${e.icone ? e.icone + ' ' : ''}${esc(e.nome)}</span><button type="button" class="fechar" data-ac="cat-tirar" data-id="${e.id}" aria-label="Tirar da categoria">✕</button></div>`).join('') || '<div class="nota">Ainda sem elementos. Acrescenta-os aqui ou nas caixas «Categorias» do cartão de cada elemento.</div>'}
-      <select name="cat-add" class="sel"><option value="">+ Acrescentar elemento…</option>${fora.map(e => `<option value="${e.id}">${esc(e.nome)}${e.pai ? ' (em ' + esc(e.pai.nome) + ')' : ''}</option>`).join('')}</select>
+      ${membros.map(e => `<div class="membro"><span class="pinta ${e.pai ? 'ponto' : e.tipo}" style="--c:${COR[e.pai ? 'ponto' : e.tipo]}"></span><span>${e.icone ? esc(e.icone) + ' ' : ''}${esc(e.nome)}</span><button type="button" class="fechar" data-ac="cat-tirar" data-id="${e.id}" aria-label="Tirar da categoria">✕</button></div>`).join('') || '<div class="nota">Ainda sem elementos. Acrescenta-os aqui ou nas caixas «Categorias» do cartão de cada elemento.</div>'}
+      <select name="cat-add" class="seletor"><option value="">+ Acrescentar elemento…</option>${fora.map(e => `<option value="${e.id}">${esc(e.nome)}${e.pai ? ' (em ' + esc(e.pai.nome) + ')' : ''}</option>`).join('')}</select>
     </div>
     <div class="acoes-ed"><button type="button" class="btn" data-visitar="${cat.id}">▶ Visitar</button><span class="esp"></span><button type="button" class="btn perigo" data-ac="cat-apagar">Apagar categoria</button><button type="button" class="btn on" data-ac="concluir">Concluído</button></div></form>`;
 }
@@ -933,7 +973,7 @@ function mostrarCategoria(cat) {
   const marg = margensVoo(null, edicao);
   modal.classList.toggle('lado', edicao && marg.modo === 'lado'); modal.classList.toggle('baixo', edicao && marg.modo !== 'lado');
   modalConteudo.innerHTML = edicao ? htmlFormCategoria(cat) : htmlCategoria(cat);
-  modal.querySelector('.cartao').scrollTop = 0; modal.classList.add('aberto');
+  modal.querySelector('.cartao').scrollTop = 0; modal.classList.add('aberto'); document.body.classList.add('cartao-aberto');
 }
 // ---- visita guiada: lista de destaques (personalizável) ou membros de uma categoria ----
 let passos = [], visitaAtual = null; // null = visita completa; senão, id da categoria
@@ -971,8 +1011,9 @@ function preencherSeletor() {
   gSel.value = visitaAtual || ''; gSel.style.display = C.categorias.length ? '' : 'none';
 }
 function ligarGuiao(ligar, catId) {
-  if (ligar && edicao) return;
-  guiao.classList.toggle('aberto', ligar);
+  if (ligar && edicao) { aviso('Sai do modo de edição para fazer a visita.', 2500); return; }
+  if (ligar && !listaVisita(catId || null).length) { aviso(catId ? 'Esta categoria ainda não tem elementos.' : 'A visita não tem destaques.', 3000); return; }
+  guiao.classList.toggle('aberto', ligar); document.body.classList.toggle('visita-aberta', ligar);
   btnGuiao.classList.toggle('on', ligar);
   btnGuiao.textContent = ligar ? '■ Sair da visita' : '▶ Visita guiada';
   if (ligar) {
@@ -984,10 +1025,11 @@ function ligarGuiao(ligar, catId) {
 btnGuiao.addEventListener('click', () => ligarGuiao(!guiaoAberto()));
 gSel.addEventListener('change', () => { visitaAtual = gSel.value || null; irPasso(0); });
 $('#g-sair').addEventListener('click', () => ligarGuiao(false));
-$('#g-prev').addEventListener('click', () => irPasso(passo - 1));
-$('#g-next').addEventListener('click', () => irPasso(passo + 1));
+$('#g-prev').addEventListener('click', e => { irPasso(passo - 1); e.currentTarget.blur(); }); // sem foco no botão, a tecla Espaço não avança dois passos
+$('#g-next').addEventListener('click', e => { irPasso(passo + 1); e.currentTarget.blur(); });
 document.addEventListener('keydown', e => {
-  if (e.target && e.target.matches && e.target.matches('input, textarea, select')) return;
+  if (e.target && e.target.matches && e.target.matches('input, textarea, select')) { if (e.key === 'Escape' && edicao && ferramenta !== 'mover') { porFerramenta('mover'); e.target.blur(); } return; }
+  if ((e.key === ' ' || e.key === 'Enter') && e.target && e.target.matches && e.target.matches('button, a')) return; // o botão trata da sua própria ativação
   if (e.key === 'Escape') {
     if (lightbox.classList.contains('aberto')) { lightbox.classList.remove('aberto'); return; }
     if (edicao && ferramenta !== 'mover') { porFerramenta('mover'); return; }
@@ -1027,7 +1069,7 @@ function aviso(txt, ms) {
 // ---------- modo de edição ----------
 // A apresentação arranca em modo de visualização; o lápis (canto superior direito) liga a edição.
 let edicao = false, ferramenta = 'mover', desenho = [], tempLinha = null, tempPontos = [], aPintar = false, alterado = false, criados = 0;
-let alvoZona = null, servidorOk = null, FICHEIRO = null; // FICHEIRO: o preset tal como está em dados/conteudos.js
+let alvoZona = null, servidorOk = null, FICHEIRO = null, autoFalhou = false; // FICHEIRO: o preset tal como está em dados/conteudos.js
 const btnEditar = $('#btn-editar'), barra = $('#barra-edicao'), estadoEl = $('#estado-edicao');
 const DICAS = {
   mover: 'Arrasta os pontos; larga um ponto sobre uma zona para o meter lá dentro. Clica num elemento para editar o cartão; numa zona, arrasta os vértices (duplo clique apaga um).',
@@ -1092,8 +1134,8 @@ const arredLL = ll => [+ll.lat.toFixed(6), +ll.lng.toFixed(6)];
 const CHAVE_AUTO = 'co-autosave';
 function estado(txt, sujo) { estadoEl.textContent = txt; barra.classList.toggle('sujo', !!sujo); }
 function autoGuardar() {
-  try { localStorage.setItem(CHAVE_AUTO, JSON.stringify({ quando: Date.now(), dados: serializar() })); $('#estado-auto').textContent = 'auto-save ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5); }
-  catch (err) { $('#estado-auto').textContent = 'auto-save indisponível'; }
+  try { localStorage.setItem(CHAVE_AUTO, JSON.stringify({ quando: Date.now(), dados: serializar() })); $('#estado-auto').textContent = 'gravação automática ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5); autoFalhou = false; }
+  catch (err) { $('#estado-auto').textContent = 'gravação automática indisponível'; if (!autoFalhou) { autoFalhou = true; aviso('A gravação automática no browser falhou (sem espaço, provavelmente por fotos embebidas). Guarda ou exporta para não perderes o trabalho.', 8000); } }
 }
 function marcarAlterado() {
   alterado = true; estado('Alterações por guardar', true);
@@ -1132,27 +1174,33 @@ function importarPreset(ficheiro) {
 }
 function reporDoFicheiro() {
   if (!confirm('Descartar o trabalho em curso e voltar ao que está em dados/conteudos.js?')) return;
-  carregar(clonar(FICHEIRO)); alterado = false; localStorage.removeItem(CHAVE_AUTO);
-  estado('Reposto do ficheiro'); $('#estado-auto').textContent = 'auto-save ligado'; aviso('Reposto a partir de dados/conteudos.js.', 3000);
+  carregar(clonar(FICHEIRO)); alterado = false; try { localStorage.removeItem(CHAVE_AUTO); } catch (err) { /* sem storage */ }
+  estado('Reposto do ficheiro'); $('#estado-auto').textContent = 'gravação automática ligada'; aviso('Reposto a partir de dados/conteudos.js.', 3000);
 }
-function restaurarAutosave() { // ao abrir a página: repõe o preset em curso da sessão anterior, se for diferente do ficheiro
-  try {
-    const r = JSON.parse(localStorage.getItem(CHAVE_AUTO) || 'null');
-    if (!r || !r.dados || JSON.stringify(r.dados) === JSON.stringify(FICHEIRO)) return;
-    carregar(clonar(r.dados)); alterado = true;
-    estado('Alterações por guardar (recuperadas de ' + new Date(r.quando).toLocaleString('pt-PT') + ')', true);
-    aviso('Trabalho da sessão anterior recuperado; ainda não está gravado em dados/conteudos.js.', 7000);
-  } catch (err) { /* auto-save ilegível: fica o ficheiro */ }
+async function restaurarAutosave() { // ao abrir a página: repõe o preset em curso da sessão anterior, se for diferente do ficheiro e mais recente
+  let r; try { r = JSON.parse(localStorage.getItem(CHAVE_AUTO) || 'null'); } catch (err) { return; }
+  if (!r || !r.dados || JSON.stringify(r.dados) === JSON.stringify(FICHEIRO)) return;
+  try { // se o ficheiro foi alterado depois da gravação automática (à mão ou noutro browser), vale o ficheiro
+    const h = await fetch('dados/conteudos.js', { method: 'HEAD', cache: 'no-store' });
+    const mod = h.ok && h.headers.get('Last-Modified') ? Date.parse(h.headers.get('Last-Modified')) : 0;
+    if (mod && mod > r.quando) { localStorage.removeItem(CHAVE_AUTO); aviso('O ficheiro dados/conteudos.js é mais recente do que a gravação automática; ficou o ficheiro.', 6000); return; }
+  } catch (err) { /* sem servidor: não há como comparar; vale a gravação automática */ }
+  if (location.hash && POR_ID[location.hash.slice(1)] && selecionado) { /* mantém a seleção pedida no endereço */ }
+  carregar(clonar(r.dados)); alterado = true;
+  estado('Alterações por guardar (recuperadas de ' + new Date(r.quando).toLocaleString('pt-PT') + ')', true);
+  aviso('Trabalho da sessão anterior recuperado; ainda não está gravado em dados/conteudos.js.', 7000);
+  let sel = null; try { sel = POR_ID[decodeURIComponent(location.hash.slice(1))]; } catch (err) { /* ignora */ }
+  if (sel) selecionar(sel, true);
 }
 function limpo(el) {
   const c = { id: el.id, tipo: el.tipo, nome: el.nome };
   if (el.icone) c.icone = el.icone;
   c.texto = el.texto || '';
   c.fotos = (el.fotos || []).map(f => typeof f === 'string' ? { src: f, legenda: '' } : { src: f.src, legenda: f.legenda || '' });
-  if (el.tipo === 'ponto') c.pos = el.pos;
-  if (el.tipo === 'grupo') c.pontos = el.pontos;
-  if (el.tipo === 'rua') { if (el.rua) c.rua = el.rua; else c.linhas = el.linhas; }
-  if (el.tipo === 'zona') { c.poligono = el.poligono; if (el.lote) c.lote = el.lote; c.filhos = el.filhos.map(limpo); }
+  if (el.tipo === 'ponto') c.pos = el.pos.slice();
+  if (el.tipo === 'grupo') c.pontos = el.pontos.map(p => p.slice());
+  if (el.tipo === 'rua') { if (el.rua) c.rua = el.rua; else c.linhas = el.linhas.map(l => l.map(p => p.slice())); }
+  if (el.tipo === 'zona') { c.poligono = el.poligono.map(p => p.slice()); if (el.lote) c.lote = el.lote; c.filhos = el.filhos.map(limpo); }
   return c;
 }
 function serializar() {
@@ -1167,7 +1215,8 @@ function ficheiroConteudos(d) {
     'window.CONTEUDOS = ' + JSON.stringify(d, null, 1) + ';\n';
 }
 function carregar(d) {
-  limparSelecao(); fecharCartao();
+  limparSelecao(); limparRuaDestaque(); fecharCartao(); categoriaAtual = null;
+  if (guiaoAberto()) ligarGuiao(false); visitaAtual = null; passos = [];
   ELEMENTOS.length = 0; for (const k in POR_ID) delete POR_ID[k];
   C.titulo = d.titulo; C.subtitulo = d.subtitulo;
   for (const e of d.elementos || []) { const p = preparar(e, null); if (p) ELEMENTOS.push(p); }
@@ -1176,7 +1225,7 @@ function carregar(d) {
   if (edicao) { $('#ed-titulo').value = C.titulo || ''; $('#ed-subtitulo').value = C.subtitulo || ''; }
 }
 async function verificarServidor() { // o servidor local (tools/serve.mjs) aceita gravação; um servidor qualquer ou file:// não
-  if (servidorOk !== null) return servidorOk;
+  if (servidorOk === true) return true; // se não havia servidor, volta a perguntar (pode ter sido ligado entretanto)
   try { const r = await fetch('/guardar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"sonda":true}' }); const j = r.ok ? await r.json() : {}; servidorOk = !!j.sonda; }
   catch (err) { servidorOk = false; }
   barra.classList.toggle('offline', !servidorOk);
@@ -1214,7 +1263,7 @@ function acrescentar(el, pai) {
   selecionar(p, false);
   setTimeout(() => { const i = modalConteudo.querySelector('input[name=nome]'); if (i) { i.focus(); i.select(); } }, 60);
 }
-function novoPonto(ll) { criados++; acrescentar({ tipo: 'ponto', nome: 'Novo ponto ' + criados, icone: '📍', pos: arredLL(ll) }, zonaEm(ll, null)); }
+function novoPonto(ll) { criados++; const z = zonaEm(ll, null); acrescentar({ tipo: 'ponto', nome: 'Novo ponto ' + criados, icone: '📍', pos: arredLL(ll) }, z && !z.oculto ? z : null); }
 function terminarZona(pts) {
   cancelarDesenho();
   if (pts.length < 3) return;
@@ -1324,10 +1373,10 @@ function htmlForm(el) {
     <div class="linha"><button type="button" class="btn" data-ac="ligacao">🔗 Ligação</button><button type="button" class="btn" data-ac="negrito"><b>B</b> Negrito</button><button type="button" class="btn" data-ac="italico"><i>I</i> Itálico</button></div>
     <div class="fotos-ed"><h3>Fotos</h3>
       ${fotos.map((f, i) => `<div class="foto-ed"><img src="${esc(f.src)}" alt="" loading="lazy"><div><input name="foto-src" data-i="${i}" value="${esc(f.src)}" placeholder="assets/fotos/ficheiro.jpg ou https://…"><input name="foto-leg" data-i="${i}" value="${esc(f.legenda || '')}" placeholder="Legenda"></div><button type="button" class="fechar" data-ac="foto-remover" data-i="${i}" aria-label="Remover foto">✕</button></div>`).join('')}
-      <div class="linha"><button type="button" class="btn" data-ac="foto-ficheiro">📷 Adicionar ficheiro…</button><button type="button" class="btn" data-ac="foto-url">🔗 Adicionar por endereço</button><input type="file" name="ficheiros" accept="image/*" multiple hidden></div>
+      <div class="linha"><button type="button" class="btn" data-ac="foto-ficheiro">📷 Acrescentar ficheiro…</button><button type="button" class="btn" data-ac="foto-url">🔗 Acrescentar por endereço</button><input type="file" name="ficheiros" accept="image/*" multiple hidden></div>
     </div>
     <div class="fotos-ed"><h3>Categorias e visita</h3>
-      <div class="checks">${C.categorias.map(c => `<label class="check"><input type="checkbox" name="cat" value="${c.id}" ${c.membros.includes(el.id) ? 'checked' : ''}><span class="pinta categoria" style="--c:${c.cor}"></span>${c.icone ? c.icone + ' ' : ''}${esc(c.nome)}</label>`).join('') || '<span class="nota">Ainda não há categorias: cria-as no índice (☰), em «+ Nova categoria».</span>'}</div>
+      <div class="checks">${C.categorias.map(c => `<label class="check"><input type="checkbox" name="cat" value="${c.id}" ${c.membros.includes(el.id) ? 'checked' : ''}><span class="pinta categoria" style="--c:${c.cor}"></span>${c.icone ? esc(c.icone) + ' ' : ''}${esc(c.nome)}</label>`).join('') || '<span class="nota">Ainda não há categorias: cria-as no índice (☰), em «+ Nova categoria».</span>'}</div>
       <label class="check destaque"><input type="checkbox" name="visita" ${visitaIds().includes(el.id) ? 'checked' : ''}>Destaque na visita guiada</label>
     </div>
     <div class="acoes-ed"><button type="button" class="btn" data-ac="subir" title="Mover para cima na ordem">↑</button><button type="button" class="btn" data-ac="descer" title="Mover para baixo na ordem">↓</button><span class="esp"></span><button type="button" class="btn perigo" data-ac="apagar">Apagar</button><button type="button" class="btn on" data-ac="concluir">Concluído</button></div>
@@ -1411,7 +1460,7 @@ modalConteudo.addEventListener('click', async e => {
   }
   if (!selecionado) return;
   const el = selecionado, ac = b.dataset.ac, form = modalConteudo.querySelector('form'), ta = form.querySelector('textarea[name=texto]');
-  if (ac === 'ligacao') { const url = prompt('Endereço da ligação:', 'https://'); if (url) envolver(ta, `<a href="${url}" target="_blank" rel="noopener">`, '</a>', 'texto da ligação'); }
+  if (ac === 'ligacao') { const url = prompt('Endereço da ligação:', 'https://'); if (url) envolver(ta, `<a href="${esc(url.trim())}" target="_blank" rel="noopener">`, '</a>', 'texto da ligação'); }
   else if (ac === 'negrito') envolver(ta, '<b>', '</b>', 'texto');
   else if (ac === 'italico') envolver(ta, '<i>', '</i>', 'texto');
   else if (ac === 'foto-remover') { el.fotos.splice(+b.dataset.i, 1); marcarAlterado(); mostrarInfo(el, modal.classList.contains('lado') ? 'lado' : 'baixo'); }
@@ -1433,13 +1482,20 @@ map.on('click', e => {
 map.on('dblclick', e => { if (edicao && ferramenta === 'poligono') { L.DomEvent.stop(e); terminarZona(desenho.slice(0, -1)); } });
 map.on('mousedown', e => { if (edicao && ferramenta === 'pincel') { aPintar = true; desenho = [e.latlng]; } });
 map.on('mousemove', e => { if (aPintar) { desenho.push(e.latlng); atualizarTemp(); } });
-map.on('mouseup', () => {
+L.DomEvent.on(document, 'mouseup', () => { if (aPintar) terminarPincel(); }); // largar o rato fora do mapa também termina a zona
+function terminarPincel() {
   if (!aPintar) return; aPintar = false;
   const pts = L.LineUtil.simplify(desenho.map(ll => map.latLngToLayerPoint(ll)), 4).map(p => map.layerPointToLatLng(p));
   terminarZona(pts);
-});
+}
+// pincel com o dedo (o Leaflet não traduz toques em mousedown/mousemove)
+const contentor = map.getContainer();
+contentor.addEventListener('touchstart', e => { if (edicao && ferramenta === 'pincel' && e.touches.length === 1) { aPintar = true; desenho = [map.mouseEventToLatLng(e.touches[0])]; e.preventDefault(); } }, { passive: false });
+contentor.addEventListener('touchmove', e => { if (aPintar && e.touches.length) { desenho.push(map.mouseEventToLatLng(e.touches[0])); atualizarTemp(); e.preventDefault(); } }, { passive: false });
+contentor.addEventListener('touchend', () => { if (aPintar) terminarPincel(); });
 btnEditar.addEventListener('click', () => entrarEdicao());
 $('#btn-sair-edicao').addEventListener('click', () => entrarEdicao(false));
+$('#btn-mais').addEventListener('click', () => { const mais = barra.classList.toggle('mais'); $('#btn-mais').setAttribute('aria-expanded', String(mais)); $('#btn-mais').classList.toggle('on', mais); });
 $('#btn-guardar').addEventListener('click', guardar);
 $('#btn-transferir').addEventListener('click', () => transferir());
 $('#btn-novo-preset').addEventListener('click', novoPreset);
@@ -1450,12 +1506,12 @@ $('#btn-repor-ficheiro').addEventListener('click', reporDoFicheiro);
 barra.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => porFerramenta(b.dataset.tool)));
 $('#ed-titulo').addEventListener('input', e => { C.titulo = e.target.value.trim(); aplicarTitulo(); marcarAlterado(); });
 $('#ed-subtitulo').addEventListener('input', e => { C.subtitulo = e.target.value.trim(); aplicarTitulo(); marcarAlterado(); });
-window.addEventListener('beforeunload', e => { if (alterado) { e.preventDefault(); e.returnValue = ''; } });
+window.addEventListener('beforeunload', e => { if (alterado && edicao) { e.preventDefault(); e.returnValue = ''; } }); // só avisa quem está a editar; o trabalho fica na gravação automática
 
 // ---------- arranque ----------
 construir(); construirIndice(); construirRuas(); construirPesquisa();
-FICHEIRO = serializar(); restaurarAutosave();
-const inicial = POR_ID[decodeURIComponent(location.hash.slice(1))];
+FICHEIRO = clonar(serializar()); restaurarAutosave();
+let inicial = null; try { inicial = POR_ID[decodeURIComponent(location.hash.slice(1))]; } catch (err) { /* hash malformado: ignora */ }
 if (inicial) map.whenReady(() => setTimeout(() => selecionar(inicial, true), 300));
 if (EDITOR) entrarEdicao(true); // ?editor abre logo em modo de edição; por predefinição arranca em visualização
 window.__mapa = { map, C, ELEMENTOS, POR_ID, RUAS_VISTA, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva, entrarEdicao, porFerramenta, serializar, guardar, carregar, lerPreset, novoPreset, importarPreset, reporDoFicheiro, largarPonto, novoPonto, criarRua, criarDeLote, novaCategoria, definirMembro, alternarCategoria, editarVisita, mostrarCategoria, categoriasAtivas, get edicao() { return edicao; }, get ferramenta() { return ferramenta; }, get passos() { return passos; } };

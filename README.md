@@ -17,7 +17,8 @@ não grava diretamente (transfere o ficheiro).
 
 ## Modo de edição
 
-Liga-se no lápis (canto superior direito). Barra de ferramentas no topo:
+Liga-se no lápis (canto superior direito). Barra de ferramentas no topo (em telemóvel mostra só as
+ferramentas; «⋯ Mais» abre o título, o subtítulo e os presets):
 
 - **Mover**: clicar num elemento abre o cartão em modo de formulário; arrastar um ponto muda a posição; largar
   um ponto sobre uma zona mete-o dentro dela (enquanto se arrasta sobre a zona, o ponto encolhe e pulsa e a
@@ -37,7 +38,8 @@ Liga-se no lápis (canto superior direito). Barra de ferramentas no topo:
   Em cada cartão de elemento há caixas para o pôr nas categorias. Um elemento pode estar em várias.
 - **Cartão em modo de formulário**: nome, símbolo, texto (parágrafos separados por linha em branco; aceita HTML,
   com botões para ligação, negrito e itálico), fotos (ficheiros do computador, que o servidor grava em
-  `assets/fotos/`, ou por endereço; legenda por foto), ordem no índice e no guião (↑ ↓), apagar.
+  `assets/fotos/`, ou por endereço; legenda por foto), ordem no índice (↑ ↓; a visita segue esta ordem
+  enquanto não for personalizada), caixas de categorias e de destaque na visita, apagar.
 - **Guardar** escreve `dados/conteudos.js` através do servidor local (o ficheiro anterior fica em
   `dados/conteudos.anterior.js`).
 - **Presets** (terceira linha da barra): **Novo** começa um preset vazio, com aviso de que elimina o atual e
@@ -46,13 +48,29 @@ Liga-se no lápis (canto superior direito). Barra de ferramentas no topo:
   **Transferir conteudos.js** descarrega o ficheiro no formato de `dados/conteudos.js`, para quando a
   apresentação não está servida por `tools/serve.mjs` (nesse caso as fotos ficam embebidas); **Repor do
   ficheiro** descarta o trabalho em curso e volta ao que está em `dados/conteudos.js`.
-- **Auto-save**: cada alteração fica guardada no browser (localStorage) e é reposta automaticamente ao abrir a
-  página, mesmo que não se tenha gravado o ficheiro; a barra indica «Alterações por guardar (recuperadas de
-  …)». Só se perde com «Repor do ficheiro» ou ao limpar os dados do site.
+- **Gravação automática**: cada alteração fica guardada no browser (localStorage) e é reposta automaticamente ao
+  abrir a página, mesmo que não se tenha gravado o ficheiro; a barra indica «Alterações por guardar
+  (recuperadas de …)». Se `dados/conteudos.js` tiver sido alterado depois (à mão ou noutro browser), vale o
+  ficheiro. Só se perde com «Repor do ficheiro» ou ao limpar os dados do site. O aviso ao fechar a página só
+  aparece em modo de edição.
+
+## Modelo de `dados/conteudos.js`
+
+`window.CONTEUDOS = { titulo, subtitulo, elementos, visita?, categorias? }`
+
+- Elemento: `{ id, tipo, nome, icone?, texto, fotos, … }` com `tipo` em `ponto` (`pos: [lat, lon]`), `grupo`
+  (`pontos: [[lat, lon], …]`), `rua` (`linhas: [[[lat, lon], …], …]` ou `rua: 'Nome'` para ir buscar o traçado
+  a `geo.js`/`ruas.js`) e `zona` (`poligono: [[lat, lon], …]` ou `area: 'Nome'` de `geo.js`; `lote` guarda o
+  código SIG quando veio do cadastro; `filhos`: pontos dentro da zona).
+- `texto`: string (pode ter HTML) ou lista de parágrafos. `fotos`: `[{ src, legenda }]` (`src` é um caminho
+  como `assets/fotos/x.jpg`, um endereço ou, sem servidor, uma imagem embebida).
+- `visita`: lista de ids pela ordem dos destaques (ausente = todos os elementos de topo, pela ordem do índice).
+- `categorias`: `[{ id, nome, icone, cor, membros: [ids] }]`.
 
 ## Ficheiros
 
-- `index.html` — a apresentação final, pensada para ecrãs 16:9 mas funcional em tablet e telemóvel. Satélite
+- `index.html` — a apresentação final, pensada para ecrãs 16:9 mas funcional em tablet e telemóvel (em ecrãs
+  estreitos o zoom faz-se com os dedos e os controlos saem da frente do cartão e da visita). Satélite
   DGT OrtoSat 2023 em direto por WMS, com a imagem fixa por baixo (aparece logo e fica como reserva automática
   se o servidor da DGT falhar ou não houver rede); exterior da freguesia escurecido a 72 %. Os pontos de
   interesse são círculos coloridos por tipo, que pulsam ao passar o cursor; a informação abre num cartão
@@ -62,13 +80,13 @@ Liga-se no lápis (canto superior direito). Barra de ferramentas no topo:
   visita completa e a visita de cada categoria) e «Vista geral». As categorias também aparecem na pesquisa e,
   nos cartões, como chips que abrem o cartão da categoria (lista de membros, «Visitar», «Mostrar só esta»). Em cima à direita,
   uma caixa de pesquisa discreta (atalho: tecla /) que procura lugares, zonas e todas as ruas, sem acentos,
-  com escrita predicativa (a conclusão aparece a cinzento; Tab ou → aceita; ↑ ↓ e Enter escolhem na lista).
+  com escrita preditiva (a conclusão aparece a cinzento; Tab ou → aceita; ↑ ↓ e Enter escolhem na lista).
   Em baixo à esquerda, o botão «Camadas» abre um painel colapsável (fechado ao arrancar) com quatro camadas
   opcionais, todas desligadas por predefinição: «Pontos nas zonas» (mostra sempre os pontos escondidos dentro
   das zonas); «Nomes das ruas» (traçado de todas as ruas da freguesia, OSM: ao passar o cursor a rua
   ilumina-se e o nome surge ao longo da via; a partir do zoom 17 aparecem os nomes de todas as que têm
-  comprimento para isso); «Números de polícia» (do cadastro municipal, visíveis a partir do zoom 17,5, só
-  para o que está no ecrã); e «Lotes do cadastro» (contornos dos 2689 edifícios da cartografia municipal
+  comprimento para isso); «Números de polícia» (do cadastro municipal, desenhados num canvas a partir do
+  zoom 17,5, só para o que está no ecrã); e «Lotes do cadastro» (contornos dos 2689 edifícios da cartografia municipal
   1/1000, com a morada ao passar o cursor). Os pontos dentro
   de uma zona ficam escondidos até se selecionar a zona (ou um deles, pelo índice ou pela pesquisa), ou até
   se ligar o interruptor «Pontos nas zonas». Carregar numa zona faz o mapa voar até ela ocupar o máximo do
