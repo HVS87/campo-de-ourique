@@ -19,16 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-This license covers the source code of this project (HTML, CSS, JavaScript and
-the scripts in tools/). Third-party data and images keep their own licenses:
-
-- vendor/leaflet/: Leaflet 1.9.4, BSD 2-Clause License (c) Vladimir Agafonkin, CloudMade.
-- assets/satelite-dgt-2023.jpg and the live imagery: DGT OrtoSat 2023, CC BY 4.0.
-- dados/geo.js, dados/ruas.js, dados/campo-de-ourique.geojson and street, building and
-  place geometries derived from OpenStreetMap in dados/presets/: (c) OpenStreetMap
-  contributors, ODbL 1.0.
-- dados/edificado.js: Câmara Municipal de Lisboa, open data (service «Edificado e Vias»).
-- assets/fotos/exemplos/: Wikimedia Commons, authors and licenses in CREDITOS.md.

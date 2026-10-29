@@ -132,12 +132,6 @@ camada `ortoSat2023-CorVerdadeira` (~0,3 m/píxel).
 
 ## Licença
 
-O código deste projeto (HTML, CSS, JavaScript e os scripts em `tools/`) está sob a licença MIT: ver
-[LICENSE](LICENSE). Os dados e as imagens de terceiros mantêm as suas licenças:
-
-- Leaflet 1.9.4 (`vendor/leaflet/`): licença BSD 2-Clause.
-- Ortoimagens DGT OrtoSat 2023: CC BY 4.0.
-- Limite da freguesia, ruas e geometrias derivadas do OpenStreetMap: © colaboradores do OpenStreetMap, ODbL 1.0.
-- Edificado e números de polícia (`dados/edificado.js`): Câmara Municipal de Lisboa, dados abertos.
-- Imagens exemplificativas (`assets/fotos/exemplos/`): Wikimedia Commons, com autor e licença em
-  [CREDITOS.md](assets/fotos/exemplos/CREDITOS.md).
+O código deste projeto está sob a licença MIT: ver [LICENSE](LICENSE). Os dados e as imagens de terceiros
+(Leaflet, DGT, OpenStreetMap, Câmara Municipal de Lisboa e Wikimedia Commons) mantêm as suas licenças, listadas
+em [LICENCAS-TERCEIROS.md](LICENCAS-TERCEIROS.md).
