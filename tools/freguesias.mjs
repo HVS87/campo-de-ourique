@@ -4,6 +4,7 @@
 //   node tools/freguesias.mjs                 → todas as freguesias (exceto os dados base de Campo de Ourique)
 //   node tools/freguesias.mjs ajuda belem     → só estas
 //   node tools/freguesias.mjs --sem-imagem    → não descarrega as imagens de satélite de reserva
+//   node tools/freguesias.mjs --so-limites    → só a lista das freguesias e os limites do mapa geral (dados/freguesias/limites.js)
 //
 // Por freguesia, em dados/freguesias/<id>/: geo.js (limite e imagem de reserva), ruas.js (vias da CML recortadas
 // ao limite), edificado.js (lotes e números de polícia), verdes.js (espaços verdes e hortas urbanas), satelite.jpg,
@@ -140,6 +141,21 @@ fs.writeFileSync(path.join(ROOT, 'dados', 'freguesias', 'index.js'),
   '// Freguesias de Lisboa: limites © Câmara Municipal de Lisboa (serviço «Base_Freguesias»). Gerado por tools/freguesias.mjs.\n' +
   '// Os dados de cada uma estão em dados/freguesias/<id>/ (Campo de Ourique: em dados/) e só são carregados quando se escolhe a freguesia.\n' +
   'window.FREGUESIAS = ' + JSON.stringify(FREGS.map(f => ({ id: f.id, nome: f.nome, cod: f.cod, ha: f.ha, bbox: f.bbox }))) + ';\n');
+
+// limites simplificados das 24 freguesias para o mapa geral da cidade (carregado só quando se abre esse mapa)
+function poloRotulo(anel) { // ponto interior mais afastado do contorno, por procura em grelha (para o nome ficar bem dentro)
+  const lats = anel.map(p => p[0]), lons = anel.map(p => p[1]);
+  const [a0, a1, o0, o1] = [Math.min(...lats), Math.max(...lats), Math.min(...lons), Math.max(...lons)];
+  const distBorda = q => { let d = Infinity; for (let i = 0, j = anel.length - 1; i < anel.length; j = i++) { const A = m(anel[j]), B = m(anel[i]), P = m(q); const dx = B[0] - A[0], dy = B[1] - A[1]; const L2 = dx * dx + dy * dy || 1e-9; const t = Math.max(0, Math.min(1, ((P[0] - A[0]) * dx + (P[1] - A[1]) * dy) / L2)); d = Math.min(d, Math.hypot(P[0] - A[0] - t * dx, P[1] - A[1] - t * dy)); } return d; };
+  let melhor = centroide(anel), md = dentroAnel(melhor, anel) ? distBorda(melhor) : -1;
+  for (let i = 1; i < 30; i++) for (let k = 1; k < 30; k++) { const q = [a0 + (a1 - a0) * i / 30, o0 + (o1 - o0) * k / 30]; if (!dentroAnel(q, anel)) continue; const d = distBorda(q); if (d > md) { md = d; melhor = q; } }
+  return arred(melhor);
+}
+fs.writeFileSync(path.join(ROOT, 'dados', 'freguesias', 'limites.js'),
+  '// Limites simplificados (8 m) das freguesias de Lisboa, para o mapa geral da cidade: © Câmara Municipal de Lisboa (serviço «Base_Freguesias»).\n' +
+  '// Gerado por tools/freguesias.mjs. aneis: [[[lat, lon], ...], ...] (a maior parte primeiro); rotulo: onde fica o nome.\n' +
+  'window.LIMITES_FREGUESIAS = ' + JSON.stringify(FREGS.map(f => ({ id: f.id, nome: f.nome, ha: f.ha, aneis: f.aneis.map(a => simplificar(a, 8)), rotulo: poloRotulo(f.aneis[0]) }))) + ';\n');
+if (args.includes('--so-limites')) { console.log('escritos dados/freguesias/index.js e limites.js'); process.exit(0); }
 
 // ---------- 2. dados de cada freguesia ----------
 const merc = lat => Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360)) * 6378137, X = lon => lon * Math.PI / 180 * 6378137;

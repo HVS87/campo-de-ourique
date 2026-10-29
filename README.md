@@ -20,6 +20,16 @@ seu `conteudos.js`.
   municipal, com nome, área e gestão ao passar o cursor) e «Mapa da cidade», que troca o satélite pelo mapa do
   OpenStreetMap como fundo (a escolha fica lembrada).
 
+### Mapa de Lisboa
+
+O botão do mapa por cima do zoom (canto inferior esquerdo), «🗺 Lisboa» no índice ou «Ver todas no mapa de
+Lisboa» na lista das freguesias afastam o mapa até à cidade inteira, dividida pelas 24 freguesias, com o nome de
+cada uma. Também se chega lá ao continuar a afastar (roda do rato ou «−») depois da vista geral da freguesia.
+Ao passar o cursor, a freguesia pulsa e a barra de baixo mostra o nome e a área; um clique abre-a. No ecrã tátil,
+o primeiro toque realça a freguesia e o segundo (ou «Abrir …» na barra) abre-a. «← Voltar» (ou Esc) regressa à
+freguesia aberta, e a pesquisa encontra também as freguesias. `?cidade` no endereço abre logo neste mapa. Os
+limites (`dados/freguesias/limites.js`, 38 kB) só se descarregam quando se abre o mapa de Lisboa.
+
 ## Como abrir
 
 ```bash
@@ -41,7 +51,19 @@ ferramentas; «⋯ Mais» abre o título, o subtítulo e os presets):
   zona pisca, a indicar que vai «mergulhar»); arrastar um ponto para fora da zona tira-o de lá. Numa zona
   selecionada aparecem os vértices: arrastam-se, os pontos médios criam vértices novos e um duplo clique num
   vértice apaga-o.
+- **Botão «+»** (canto inferior direito, só em edição): abre a lista do que se pode criar: ponto, conjunto de
+  pontos, ponto desmaterializado, rua, zona, zona livre e lote. Em telemóveis e tablets tem também «Ponto onde
+  estou» e «Rua onde estou», que usam a localização do aparelho (a rua é a mais próxima, até 60 m; fora da
+  freguesia, pergunta antes).
 - **Ponto**: um clique no mapa cria um ponto (dentro de uma zona fica filho dela).
+- **Conjunto**: vários pontos no mapa com um só cartão. Cada clique acrescenta um ponto; Esc ou «Concluído»
+  termina. No cartão do conjunto há a lista dos pontos (✕ tira um) e «＋ Acrescentar pontos no mapa»; um ponto
+  também se pode «Transformar em conjunto».
+- **Pontos desmaterializados**: sem lugar no mapa, aparecem como um ícone circular no canto superior direito,
+  por baixo do lápis. Com mais de um, ficam empilhados (com o número): clicar, ou deixar o cursor 3 s por cima,
+  abre-os numa fila vertical com os nomes (com deslocamento quando não cabem no ecrã), e tirar o cursor volta a
+  empilhá-los. Criam-se no «+» ou com «◌ Desmaterializar» no cartão de um ponto; «📍 Pôr no mapa» faz o caminho
+  inverso.
 - **Zona** (vértices, duplo clique termina) e **Zona livre** (pincel): desenham zonas novas.
 - **Rua**: liga a camada das ruas e um clique numa rua cria o elemento com o traçado do OpenStreetMap.
 - **Lote**: liga a camada dos lotes e um clique num lote cria uma zona com o contorno do cadastro.
@@ -52,19 +74,27 @@ ferramentas; «⋯ Mais» abre o título, o subtítulo e os presets):
 - **Categorias** (no índice, em edição): «+ Nova categoria» abre o cartão da categoria com nome, símbolo, cor,
   lista de membros (tirar com ✕, acrescentar pelo seletor) e «Apagar categoria»; ✎ num chip volta a abrir.
   Em cada cartão de elemento há caixas para o pôr nas categorias. Um elemento pode estar em várias.
-- **Cartão em modo de formulário**: nome, símbolo, texto (parágrafos separados por linha em branco; aceita HTML,
+- **Cartão em modo de formulário**: nome, prioridade, competência, símbolo, texto (parágrafos separados por linha em branco; aceita HTML,
   com botões para ligação, negrito e itálico), fotos (ficheiros do computador, que o servidor grava em
   `assets/fotos/`, ou por endereço; legenda por foto), ordem no índice (↑ ↓; a visita segue esta ordem
   enquanto não for personalizada), caixas de categorias e de destaque na visita, apagar.
 - **Guardar** escreve `dados/conteudos.js` através do servidor local (o ficheiro anterior fica em
   `dados/conteudos.anterior.js`).
+- **Sair** (ou o lápis) com alterações por guardar pergunta o que fazer: «Guardar e sair», «Sair sem guardar»
+  (as alterações são descartadas e não se recuperam: o preset volta ao que está gravado) ou «Continuar a
+  editar». Mudar de freguesia com alterações por guardar faz a mesma pergunta.
 - **Presets** (terceira linha da barra): há vários presets, cada um em `dados/presets/<id>.js`; o seletor troca
   o preset ativo (também existe no fundo do painel do índice, em visualização) e o ativo é copiado para
   `dados/conteudos.js`, que é o que a apresentação abre. Ao arrancar vêm dois: **Campo de Ourique** (vazio,
   para os conteúdos reais) e **Campo de Ourique (exemplo)** (dados de demonstração). **Novo…** cria um preset
   vazio com o nome que escolheres; **Apagar** apaga o ativo (fica uma cópia `.apagado.bak`); **Importar…**
-  carrega um preset exportado (.json) ou um `conteudos.js` gravado por esta ferramenta para dentro do preset
-  ativo, com confirmação; **Exportar** transfere o preset ativo em JSON; **Transferir conteudos.js** transfere
+  carrega um preset exportado (.json) ou um `conteudos.js` gravado por esta ferramenta como **preset
+  alternativo** desta freguesia (nunca substitui um existente; com o mesmo nome fica «(importado)»), que passa a
+  aparecer no seletor; **Exportar** transfere o preset ativo em JSON, com a freguesia a que pertence. Um preset de
+  outra freguesia pode abrir-se nessa freguesia (onde fica como alternativo, sem mexer nos presets desta) ou,
+  se se quiser, importar-se aqui. O servidor recusa gravar numa freguesia um preset marcado com outra. Sem
+  servidor, os presets novos ficam só neste browser (indicado no seletor) até serem exportados;
+  **Transferir conteudos.js** transfere
   o ficheiro no formato de `dados/conteudos.js`, para quando a apresentação não está servida por
   `tools/serve.mjs` (nesse caso as fotos ficam embebidas); **Repor do ficheiro** descarta o trabalho em curso
   e volta ao que está gravado. A gravação automática é independente por preset, e o preset escolhido fica
@@ -77,16 +107,19 @@ ferramentas; «⋯ Mais» abre o título, o subtítulo e os presets):
 
 ## Modelo de `dados/conteudos.js`
 
-`window.CONTEUDOS = { preset, titulo, subtitulo, elementos, visita?, categorias? }` (o mesmo objeto, em
-`window.CONTEUDOS_PRESET`, em cada ficheiro de `dados/presets/`)
+`window.CONTEUDOS = { preset, freguesia, titulo, subtitulo, elementos, visita?, categorias? }` (o mesmo objeto, em
+`window.CONTEUDOS_PRESET`, em cada ficheiro de `dados/presets/`; `freguesia` é o id da freguesia do preset)
 
 - Elemento: `{ id, tipo, nome, icone?, texto, fotos, … }` com `tipo` em `ponto` (`pos: [lat, lon]`), `grupo`
-  (`pontos: [[lat, lon], …]`), `rua` (`linhas: [[[lat, lon], …], …]` ou `rua: 'Nome'` para ir buscar o traçado
+  (`pontos: [[lat, lon], …]`, um só cartão para todos), `desmaterializado` (sem geometria: fica no canto superior
+  direito), `rua` (`linhas: [[[lat, lon], …], …]` ou `rua: 'Nome'` para ir buscar o traçado
   a `geo.js`/`ruas.js`) e `zona` (`poligono: [[lat, lon], …]` ou `area: 'Nome'` de `geo.js`; `lote` guarda o
   código SIG quando veio do cadastro; `filhos`: pontos dentro da zona).
 - `prioridade` (opcional): cor do elemento no mapa, no índice e no cartão: `urgente` (preto, problema urgente),
   `importante` (vermelho), `preocupante` (amarelo), `pouco` (verde, pouco preocupante) ou `sugestao` (branco,
   sugestão). Sem prioridade, o elemento fica cinzento. Escolhe-se no cartão em modo de edição.
+- `competencia` (opcional): a quem cabe resolver: `governo` (Governo), `camara` (Câmara Municipal) ou `junta`
+  (Junta de Freguesia). Aparece no cartão.
 - `texto`: string (pode ter HTML) ou lista de parágrafos. `fotos`: `[{ src, legenda }]` (`src` é um caminho
   como `assets/fotos/x.jpg`, um endereço ou, sem servidor, uma imagem embebida).
 - `visita`: lista de ids pela ordem dos destaques (ausente = todos os elementos de topo, pela ordem do índice).
@@ -147,8 +180,9 @@ ferramentas; «⋯ Mais» abre o título, o subtítulo e os presets):
   dos presets (`dados/presets/`, cópia ativa em `dados/conteudos.js`) e das fotos em `assets/fotos/` (só a
   partir desta máquina e da própria página).
 - `tools/ruas-osm.mjs` — regenera `dados/ruas.js` a partir do OpenStreetMap (precisa de internet).
-- `tools/freguesias.mjs` — gera `dados/freguesias/` (lista e dados de cada freguesia) e `dados/verdes.js`; não apaga
-  presets que já existam. `node tools/freguesias.mjs ajuda belem` refaz só essas.
+- `tools/freguesias.mjs` — gera `dados/freguesias/` (lista, limites do mapa de Lisboa e dados de cada freguesia) e
+  `dados/verdes.js`; não apaga presets que já existam. `node tools/freguesias.mjs ajuda belem` refaz só essas;
+  `--so-limites` escreve só a lista e `dados/freguesias/limites.js`.
 - `tools/edificado-cml.mjs` — regenera `dados/edificado.js` a partir do serviço da CML; `tools/edificado-osm.mjs`
   é a alternativa com o edificado e os números do OpenStreetMap (escreve `dados/edificado-osm.js`).
 

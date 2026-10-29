@@ -117,6 +117,8 @@ async function guardar(req, res, F) {
   try { dados = JSON.parse(corpo.toString('utf8')); } catch (err) { return json(res, 400, { erro: 'JSON inválido' }); }
   if (dados && dados.sonda) return json(res, 200, { ok: true, sonda: true }); // o modo de edição pergunta se este servidor grava
   if (!dados || typeof dados !== 'object' || !Array.isArray(dados.elementos)) return json(res, 400, { erro: 'Esperava um objeto com a lista «elementos»' });
+  if (dados.freguesia && dados.freguesia !== F.id) return json(res, 409, { erro: 'Este preset é da freguesia «' + dados.freguesia + '», não de «' + F.id + '»' }); // os presets de cada freguesia não se misturam
+  dados.freguesia = F.id;
   dados.preset = String(dados.preset || F.id);
   if (!idValido(dados.preset)) return json(res, 400, { erro: 'Id de preset inválido: ' + dados.preset });
   fs.mkdirSync(F.presets, { recursive: true });
