@@ -68,6 +68,9 @@ ferramentas; «⋯ Mais» abre o título, o subtítulo e os presets):
   (`pontos: [[lat, lon], …]`), `rua` (`linhas: [[[lat, lon], …], …]` ou `rua: 'Nome'` para ir buscar o traçado
   a `geo.js`/`ruas.js`) e `zona` (`poligono: [[lat, lon], …]` ou `area: 'Nome'` de `geo.js`; `lote` guarda o
   código SIG quando veio do cadastro; `filhos`: pontos dentro da zona).
+- `prioridade` (opcional): cor do elemento no mapa, no índice e no cartão: `urgente` (preto, problema urgente),
+  `importante` (vermelho), `preocupante` (amarelo), `pouco` (verde, pouco preocupante) ou `sugestao` (branco,
+  sugestão). Sem prioridade, o elemento fica cinzento. Escolhe-se no cartão em modo de edição.
 - `texto`: string (pode ter HTML) ou lista de parágrafos. `fotos`: `[{ src, legenda }]` (`src` é um caminho
   como `assets/fotos/x.jpg`, um endereço ou, sem servidor, uma imagem embebida).
 - `visita`: lista de ids pela ordem dos destaques (ausente = todos os elementos de topo, pela ordem do índice).
@@ -94,6 +97,9 @@ ferramentas; «⋯ Mais» abre o título, o subtítulo e os presets):
   comprimento para isso); «Números de polícia» (do cadastro municipal, desenhados num canvas a partir do
   zoom 17,5, só para o que está no ecrã); e «Lotes do cadastro» (contornos dos 2689 edifícios da cartografia municipal
   1/1000, com a morada ao passar o cursor). Os pontos dentro
+  No canto inferior direito, o botão «Legenda» (fechado ao arrancar) mostra o significado das cores e quantos
+  elementos há de cada prioridade: preto para problemas urgentes, vermelho para situações importantes, amarelo
+  para situações preocupantes, verde para situações pouco preocupantes e branco para sugestões.
   de uma zona ficam escondidos até se selecionar a zona (ou um deles, pelo índice ou pela pesquisa), ou até
   se ligar o interruptor «Pontos nas zonas». Carregar numa zona faz o mapa voar até ela ocupar o máximo do
   ecrã possível, com os seus pontos à vista; o cartão encosta à direita ou em baixo, conforme o que deixa a

@@ -18,6 +18,8 @@
 //   icone     um emoji ou símbolo, mostrado no índice e no cartão
 //   texto     texto do cartão: uma string (pode ter HTML) ou uma lista de parágrafos
 //   fotos     lista de fotos: 'assets/fotos/x.jpg' ou { src: 'assets/fotos/x.jpg', legenda: '...' }
+//   prioridade (opcional) cor no mapa: 'urgente' (preto), 'importante' (vermelho), 'preocupante' (amarelo),
+//             'pouco' (verde) ou 'sugestao' (branco); sem prioridade fica cinzento
 //
 // Opcionais no objeto principal: visita: [ids] (ordem dos destaques) e categorias: [{ id, nome, icone, cor, membros: [ids] }].
 // Para criar e editar tudo isto sem tocar neste ficheiro: abrir a apresentação e carregar no lápis (modo de edição).
@@ -38,7 +40,7 @@
     subtitulo: 'Dados de demonstração',
     elementos: [
       {
-        id: 'mercado', tipo: 'ponto', nome: 'Mercado de Campo de Ourique', icone: '🛒', pos: cMercado,
+        id: 'mercado', tipo: 'ponto', prioridade: 'pouco', nome: 'Mercado de Campo de Ourique', icone: '🛒', pos: cMercado,
         texto: [
           'Ponto singular: um marcador, um cartão. Aqui entra o texto real, com fotos e, se quiseres, datas.',
           'Este segundo parágrafo é só para mostrar que o texto pode ser uma lista de parágrafos.',
@@ -46,37 +48,37 @@
         fotos: [],
       },
       {
-        id: 'cafes', tipo: 'grupo', nome: 'Os cafés da Coelho da Rocha', icone: '☕',
+        id: 'cafes', tipo: 'grupo', prioridade: 'sugestao', nome: 'Os cafés da Coelho da Rocha', icone: '☕',
         pontos: [coelho[Math.floor(coelho.length * .15)], coelho[Math.floor(coelho.length * .5)], coelho[Math.floor(coelho.length * .85)]],
         texto: 'Conjunto de pontos: três marcadores partilham o mesmo cartão e acendem-se juntos quando se seleciona qualquer um deles. Posições de exemplo.',
         fotos: [],
       },
       {
-        id: 'ferreira-borges', tipo: 'rua', nome: 'Rua Ferreira Borges', icone: '🛣️', rua: 'Rua Ferreira Borges',
+        id: 'ferreira-borges', tipo: 'rua', prioridade: 'importante', nome: 'Rua Ferreira Borges', icone: '🛣️', rua: 'Rua Ferreira Borges',
         texto: 'Rua em toda a extensão: o traçado vem do OpenStreetMap (todos os troços com este nome dentro da freguesia) e ilumina-se ao selecionar.',
         fotos: [],
       },
       {
-        id: 'saraiva-carvalho', tipo: 'rua', nome: 'Rua Saraiva de Carvalho', icone: '🛣️', rua: 'Rua Saraiva de Carvalho',
+        id: 'saraiva-carvalho', tipo: 'rua', prioridade: 'preocupante', nome: 'Rua Saraiva de Carvalho', icone: '🛣️', rua: 'Rua Saraiva de Carvalho',
         texto: 'Segunda rua, para ver duas ruas lado a lado.',
         fotos: [],
       },
       {
-        id: 'parada', tipo: 'zona', nome: 'Jardim da Parada', icone: '🌳', area: 'Jardim da Parada',
+        id: 'parada', tipo: 'zona', prioridade: 'urgente', nome: 'Jardim da Parada', icone: '🌳', area: 'Jardim da Parada',
         texto: 'Zona: polígono tirado do OpenStreetMap. Ao selecionar, a zona preenche-se e aparecem os pontos que contém.',
         fotos: [],
         filhos: [
-          { id: 'parada-coreto', tipo: 'ponto', nome: 'Coreto (exemplo)', icone: '🎶', pos: [cParada[0] + 0.00008, cParada[1] - 0.00025], texto: 'Ponto dentro da zona. Posição de exemplo.', fotos: [] },
-          { id: 'parada-quiosque', tipo: 'ponto', nome: 'Quiosque (exemplo)', icone: '🥐', pos: [cParada[0] - 0.00012, cParada[1] + 0.00028], texto: 'Outro ponto dentro da zona. Posição de exemplo.', fotos: [] },
+          { id: 'parada-coreto', tipo: 'ponto', prioridade: 'sugestao', nome: 'Coreto (exemplo)', icone: '🎶', pos: [cParada[0] + 0.00008, cParada[1] - 0.00025], texto: 'Ponto dentro da zona. Posição de exemplo.', fotos: [] },
+          { id: 'parada-quiosque', tipo: 'ponto', prioridade: 'importante', nome: 'Quiosque (exemplo)', icone: '🥐', pos: [cParada[0] - 0.00012, cParada[1] + 0.00028], texto: 'Outro ponto dentro da zona. Posição de exemplo.', fotos: [] },
         ],
       },
       {
-        id: 'quarteirao-mercado', tipo: 'zona', nome: 'Quarteirão do Mercado (zona pintada)', icone: '🧱',
+        id: 'quarteirao-mercado', tipo: 'zona', prioridade: 'preocupante', nome: 'Quarteirão do Mercado (zona pintada)', icone: '🧱',
         poligono: [[cMercado[0] + 0.00075, cMercado[1] - 0.0011], [cMercado[0] + 0.00085, cMercado[1] + 0.0009], [cMercado[0] - 0.0008, cMercado[1] + 0.001], [cMercado[0] - 0.0009, cMercado[1] - 0.001]],
         texto: 'Zona desenhada à mão (um retângulo de exemplo): um bairro, um quarteirão, «a nossa rua e arredores». No modo de edição desenham-se zonas destas diretamente no mapa.',
         fotos: [],
         filhos: [
-          { id: 'quarteirao-ponto', tipo: 'ponto', nome: 'Ponto dentro do quarteirão', icone: '📍', pos: [cMercado[0] - 0.0004, cMercado[1] + 0.0005], texto: 'Exemplo.', fotos: [] },
+          { id: 'quarteirao-ponto', tipo: 'ponto', prioridade: 'pouco', nome: 'Ponto dentro do quarteirão', icone: '📍', pos: [cMercado[0] - 0.0004, cMercado[1] + 0.0005], texto: 'Exemplo.', fotos: [] },
         ],
       },
     ],
