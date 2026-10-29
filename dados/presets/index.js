@@ -4,7 +4,7 @@ window.PRESETS = [
   "id": "campo-de-ourique",
   "nome": "Campo de Ourique",
   "subtitulo": "Um passeio pela freguesia",
-  "elementos": 0
+  "elementos": 1
  },
  {
   "id": "exemplo",

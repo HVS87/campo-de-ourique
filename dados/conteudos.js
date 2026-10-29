@@ -1,9 +1,693 @@
-// Preset ativo (cópia de dados/presets/campo-de-ourique.js), gravado pelo modo de edição. Modelo dos campos: ver README.md.
+// Preset ativo (cópia de dados/presets/campo-de-ourique.js), gravado em 2026-10-29 18:13. Modelo dos campos: ver README.md.
 // Para trocar de preset ou editar, abre a apresentação e carrega no lápis.
 window.CONTEUDOS = {
  "preset": "campo-de-ourique",
  "titulo": "Campo de Ourique",
  "subtitulo": "Um passeio pela freguesia",
- "elementos": [],
+ "elementos": [
+  {
+   "id": "quinta-do-loureiro",
+   "tipo": "zona",
+   "nome": "Bairro da Quinta do Loureiro",
+   "icone": "🏘️",
+   "texto": [
+    "Zona delimitada pela Rua Maria Pia, pela Rua do Arco do Carvalhão, pela Avenida de Ceuta e pela fronteira da freguesia entre a Rua Maria Pia e a Avenida de Ceuta.",
+    "Os pontos assinalados dentro da zona identificam os principais problemas do bairro e as propostas para os resolver."
+   ],
+   "fotos": [],
+   "poligono": [
+    [
+     38.718541,
+     -9.174794
+    ],
+    [
+     38.718539,
+     -9.174713
+    ],
+    [
+     38.718533,
+     -9.174343
+    ],
+    [
+     38.718539,
+     -9.174267
+    ],
+    [
+     38.718546,
+     -9.174239
+    ],
+    [
+     38.718567,
+     -9.174189
+    ],
+    [
+     38.718588,
+     -9.174143
+    ],
+    [
+     38.718612,
+     -9.174107
+    ],
+    [
+     38.718639,
+     -9.174077
+    ],
+    [
+     38.718669,
+     -9.174051
+    ],
+    [
+     38.718702,
+     -9.174031
+    ],
+    [
+     38.718737,
+     -9.174016
+    ],
+    [
+     38.71885,
+     -9.173975
+    ],
+    [
+     38.71942,
+     -9.17383
+    ],
+    [
+     38.719563,
+     -9.173806
+    ],
+    [
+     38.71958,
+     -9.173797
+    ],
+    [
+     38.719611,
+     -9.173777
+    ],
+    [
+     38.719639,
+     -9.173751
+    ],
+    [
+     38.719662,
+     -9.173718
+    ],
+    [
+     38.71968,
+     -9.17368
+    ],
+    [
+     38.719692,
+     -9.173639
+    ],
+    [
+     38.719909,
+     -9.17255
+    ],
+    [
+     38.71992,
+     -9.1725
+    ],
+    [
+     38.719935,
+     -9.172452
+    ],
+    [
+     38.719951,
+     -9.172405
+    ],
+    [
+     38.719971,
+     -9.172363
+    ],
+    [
+     38.72,
+     -9.172316
+    ],
+    [
+     38.720022,
+     -9.172279
+    ],
+    [
+     38.720042,
+     -9.17224
+    ],
+    [
+     38.720067,
+     -9.17218
+    ],
+    [
+     38.720093,
+     -9.172105
+    ],
+    [
+     38.720276,
+     -9.171395
+    ],
+    [
+     38.72029,
+     -9.171348
+    ],
+    [
+     38.720331,
+     -9.171212
+    ],
+    [
+     38.720531,
+     -9.170546
+    ],
+    [
+     38.720581,
+     -9.170368
+    ],
+    [
+     38.7208,
+     -9.169631
+    ],
+    [
+     38.720826,
+     -9.169571
+    ],
+    [
+     38.721053,
+     -9.169132
+    ],
+    [
+     38.721109,
+     -9.169021
+    ],
+    [
+     38.721217,
+     -9.168804
+    ],
+    [
+     38.721254,
+     -9.168722
+    ],
+    [
+     38.721337,
+     -9.16844
+    ],
+    [
+     38.721379,
+     -9.168312
+    ],
+    [
+     38.72143,
+     -9.168195
+    ],
+    [
+     38.721578,
+     -9.167917
+    ],
+    [
+     38.72161,
+     -9.167856
+    ],
+    [
+     38.7217,
+     -9.16768
+    ],
+    [
+     38.721739,
+     -9.16762
+    ],
+    [
+     38.721784,
+     -9.167569
+    ],
+    [
+     38.721834,
+     -9.167524
+    ],
+    [
+     38.722285,
+     -9.167207
+    ],
+    [
+     38.722502,
+     -9.167059
+    ],
+    [
+     38.722806,
+     -9.166763
+    ],
+    [
+     38.722895,
+     -9.166676
+    ],
+    [
+     38.722964,
+     -9.16661
+    ],
+    [
+     38.722994,
+     -9.166489
+    ],
+    [
+     38.722892,
+     -9.166528
+    ],
+    [
+     38.722834,
+     -9.166565
+    ],
+    [
+     38.722434,
+     -9.166823
+    ],
+    [
+     38.721981,
+     -9.167092
+    ],
+    [
+     38.721936,
+     -9.167117
+    ],
+    [
+     38.721889,
+     -9.167134
+    ],
+    [
+     38.721793,
+     -9.167153
+    ],
+    [
+     38.721724,
+     -9.167163
+    ],
+    [
+     38.721589,
+     -9.167169
+    ],
+    [
+     38.72155,
+     -9.167168
+    ],
+    [
+     38.7215,
+     -9.167169
+    ],
+    [
+     38.72145,
+     -9.167175
+    ],
+    [
+     38.721332,
+     -9.167189
+    ],
+    [
+     38.721282,
+     -9.167251
+    ],
+    [
+     38.72126,
+     -9.167278
+    ],
+    [
+     38.721161,
+     -9.167445
+    ],
+    [
+     38.721,
+     -9.167728
+    ],
+    [
+     38.720786,
+     -9.168097
+    ],
+    [
+     38.720746,
+     -9.168171
+    ],
+    [
+     38.720708,
+     -9.16825
+    ],
+    [
+     38.720091,
+     -9.169527
+    ],
+    [
+     38.720035,
+     -9.169643
+    ],
+    [
+     38.719942,
+     -9.169834
+    ],
+    [
+     38.719405,
+     -9.170946
+    ],
+    [
+     38.719377,
+     -9.170995
+    ],
+    [
+     38.719353,
+     -9.171028
+    ],
+    [
+     38.719345,
+     -9.171039
+    ],
+    [
+     38.719308,
+     -9.171076
+    ],
+    [
+     38.71928,
+     -9.171098
+    ],
+    [
+     38.719249,
+     -9.171112
+    ],
+    [
+     38.719176,
+     -9.171144
+    ],
+    [
+     38.719133,
+     -9.171163
+    ],
+    [
+     38.719094,
+     -9.171181
+    ],
+    [
+     38.718951,
+     -9.171251
+    ],
+    [
+     38.718823,
+     -9.171314
+    ],
+    [
+     38.718559,
+     -9.171445
+    ],
+    [
+     38.718515,
+     -9.171466
+    ],
+    [
+     38.718072,
+     -9.171685
+    ],
+    [
+     38.717942,
+     -9.171749
+    ],
+    [
+     38.717909,
+     -9.171777
+    ],
+    [
+     38.717885,
+     -9.171799
+    ],
+    [
+     38.717847,
+     -9.171817
+    ],
+    [
+     38.716808,
+     -9.17233
+    ],
+    [
+     38.716363,
+     -9.172549
+    ],
+    [
+     38.7163,
+     -9.17258
+    ],
+    [
+     38.716158,
+     -9.17265
+    ],
+    [
+     38.716088,
+     -9.172683
+    ],
+    [
+     38.716039,
+     -9.172702
+    ],
+    [
+     38.715986,
+     -9.172718
+    ],
+    [
+     38.715694,
+     -9.172804
+    ],
+    [
+     38.715567,
+     -9.172867
+    ],
+    [
+     38.715466,
+     -9.172949
+    ],
+    [
+     38.715294,
+     -9.17322
+    ],
+    [
+     38.714896,
+     -9.173872
+    ],
+    [
+     38.714789,
+     -9.174012
+    ],
+    [
+     38.714703,
+     -9.174073
+    ],
+    [
+     38.71461,
+     -9.17412
+    ],
+    [
+     38.714464,
+     -9.174159
+    ],
+    [
+     38.71435,
+     -9.174168
+    ],
+    [
+     38.714021,
+     -9.174129
+    ],
+    [
+     38.71355,
+     -9.174066
+    ],
+    [
+     38.713336,
+     -9.17397
+    ],
+    [
+     38.713251,
+     -9.173902
+    ],
+    [
+     38.712969,
+     -9.173717
+    ],
+    [
+     38.712823,
+     -9.17367
+    ],
+    [
+     38.712369,
+     -9.173532
+    ],
+    [
+     38.712163,
+     -9.17347
+    ],
+    [
+     38.712116,
+     -9.173435
+    ],
+    [
+     38.712115,
+     -9.173388
+    ],
+    [
+     38.71214,
+     -9.175139
+    ],
+    [
+     38.712138,
+     -9.175001
+    ],
+    [
+     38.712153,
+     -9.175007
+    ],
+    [
+     38.712416,
+     -9.175143
+    ],
+    [
+     38.712877,
+     -9.175402
+    ],
+    [
+     38.71309,
+     -9.175492
+    ],
+    [
+     38.713739,
+     -9.175792
+    ],
+    [
+     38.714209,
+     -9.175876
+    ],
+    [
+     38.71466,
+     -9.175887
+    ],
+    [
+     38.714894,
+     -9.175856
+    ],
+    [
+     38.715073,
+     -9.175809
+    ],
+    [
+     38.715868,
+     -9.175575
+    ],
+    [
+     38.716586,
+     -9.175326
+    ],
+    [
+     38.716662,
+     -9.175301
+    ],
+    [
+     38.717406,
+     -9.175064
+    ],
+    [
+     38.718085,
+     -9.174874
+    ],
+    [
+     38.718293,
+     -9.174827
+    ],
+    [
+     38.718541,
+     -9.174794
+    ]
+   ],
+   "filhos": [
+    {
+     "id": "sala-consumo-assistido",
+     "tipo": "ponto",
+     "nome": "Sala de Consumo Assistido",
+     "icone": "🏥",
+     "pos": [
+      38.71372,
+      -9.17508
+     ],
+     "texto": [
+      "A sala de consumo assistido, gerida pela associação Ares do Pinhal, está sobrelotada.",
+      "Propõe-se a sua deslocalização para fora do contínuo urbano do Bairro da Quinta do Loureiro, para o terreno livre entre este bairro e o Bairro Ceuta Sul.",
+      "O edifício atual deve ser transformado num equipamento de saúde, nomeadamente uma Unidade Local de Saúde ou um posto médico."
+     ],
+     "fotos": []
+    },
+    {
+     "id": "loureiro-parque-habitacional",
+     "tipo": "ponto",
+     "nome": "Degradação do parque habitacional",
+     "icone": "🏚️",
+     "pos": [
+      38.715718,
+      -9.175003
+     ],
+     "texto": [
+      "O parque habitacional municipal da Quinta do Loureiro, gerido pela GEBALIS, está degradado, tanto no interior das habitações como nas áreas comuns dos edifícios.",
+      "Os elevadores estão cronicamente avariados."
+     ],
+     "fotos": []
+    },
+    {
+     "id": "loureiro-trafico",
+     "tipo": "ponto",
+     "nome": "Consumo e tráfico de estupefacientes",
+     "icone": "⚠️",
+     "pos": [
+      38.717,
+      -9.1743
+     ],
+     "texto": [
+      "Têm aumentado o consumo e o tráfico de estupefacientes no bairro.",
+      "Vários lotes foram tomados pelas redes de tráfico, os traficantes ocupam o espaço público e as zonas de lazer e de estadia estão ocupadas por toxicodependentes.",
+      "Isto inviabiliza o uso de equipamentos como o parque infantil, junto ao campo de jogos."
+     ],
+     "fotos": []
+    },
+    {
+     "id": "loureiro-limpeza",
+     "tipo": "ponto",
+     "nome": "Falta de limpeza e manutenção",
+     "icone": "🧹",
+     "pos": [
+      38.71545,
+      -9.17395
+     ],
+     "texto": [
+      "Falta limpeza e manutenção do espaço público e dos equipamentos, o que impede o seu usufruto.",
+      "Proliferam objetos associados ao consumo, sobretudo seringas."
+     ],
+     "fotos": []
+    },
+    {
+     "id": "loureiro-campo-jogos",
+     "tipo": "ponto",
+     "nome": "Campo de jogos",
+     "icone": "🏀",
+     "pos": [
+      38.716278,
+      -9.174445
+     ],
+     "texto": [
+      "É necessário investir na requalificação deste campo de jogos, um equipamento desportivo fundamental para os jovens do bairro.",
+      "É também necessário construir uma cobertura que o proteja da chuva e do sol intenso."
+     ],
+     "fotos": []
+    },
+    {
+     "id": "loureiro-linha-ferrea",
+     "tipo": "ponto",
+     "nome": "Linha férrea a descoberto",
+     "icone": "🚆",
+     "pos": [
+      38.716003,
+      -9.174052
+     ],
+     "texto": [
+      "Aqui termina o túnel do comboio e a linha fica a descoberto, atravessando o bairro.",
+      "É necessário enterrar esta linha para eliminar mais uma barreira entre a população do bairro e o resto do contínuo urbano, como já foi prometido pela IP – Infraestruturas de Portugal."
+     ],
+     "fotos": []
+    }
+   ]
+  }
+ ],
  "categorias": []
 };
