@@ -24,9 +24,13 @@ de satélite em direto precisa de internet.
   «Guião passo a passo» (setas ‹ › ou teclado: ←, →, Espaço, Home, End) e «Vista geral». Em cima à direita,
   uma caixa de pesquisa discreta (atalho: tecla /) que procura lugares, zonas e todas as ruas, sem acentos,
   com escrita predicativa (a conclusão aparece a cinzento; Tab ou → aceita; ↑ ↓ e Enter escolhem na lista).
-  Em baixo à esquerda, o interruptor «Nomes das ruas» liga uma camada opcional (desligada por predefinição)
-  com o traçado de todas as ruas da freguesia: ao passar o cursor a rua ilumina-se e o nome surge ao longo da
-  via; a partir do zoom 17 aparecem os nomes de todas as que têm comprimento para isso. Os pontos dentro
+  Em baixo à esquerda, o botão «Camadas» abre um painel colapsável (fechado ao arrancar) com quatro camadas
+  opcionais, todas desligadas por predefinição: «Pontos nas zonas» (mostra sempre os pontos escondidos dentro
+  das zonas); «Nomes das ruas» (traçado de todas as ruas da freguesia, OSM: ao passar o cursor a rua
+  ilumina-se e o nome surge ao longo da via; a partir do zoom 17 aparecem os nomes de todas as que têm
+  comprimento para isso); «Números de polícia» (do cadastro municipal, visíveis a partir do zoom 17,5, só
+  para o que está no ecrã); e «Lotes do cadastro» (contornos dos 2689 edifícios da cartografia municipal
+  1/1000, com a morada ao passar o cursor). Os pontos dentro
   de uma zona ficam escondidos até se selecionar a zona (ou um deles, pelo índice ou pela pesquisa), ou até
   se ligar o interruptor «Pontos nas zonas». Carregar numa zona faz o mapa voar até ela ocupar grande parte
   do ecrã, com os seus pontos à vista; nesse caso o cartão encosta à direita (ou em baixo, em ecrãs mais
@@ -42,6 +46,9 @@ de satélite em direto precisa de internet.
 - `dados/ruas.js` — todas as ruas com nome da freguesia (98), recortadas ao limite e encadeadas, geradas por
   `node tools/ruas-osm.mjs` a partir do OpenStreetMap (Overpass). Em `conteudos.js` uma rua pode usar
   `rua: 'Nome'` com qualquer destes nomes.
+- `dados/edificado.js` — edificado da freguesia segundo a Câmara Municipal de Lisboa (serviço «Edificado e Vias»
+  em geodados / ArcGIS Online): contorno, morada e código SIG de cada edifício, mais os números de polícia
+  derivados da morada. Gerado por `node tools/edificado-cml.mjs` (893 kB).
 - `dados/campo-de-ourique.geojson` — o mesmo limite em GeoJSON (OpenStreetMap, relação 6427490).
 - `assets/satelite-dgt-2023.jpg` — imagem fixa de 4096×3061 px, OrtoSat 2023 da DGT (CC BY 4.0),
   em EPSG:3857, bbox lat 38.7110–38.7254, lon −9.1775 a −9.1528.
@@ -51,6 +58,8 @@ de satélite em direto precisa de internet.
   navegação, marcadores, editor), mantido para consulta. Usa o Leaflet do CDN.
 - `tools/serve.mjs` — servidor local simples (porta 8081), sem dependências.
 - `tools/ruas-osm.mjs` — regenera `dados/ruas.js` a partir do OpenStreetMap (precisa de internet).
+- `tools/edificado-cml.mjs` — regenera `dados/edificado.js` a partir do serviço da CML; `tools/edificado-osm.mjs`
+  é a alternativa com o edificado e os números do OpenStreetMap (escreve `dados/edificado-osm.js`).
 
 Satélite em direto: WMS da DGT, `https://ortos.dgterritorio.gov.pt/wms/ortosat2023`,
 camada `ortoSat2023-CorVerdadeira` (~0,3 m/píxel).

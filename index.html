@@ -8,6 +8,7 @@
 <script src="vendor/leaflet/leaflet.js"></script>
 <script src="dados/geo.js"></script>
 <script src="dados/ruas.js"></script>
+<script src="dados/edificado.js"></script>
 <script src="dados/conteudos.js"></script>
 <style>
   :root {
@@ -80,12 +81,27 @@
   .leaflet-bar { border: 1px solid var(--panel-border) !important; border-radius: 12px !important; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,.45) !important; }
   .leaflet-bar a { width: 36px !important; height: 36px !important; line-height: 36px !important; background: var(--panel) !important; color: var(--ink) !important; border-color: var(--panel-border) !important; backdrop-filter: blur(10px); }
   .leaflet-bar a:hover { background: rgba(40,46,56,.96) !important; }
-  .camada { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px 0 12px; border-radius: 19px; color: var(--ink); cursor: pointer; font-size: 12.5px; white-space: nowrap; }
-  .camada:hover { background: rgba(40,46,56,.96); }
-  .camada.on { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 600; }
-  .camada .inter { width: 26px; height: 14px; border-radius: 7px; background: rgba(255,255,255,.18); position: relative; flex: none; }
-  .camada .inter::after { content: ""; position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; border-radius: 50%; background: #fff; transition: left .15s; }
-  .camada.on .inter { background: rgba(0,0,0,.25); } .camada.on .inter::after { left: 14px; background: #1a1405; }
+  /* painel de camadas, colapsável (fechado ao arrancar) */
+  #camadas { display: flex; flex-direction: column-reverse; align-items: flex-start; gap: 8px; }
+  #btn-camadas { height: 38px; padding: 0 14px 0 12px; border-radius: 19px; display: flex; align-items: center; gap: 8px; color: var(--ink); cursor: pointer; font-size: 12.5px; }
+  #btn-camadas:hover { background: rgba(40,46,56,.96); }
+  #btn-camadas.on { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 600; }
+  #btn-camadas svg { width: 16px; height: 16px; }
+  #btn-camadas .conta { min-width: 18px; height: 18px; border-radius: 9px; padding: 0 5px; font-size: 11px; font-weight: 700; display: none; place-items: center; background: var(--accent); color: var(--accent-ink); }
+  #btn-camadas.algumas .conta { display: grid; } #btn-camadas.on .conta { background: #1a1405; color: var(--accent); }
+  #lista-camadas { display: none; flex-direction: column; border-radius: var(--radius); padding: 6px; min-width: 230px; }
+  #lista-camadas.aberto { display: flex; }
+  #lista-camadas h4 { margin: 4px 8px 6px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px; color: var(--ink-dim); font-weight: 600; }
+  .camada { display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; border-radius: 9px; border: 0; background: transparent; color: var(--ink); cursor: pointer; font-size: 13px; white-space: nowrap; text-align: left; }
+  .camada:hover { background: rgba(255,255,255,.07); }
+  .camada.on { color: #fff; }
+  .camada .inter { width: 28px; height: 16px; border-radius: 8px; background: rgba(255,255,255,.18); position: relative; flex: none; transition: background .15s; }
+  .camada .inter::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; transition: left .15s; }
+  .camada.on .inter { background: var(--accent); } .camada.on .inter::after { left: 14px; background: #1a1405; }
+  .camada small { color: var(--ink-dim); font-size: 11px; margin-left: auto; padding-left: 10px; }
+  /* números de polícia e lotes */
+  .num-policia { font: 700 11px/1 var(--font); color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000, 0 1px 2px #000; white-space: nowrap; pointer-events: none; text-align: center; letter-spacing: .2px; }
+  .leaflet-numeros-pane { pointer-events: none; }
   .leaflet-control-attribution { background: rgba(0,0,0,.55) !important; color: #bbb !important; font-size: 10px; }
   .leaflet-control-attribution a { color: #ddd !important; }
 
@@ -197,8 +213,7 @@
     .info h2 { font-size: 19px; }
     .info .texto { font-size: 14px; }
     #guiao .texto { min-width: 140px; font-size: 12.5px; }
-    .camada span.txt { display: none; }
-    .camada { padding: 0 12px; }
+    #btn-camadas span.txt { display: none; }
   }
   @media (pointer: coarse) { .mk-circ { border-width: 2px; } }
 </style>
@@ -300,7 +315,9 @@ L.control.attribution({ position: 'bottomright', prefix: false }).addAttribution
 map.createPane('satBase').style.zIndex = 190;   // imagem fixa (reserva e fundo imediato)
 map.createPane('sat').style.zIndex = 200;       // satélite em direto
 map.createPane('mascara').style.zIndex = 390;
+map.createPane('edificado').style.zIndex = 393; // camada opcional: lotes do cadastro municipal
 map.createPane('ruasTodas').style.zIndex = 395; // camada opcional com todas as ruas
+map.createPane('numeros').style.zIndex = 396;   // camada opcional: números de polícia
 map.createPane('zonas').style.zIndex = 400;
 map.createPane('ruas').style.zIndex = 410;
 map.createPane('limite').style.zIndex = 420;
@@ -401,7 +418,7 @@ function mostrarFilhos(zona, mostrar) { for (const f of zona.filhos) { const m =
 function ligarPontos(ligar) {
   todosPontos = ligar === undefined ? !todosPontos : ligar;
   for (const el of ELEMENTOS) if (el.tipo === 'zona') mostrarFilhos(el, selecionado === el || (selecionado && selecionado.pai === el));
-  const b = $('#btn-pontos'); b.classList.toggle('on', todosPontos); b.setAttribute('aria-pressed', String(todosPontos));
+  estadoCamada('btn-pontos', todosPontos);
 }
 function limparSelecao() {
   if (!selecionado) return;
@@ -547,8 +564,7 @@ map.on('zoomend', atualizarNomesRuas);
 function ligarRuas(ligar) {
   ruasLigadas = ligar === undefined ? !ruasLigadas : ligar;
   paneRuas.classList.toggle('ruas-off', !ruasLigadas);
-  $('#btn-ruas').classList.toggle('on', ruasLigadas);
-  $('#btn-ruas').setAttribute('aria-pressed', String(ruasLigadas));
+  estadoCamada('btn-ruas', ruasLigadas);
 }
 function destacarRua(r, voar) {
   limparRuaDestaque(); limparSelecao(); fecharCartao();
@@ -556,18 +572,73 @@ function destacarRua(r, voar) {
   if (voar) map.flyToBounds(L.latLngBounds(r.rua.trocos.flat()), { paddingTopLeft: [60, 80], paddingBottomRight: [60, 60], maxZoom: 18, duration: .9 });
 }
 function limparRuaDestaque() { if (ruaDestaque) classeRua(ruaDestaque, 'destaque', false); ruaDestaque = null; }
-// botões das camadas, junto ao zoom
-function botaoCamada(id, texto, acao) {
-  const Ctrl = L.Control.extend({ onAdd() {
-    const b = L.DomUtil.create('button', 'vidro camada'); b.id = id; b.type = 'button'; b.setAttribute('aria-pressed', 'false');
-    b.innerHTML = '<span class="inter"></span><span class="txt">' + texto + '</span>';
-    L.DomEvent.disableClickPropagation(b); b.addEventListener('click', () => acao());
-    return b;
-  } });
-  new Ctrl({ position: 'bottomleft' }).addTo(map);
+// ---------- camadas opcionais do cadastro municipal: lotes e números de polícia ----------
+const ED = window.EDIFICADO || { lotes: [], numeros: [] };
+const rendLotes = L.canvas({ pane: 'edificado', padding: .3 });
+const grupoLotes = L.layerGroup();
+let lotesLigados = false, numerosLigados = false;
+const estiloLote = { renderer: rendLotes, pane: 'edificado', color: 'rgba(130, 220, 255, .8)', weight: 1, fillColor: '#7ad3ff', fillOpacity: .05, bubblingMouseEvents: false };
+for (const l of ED.lotes) {
+  const pol = L.polygon(l.p, estiloLote);
+  if (l.m) pol.bindTooltip(esc(l.m), { sticky: true, className: 'rotulo', opacity: 1 });
+  pol.on('mouseover', () => pol.setStyle({ color: '#f3c35b', weight: 2, fillOpacity: .18 }));
+  pol.on('mouseout', () => pol.setStyle({ color: estiloLote.color, weight: 1, fillOpacity: .05 }));
+  grupoLotes.addLayer(pol);
 }
-botaoCamada('btn-pontos', 'Pontos nas zonas', () => ligarPontos());
-botaoCamada('btn-ruas', 'Nomes das ruas', () => ligarRuas());
+function ligarLotes(ligar) {
+  lotesLigados = ligar === undefined ? !lotesLigados : ligar;
+  if (lotesLigados) grupoLotes.addTo(map); else map.removeLayer(grupoLotes);
+  estadoCamada('btn-lotes', lotesLigados);
+}
+// os números só se desenham para o que está no ecrã, a partir do zoom 17,5 (são mais de 2500)
+const grupoNumeros = L.layerGroup().addTo(map);
+const ZOOM_NUMEROS = 17.5;
+function desenharNumeros() {
+  grupoNumeros.clearLayers();
+  if (!numerosLigados || map.getZoom() < ZOOM_NUMEROS) return;
+  const b = map.getBounds().pad(.1);
+  for (const n of ED.numeros) {
+    if (n[0] < b.getSouth() || n[0] > b.getNorth() || n[1] < b.getWest() || n[1] > b.getEast()) continue;
+    grupoNumeros.addLayer(L.marker([n[0], n[1]], { pane: 'numeros', interactive: false, keyboard: false, icon: L.divIcon({ className: 'num-policia', html: esc(n[2]), iconSize: null }) }));
+  }
+}
+map.on('moveend zoomend', desenharNumeros);
+function ligarNumeros(ligar) {
+  numerosLigados = ligar === undefined ? !numerosLigados : ligar;
+  desenharNumeros();
+  estadoCamada('btn-numeros', numerosLigados);
+  if (numerosLigados && map.getZoom() < ZOOM_NUMEROS) aviso('Os números de polícia aparecem a partir do zoom 17,5: aproxima o mapa.', 4000);
+}
+
+// ---------- painel de camadas, colapsável (fechado ao arrancar), junto ao zoom ----------
+const CAMADAS = [
+  { id: 'btn-pontos', texto: 'Pontos nas zonas', nota: '', acao: () => ligarPontos() },
+  { id: 'btn-ruas', texto: 'Nomes das ruas', nota: 'OSM', acao: () => ligarRuas() },
+  { id: 'btn-numeros', texto: 'Números de polícia', nota: 'CML', acao: () => ligarNumeros() },
+  { id: 'btn-lotes', texto: 'Lotes do cadastro', nota: 'CML', acao: () => ligarLotes() },
+];
+const CtrlCamadas = L.Control.extend({ onAdd() {
+  const box = L.DomUtil.create('div'); box.id = 'camadas';
+  const b = L.DomUtil.create('button', 'vidro', box); b.id = 'btn-camadas'; b.type = 'button'; b.setAttribute('aria-expanded', 'false');
+  b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5 9-5z"/><path d="m3 12 9 5 9-5"/><path d="m3 16 9 5 9-5"/></svg><span class="txt">Camadas</span><span class="conta">0</span>';
+  const lista = L.DomUtil.create('div', 'vidro', box); lista.id = 'lista-camadas'; lista.setAttribute('role', 'group'); lista.setAttribute('aria-label', 'Camadas');
+  lista.innerHTML = '<h4>Camadas</h4>' + CAMADAS.map(c => `<button type="button" class="camada" id="${c.id}" aria-pressed="false"><span class="inter"></span>${c.texto}${c.nota ? `<small>${c.nota}</small>` : ''}</button>`).join('');
+  L.DomEvent.disableClickPropagation(box); L.DomEvent.disableScrollPropagation(box);
+  b.addEventListener('click', () => abrirCamadas());
+  for (const c of CAMADAS) lista.querySelector('#' + c.id).addEventListener('click', c.acao);
+  return box;
+} });
+new CtrlCamadas({ position: 'bottomleft' }).addTo(map);
+function abrirCamadas(abrir) {
+  const lista = $('#lista-camadas'), b = $('#btn-camadas');
+  if (abrir === undefined) abrir = !lista.classList.contains('aberto');
+  lista.classList.toggle('aberto', abrir); b.classList.toggle('on', abrir); b.setAttribute('aria-expanded', String(abrir));
+}
+function estadoCamada(id, ligada) {
+  const b = $('#' + id); b.classList.toggle('on', ligada); b.setAttribute('aria-pressed', String(ligada));
+  const n = document.querySelectorAll('#lista-camadas .camada.on').length;
+  $('#btn-camadas .conta').textContent = n; $('#btn-camadas').classList.toggle('algumas', n > 0);
+}
 
 // ---------- pesquisa com escrita predicativa ----------
 const INDICE_PESQUISA = [];
@@ -786,7 +857,7 @@ if (EDITOR) {
 construir(); construirIndice(); construirRuas(); construirPesquisa();
 const inicial = POR_ID[decodeURIComponent(location.hash.slice(1))];
 if (inicial) map.whenReady(() => setTimeout(() => selecionar(inicial, true), 300));
-window.__mapa = { map, ELEMENTOS, POR_ID, RUAS_VISTA, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, destacarRua, abrirPainel, vista, dgt, reserva };
+window.__mapa = { map, ELEMENTOS, POR_ID, RUAS_VISTA, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva };
 })();
 </script>
 </body>
