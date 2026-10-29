@@ -32,9 +32,10 @@ de satélite em direto precisa de internet.
   para o que está no ecrã); e «Lotes do cadastro» (contornos dos 2689 edifícios da cartografia municipal
   1/1000, com a morada ao passar o cursor). Os pontos dentro
   de uma zona ficam escondidos até se selecionar a zona (ou um deles, pelo índice ou pela pesquisa), ou até
-  se ligar o interruptor «Pontos nas zonas». Carregar numa zona faz o mapa voar até ela ocupar grande parte
-  do ecrã, com os seus pontos à vista; nesse caso o cartão encosta à direita (ou em baixo, em ecrãs mais
-  pequenos) para não tapar a zona. Esc fecha o que estiver aberto. Cada elemento tem ligação própria: `index.html#id`.
+  se ligar o interruptor «Pontos nas zonas». Carregar numa zona faz o mapa voar até ela ocupar o máximo do
+  ecrã possível, com os seus pontos à vista; o cartão encosta à direita ou em baixo, conforme o que deixa a
+  zona maior, para não a tapar. Ao desselecionar a zona (clique no mapa ou Esc) o mapa volta à vista inicial
+  da freguesia. Esc fecha o que estiver aberto. Cada elemento tem ligação própria: `index.html#id`.
 - `index.html?editor` — mostra a barra do editor (só para preparar conteúdos, só com rato): polígono por
   vértices, pincel livre, ponto (fica filho da zona selecionada se cair dentro dela), apagar último,
   copiar JSON. Nada é guardado: o JSON copia-se para `dados/conteudos.js`.

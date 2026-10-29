@@ -136,8 +136,11 @@
   /* ---- cartão central ---- */
   #modal { position: absolute; inset: 0; z-index: 1100; background: rgba(0,0,0,.42); display: none; place-items: center; padding: 20px 20px 90px; }
   #modal.aberto { display: grid; }
-  #modal.lado { background: transparent; pointer-events: none; justify-items: end; padding: 70px 14px 14px; }
+  #modal.lado, #modal.baixo { background: transparent; pointer-events: none; }
+  #modal.lado { justify-items: end; padding: 70px 14px 14px; }
   #modal.lado .cartao { pointer-events: auto; width: min(400px, 100%); animation-name: surgir-lado; }
+  #modal.baixo { justify-items: center; align-items: end; padding: 12px 12px 80px; }
+  #modal.baixo .cartao { pointer-events: auto; width: min(600px, 100%); max-height: 38vh; }
   @keyframes surgir-lado { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
   #modal .cartao { position: relative; width: min(600px, 100%); max-height: 100%; overflow: auto; border-radius: 18px; padding: 22px 26px 24px; box-shadow: 0 24px 70px rgba(0,0,0,.65); animation: surgir .22s ease-out; }
   @keyframes surgir { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
@@ -190,10 +193,6 @@
   #map.desenhar { cursor: crosshair; }
 
   /* ---- ecrãs médios (tablet) e estreitos (telemóvel) ---- */
-  @media (max-width: 1000px) {
-    #modal.lado { justify-items: center; align-items: end; padding: 12px 12px 80px; }
-    #modal.lado .cartao { width: min(600px, 100%); max-height: 42vh; }
-  }
   @media (max-width: 900px) {
     #marca small { display: none; }
     #pesquisa-box { width: 230px; }
@@ -207,8 +206,8 @@
     #pesquisa-box:not(:focus-within):not(.com-texto) #pesquisa::placeholder { color: transparent; }
     #pesquisa-box:not(:focus-within):not(.com-texto) #ghost { display: none; }
     #modal { padding: 12px 12px 80px; align-items: end; }
-    #modal.lado { justify-items: stretch; padding: 12px 12px 80px; }
-    #modal.lado .cartao { width: 100%; max-height: 50vh; }
+    #modal.baixo { justify-items: stretch; padding: 12px 12px 80px; }
+    #modal.baixo .cartao { width: 100%; max-height: 50vh; }
     #modal .cartao { padding: 18px 18px 20px; border-radius: 16px; }
     .info h2 { font-size: 19px; }
     .info .texto { font-size: 14px; }
@@ -309,7 +308,7 @@ function preparar(el, pai) {
 for (const e of C.elementos || []) { const p = preparar(e, null); if (p) ELEMENTOS.push(p); }
 
 // ---------- mapa ----------
-const map = L.map('map', { zoomControl: false, attributionControl: false, maxZoom: 20, minZoom: 14, zoomSnap: .5 });
+const map = L.map('map', { zoomControl: false, attributionControl: false, maxZoom: 20, minZoom: 14, zoomSnap: .25, zoomDelta: 1 });
 L.control.zoom({ position: 'bottomleft' }).addTo(map);
 L.control.attribution({ position: 'bottomright', prefix: false }).addAttribution('© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>').addTo(map);
 map.createPane('satBase').style.zIndex = 190;   // imagem fixa (reserva e fundo imediato)
@@ -404,10 +403,20 @@ function limitesDe(el) {
 // Em ecrãs estreitos o cartão ocupa a parte de baixo.
 function margensVoo(el) {
   const W = window.innerWidth, H = window.innerHeight, zona = !!(el && (el.tipo === 'zona' || el.pai));
-  if (estreito()) return { paddingTopLeft: [20, 70], paddingBottomRight: [20, Math.round(H * .55)] };
-  if (zona && W < 1000) return { paddingTopLeft: [40, 80], paddingBottomRight: [40, Math.round(H * .42) + 100], maxZoom: 19.5 }; // cartão em baixo (até 42vh + margens)
-  if (zona) return { paddingTopLeft: [Math.round(W * .08), 90], paddingBottomRight: [Math.round(W * .06) + 420, 60], maxZoom: 19.5 }; // cartão à direita
-  return { paddingTopLeft: [80, 80], paddingBottomRight: [80, 120] };
+  if (estreito()) return { modo: 'baixo', paddingTopLeft: [20, 70], paddingBottomRight: [20, Math.round(H * .55)] };
+  if (!zona) return { modo: 'centro', paddingTopLeft: [80, 80], paddingBottomRight: [80, 120] };
+  // zona: o cartão encosta à direita (400 px) ou em baixo (até 38 % da altura), conforme o que deixa a zona maior
+  const lado = { modo: 'lado', paddingTopLeft: [Math.round(W * .03), 66], paddingBottomRight: [Math.round(W * .02) + 414, 36], maxZoom: 20 };
+  const baixo = { modo: 'baixo', paddingTopLeft: [24, 66], paddingBottomRight: [24, Math.round(H * .38) + 92], maxZoom: 20 };
+  if (W < 900) return baixo;
+  const zoomCom = o => map.getBoundsZoom(limitesDe(el), false, L.point(o.paddingTopLeft).add(L.point(o.paddingBottomRight)));
+  return zoomCom(lado) >= zoomCom(baixo) ? lado : baixo;
+}
+// ao desselecionar uma zona (ou um ponto dentro dela) o mapa volta à vista inicial da freguesia
+function desselecionar() {
+  const eraZona = !!(selecionado && (selecionado.tipo === 'zona' || selecionado.pai));
+  limparSelecao(); limparRuaDestaque(); fecharCartao();
+  if (eraZona) map.flyToBounds(limiteBounds, Object.assign({ duration: 1 }, margensGerais()));
 }
 
 // ---------- seleção ----------
@@ -440,9 +449,10 @@ function selecionar(el, voar, semCartao) {
   if (el.pai) { vista[el.pai.id].poligono.setStyle(estiloZona.ativa); mostrarFilhos(el.pai, true); }
   v.marcadores.forEach(m => m.getElement() && m.getElement().classList.add('sel'));
   const b = document.querySelector(`#indice button[data-id="${el.id}"]`); if (b) { b.classList.add('sel'); b.scrollIntoView({ block: 'nearest' }); }
-  if (voar) map.flyToBounds(limitesDe(el), Object.assign({ maxZoom: 18.5, duration: .9 }, margensVoo(el)));
+  const marg = margensVoo(el);
+  if (voar) map.flyToBounds(limitesDe(el), Object.assign({ maxZoom: 18.5, duration: .9 }, marg));
   history.replaceState(null, '', '#' + el.id);
-  if (!semCartao) mostrarInfo(el);
+  if (!semCartao) mostrarInfo(el, marg.modo);
   if (estreito()) abrirPainel(false);
 }
 
@@ -468,8 +478,10 @@ function htmlInfo(el) {
   return h + '</div>';
 }
 const modal = $('#modal'), modalConteudo = $('#modal-conteudo');
-function mostrarInfo(el) {
-  modal.classList.toggle('lado', el.tipo === 'zona' || !!el.pai);
+function mostrarInfo(el, modo) {
+  const zona = el.tipo === 'zona' || !!el.pai;
+  modal.classList.toggle('lado', zona && modo === 'lado');
+  modal.classList.toggle('baixo', zona && modo !== 'lado');
   modalConteudo.innerHTML = htmlInfo(el);
   modal.querySelector('.cartao').scrollTop = 0;
   modal.classList.add('aberto');
@@ -742,7 +754,7 @@ document.addEventListener('keydown', e => {
     if (ferramenta) { cancelarDesenho(); porFerramenta(null); return; }
     if (cartaoAberto()) { fecharCartao(); return; }
     if (guiaoAberto()) { ligarGuiao(false); return; }
-    if (selecionado || ruaDestaque) { limparSelecao(); limparRuaDestaque(); return; }
+    if (selecionado || ruaDestaque) { desselecionar(); return; }
     if (painel.classList.contains('aberto')) abrirPainel(false);
     return;
   }
@@ -834,7 +846,7 @@ function apagarUltimo() {
 map.on('click', e => {
   if (ferramenta === 'poligono') { desenho.push(e.latlng); tempPontos.push(L.circleMarker(e.latlng, { radius: 5, color: '#fff', fillColor: '#f3c35b', fillOpacity: 1, interactive: false }).addTo(map)); atualizarTemp(); }
   else if (ferramenta === 'ponto') novoPonto(e.latlng);
-  else if (!ferramenta) { if (selecionado) limparSelecao(); limparRuaDestaque(); fecharCartao(); if (estreito()) abrirPainel(false); }
+  else if (!ferramenta) { desselecionar(); if (estreito()) abrirPainel(false); }
 });
 if (EDITOR) {
   $('#editor').classList.add('aberto');
