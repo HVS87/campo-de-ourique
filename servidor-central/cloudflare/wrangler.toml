@@ -1,4 +1,4 @@
-# Servidor central no Cloudflare Workers (plano grátis). Passos para publicar: servidor-central/README.md.
+# Servidor central no Cloudflare Workers (plano grátis). Passos para publicar: servidor-central/GUIA-CLOUDFLARE.md.
 name = "campo-de-ourique-central"
 main = "worker.mjs"
 compatibility_date = "2026-10-01"
@@ -15,7 +15,7 @@ NOME = "Servidor central das freguesias de Lisboa"
 ORIGENS = "*"
 # "1" deixa consultar sem chave
 LEITURA_PUBLICA = "0"
-# a chave de administração não fica aqui: npx wrangler secret put CHAVE_ADMIN
+# a chave de administração não fica aqui: npx wrangler secret put CHAVE_ADMIN (e, opcional, SEGREDO_SESSOES)
 
 # a página de consulta entra no Worker como texto
 [[rules]]

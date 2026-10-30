@@ -293,6 +293,12 @@
   /* ---- modo de edição ---- */
   #btn-editar { position: absolute; top: 14px; right: 14px; z-index: 1002; }
   #btn-editar svg { width: 18px; height: 18px; }
+  /* a conta com sessão: ao lado do lápis (no mapa de Lisboa, no lugar dele) */
+  #btn-sessao { position: absolute; top: 14px; right: 66px; z-index: 1002; display: none; font-size: 13px; font-weight: 700; letter-spacing: .3px; }
+  body.com-sessao #btn-sessao { display: grid; }
+  body.com-sessao #pesquisa-box { right: 118px; }
+  body.cidade #btn-sessao { right: 14px; }
+  body.cidade.com-sessao #pesquisa-box { right: 66px; }
   #barra-edicao { display: none; position: absolute; left: 50%; top: 66px; transform: translateX(-50%); z-index: 1050; border-radius: var(--radius); padding: 8px 10px; width: min(760px, 94vw); font-size: 12.5px; }
   #barra-edicao.aberto { display: block; }
   #barra-edicao .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
@@ -354,7 +360,7 @@
   .pinta.freguesia { border-radius: 2px; background: transparent; box-shadow: inset 0 0 0 2px var(--c); }
 
   /* ---- diálogo (guardar ou descartar, presets de outras freguesias) ---- */
-  #dialogo { position: absolute; inset: 0; z-index: 1400; background: rgba(0,0,0,.55); display: none; place-items: center; padding: 16px; }
+  #dialogo { position: absolute; inset: 0; z-index: 1400; background: rgba(0,0,0,.55); display: none; place-items: center; grid-template-columns: minmax(0, 1fr); padding: 16px; }
   #dialogo.aberto { display: grid; }
   #dialogo .caixa { width: min(470px, 100%); border-radius: 16px; padding: 20px 22px 18px; animation: surgir .18s ease-out; }
   #dialogo h2 { margin: 0 0 10px; font-size: 18px; }
@@ -366,6 +372,19 @@
   #dialogo .campo-dialogo input { display: block; width: 100%; margin-top: 6px; font: inherit; font-size: 14px; background: rgba(255,255,255,.06); border: 1px solid var(--panel-border); color: var(--ink); border-radius: 8px; padding: 8px 10px; }
   #dialogo .campo-dialogo input:focus { outline: none; border-color: rgba(243,195,91,.6); }
   #dialogo .botoes { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+  #dialogo .caixa.larga { width: min(1040px, 100%); min-width: 0; max-height: calc(100% - 8px); display: flex; flex-direction: column; overflow-y: auto; }
+  #dialogo .caixa.larga > * { min-width: 0; flex-shrink: 0; }
+  #dialogo .caixa.larga .tabela-dialogo { flex-shrink: 1; }
+  #dialogo .tabela-dialogo { overflow: auto; min-height: 80px; max-height: 52vh; margin: 6px 0 10px; border: 1px solid var(--panel-border); border-radius: 10px; }
+  #dialogo .tabela-dialogo table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  #dialogo .tabela-dialogo th, #dialogo .tabela-dialogo td { text-align: left; vertical-align: top; padding: 6px 8px; border-bottom: 1px solid var(--panel-border); }
+  #dialogo .tabela-dialogo th { position: sticky; top: 0; background: #1b2029; color: var(--ink-dim); font-weight: 600; }
+  #dialogo .tabela-dialogo td.nota, #dialogo .tabela-dialogo small { color: var(--ink-dim); }
+  #dialogo .filtros-dialogo { display: flex; flex-wrap: wrap; gap: 0 12px; }
+  #dialogo .filtros-dialogo .campo-dialogo { flex: 1 1 180px; margin: 4px 0 6px; }
+  #dialogo .filtros-dialogo .campo-dialogo + .campo-dialogo { margin-top: 4px; }
+  #dialogo .campo-dialogo.marca { display: flex; align-items: center; gap: 8px; margin-top: 10px; color: var(--ink); cursor: pointer; }
+  #dialogo .campo-dialogo.marca input { display: inline-block; width: 18px; height: 18px; margin: 0; accent-color: var(--accent); flex: none; }
 
   /* ---- mapa geral da cidade: as 24 freguesias ---- */
   #map.modo-cidade .leaflet-zonas-pane, #map.modo-cidade .leaflet-ruas-pane, #map.modo-cidade .leaflet-limite-pane, #map.modo-cidade .leaflet-mascara-pane,
@@ -389,8 +408,8 @@
   .lista-freguesias .ver-cidade { grid-column: 1 / -1; border: 1px dashed var(--panel-border); color: var(--ink-dim); margin-bottom: 4px; }
 
   /* ---- botão «+» do modo de edição (canto inferior direito) ---- */
-  #criar { display: none; flex-direction: column-reverse; align-items: flex-end; gap: 8px; }
-  body.edicao #criar { display: flex; }
+  #criar { display: flex; flex-direction: column-reverse; align-items: flex-end; gap: 8px; } /* fora da edição, o «+» entra no modo de edição */
+  body.cidade #criar, body.visita-aberta:not(.edicao) #criar { display: none; }
   #btn-criar { width: 52px; height: 52px; border-radius: 50%; border: 0; padding: 0; background: var(--accent); color: var(--accent-ink); font-size: 30px; font-weight: 300; line-height: 1; cursor: pointer; display: grid; place-items: center; box-shadow: 0 8px 24px rgba(0,0,0,.5); transition: transform .2s; }
   #btn-criar:hover { filter: brightness(1.07); }
   #btn-criar.on { transform: rotate(45deg); }
@@ -527,6 +546,7 @@
 <div id="desmat" aria-label="Pontos desmaterializados"><button id="desmat-pilha" type="button"></button><div id="desmat-lista" role="list"></div></div>
 <div id="lightbox"><figure><img alt=""><figcaption></figcaption></figure></div>
 
+<button id="btn-sessao" class="vidro redondo" type="button" aria-label="Conta"></button>
 <button id="btn-editar" class="vidro redondo" aria-label="Modo de edição" aria-pressed="false" title="Modo de edição"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
 
 <aside id="barra-edicao" class="vidro" aria-label="Modo de edição">
@@ -562,7 +582,7 @@
     <input type="file" id="ficheiro-preset" accept=".json,.js,application/json,text/javascript" hidden>
     <span class="estado auto" id="estado-auto" title="O trabalho em curso fica guardado neste browser e é reposto ao abrir a página">gravação automática ligada</span>
   </div>
-  <div id="sem-servidor">Sem servidor local: «Guardar» transfere o ficheiro conteudos.js para o substituíres na pasta da freguesia, e as fotos ficam embebidas.</div>
+  <div id="sem-servidor">Sem servidor local: «Guardar» transfere o ficheiro conteudos.js para o substituíres na pasta da freguesia (e envia o preset para o servidor central, se houver), e as fotos ficam embebidas.</div>
 </aside>
 
 <script>
@@ -594,6 +614,8 @@ const ordemPri = el => { const i = PRIORIDADES.findIndex(p => p.id === (el && el
 const COMPETENCIAS = [{ id: 'governo', nome: 'Governo' }, { id: 'camara', nome: 'Câmara Municipal' }, { id: 'junta', nome: 'Junta de Freguesia' }];
 const COMP = Object.fromEntries(COMPETENCIAS.map(c => [c.id, c]));
 const EDITOR = new URLSearchParams(location.search).has('editor');
+// aberta sem freguesia no endereço: começa no mapa de Lisboa sem nenhuma freguesia «aberta» (até se escolher uma)
+let semFreguesia = !new URLSearchParams(location.search).has('freguesia');
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const normalizar = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); // sem acentos nem maiúsculas
@@ -964,19 +986,21 @@ listaFreg.addEventListener('click', e => {
 });
 const qsTexto = qs => { const t = qs.toString().replace(/=(&|$)/g, '$1'); return t ? '?' + t : ''; }; // «?cidade» em vez de «?cidade=»
 // muda de freguesia: recarrega a página só com os dados dela (com alterações por guardar, pergunta se as guarda ou descarta)
-async function irParaFreguesia(id) {
+async function irParaFreguesia(id, opcoes = {}) {
   if (id === FREG.id) { if (cidade) abrirCidade(false); else map.flyToBounds(limiteBounds, Object.assign({ duration: .9 }, margensGerais())); return; }
   if (!FREGUESIAS.some(f => f.id === id)) return;
   if (edicao && alterado) {
     const r = await perguntarGuardar('Mudar de freguesia', 'mudar');
     if (r === 'cancelar') return false;
-    if (r === 'guardar') { if ((await guardar()) === 'transferido') await new Promise(ok => setTimeout(ok, 1200)); } // dá tempo à transferência antes de mudar de página
+    if (r === 'guardar') { const g = await guardar(); if (g === 'recusado') return false; if (g === 'transferido') await new Promise(ok => setTimeout(ok, 1200)); } // dá tempo à transferência antes de mudar de página
     else descartarAlteracoes();
   }
   alterado = false; // nada por guardar: não pedir confirmação ao sair da página
   const b = listaFreg.querySelector(`[data-freg="${id}"]`); if (b) { b.classList.add('a-carregar'); b.textContent += '…'; }
   try { localStorage.setItem('co-freguesia', id); } catch (err) { /* sem armazenamento local */ }
   const qs = new URLSearchParams(location.search); qs.set('freguesia', id); qs.delete('cidade');
+  if (opcoes.editar) qs.set('editor', ''); // abre lá em modo de edição (a conta é verificada outra vez)
+  if (opcoes.criar) qs.set('criar', ''); else qs.delete('criar');
   location.href = location.pathname + qsTexto(qs);
   return true; // a página vai mudar
 }
@@ -1028,7 +1052,7 @@ function construirCidade(lista) {
   const base = `<b>Lisboa</b> · ${lista.length} freguesias <small>· escolhe uma</small>`;
   g.addLayer(L.polygon([MUNDO, ...aneis], { pane: 'cidade', stroke: false, fillColor: '#05070a', fillOpacity: .6, interactive: false })); // fora de Lisboa, escurecido
   for (const f of lista) {
-    const atual = f.id === FREG.id, cor = atual ? '#f3c35b' : '#ffffff';
+    const atual = !semFreguesia && f.id === FREG.id, cor = atual ? '#f3c35b' : '#ffffff';
     const ecos = [0, 1].map(i => L.polygon(f.aneis, { pane: 'cidade', color: cor, weight: 3, opacity: 0, fill: false, interactive: false, lineJoin: 'round', className: `eco eco-zona eco-${i}` }));
     const estilo = { color: cor, weight: atual ? 3 : 1.5, opacity: .9, fillColor: cor, fillOpacity: atual ? .16 : .05 };
     const pol = L.polygon(f.aneis, { pane: 'cidade', ...estilo, bubblingMouseEvents: false });
@@ -1052,8 +1076,8 @@ function construirCidade(lista) {
   g.escolher = id => { // realça uma freguesia (sem a abrir); null limpa
     const ant = porId[g.escolhida]; if (ant) { ant.pulsar(false); ant.pol.setStyle(ant.estilo); }
     g.escolhida = id; const o = porId[id], btn = $('#btn-cidade-voltar');
-    if (o) { o.pulsar(true); o.pol.setStyle({ fillOpacity: .28, weight: 3 }); txt.innerHTML = '<b>' + esc(o.f.nome) + '</b> · ' + o.f.ha.toLocaleString('pt-PT') + ' ha <small>· toca outra vez para abrir</small>'; btn.textContent = 'Abrir ' + o.f.nome + ' →'; }
-    else { txt.innerHTML = base; btn.textContent = '← Voltar a ' + FREG.nome; }
+    if (o) { o.pulsar(true); o.pol.setStyle({ fillOpacity: .28, weight: 3 }); txt.innerHTML = '<b>' + esc(o.f.nome) + '</b> · ' + o.f.ha.toLocaleString('pt-PT') + ' ha <small>· toca outra vez para abrir</small>'; btn.textContent = 'Abrir ' + o.f.nome + ' →'; btn.hidden = false; }
+    else { txt.innerHTML = base; btn.textContent = '← Voltar a ' + FREG.nome; btn.hidden = semFreguesia; } // à entrada não há de onde voltar
   };
   return g;
 }
@@ -1078,12 +1102,13 @@ async function abrirCidade(ligar) {
   } else {
     cidade = false; document.body.classList.remove('cidade'); map.getContainer().classList.remove('modo-cidade', 'cidade-longe', 'cidade-muito-longe');
     map.removeLayer(camadaCidade); if (osmNaCidade) { map.removeLayer(mapaCidade); osmNaCidade = false; }
+    if (semFreguesia) { semFreguesia = false; camadaCidade = null; } // daqui em diante esta freguesia é a aberta (o mapa refaz-se com ela realçada)
     aplicarTitulo(); map.setMaxBounds(null);
     map.once('moveend', () => { if (!cidade) { map.setMinZoom(MIN_ZOOM); map.setMaxBounds(limiteBounds.pad(LIMITE_MOVER)); } });
     map.flyToBounds(limiteBounds, Object.assign({ duration: 1 }, margensGerais()));
   }
   $('#btn-cidade').classList.toggle('on', cidade); $('#btn-cidade').setAttribute('aria-pressed', String(cidade));
-  const qs = new URLSearchParams(location.search); if (cidade) qs.set('cidade', ''); else qs.delete('cidade');
+  const qs = new URLSearchParams(location.search); if (cidade) qs.set('cidade', ''); else { qs.delete('cidade'); qs.set('freguesia', FREG.id); } // ao recarregar, fica onde está
   history.replaceState(null, '', location.pathname + qsTexto(qs) + location.hash);
 }
 $('#btn-cidade-voltar').addEventListener('click', () => { if (camadaCidade && camadaCidade.escolhida) irParaFreguesia(camadaCidade.escolhida); else abrirCidade(false); });
@@ -1307,10 +1332,10 @@ const htmlCriar = c => `<button type="button" class="camada" role="menuitem" dat
 const CtrlCriar = L.Control.extend({ onAdd() {
   const box = L.DomUtil.create('div'); box.id = 'criar';
   const b = L.DomUtil.create('button', '', box); b.id = 'btn-criar'; b.type = 'button'; b.textContent = '+';
-  b.title = 'Criar ponto, rua ou zona'; b.setAttribute('aria-label', 'Criar'); b.setAttribute('aria-expanded', 'false'); b.setAttribute('aria-controls', 'menu-criar');
+  b.title = 'Criar ponto, rua ou zona (entra no modo de edição)'; b.setAttribute('aria-label', 'Criar'); b.setAttribute('aria-expanded', 'false'); b.setAttribute('aria-controls', 'menu-criar');
   const menu = L.DomUtil.create('div', 'vidro', box); menu.id = 'menu-criar'; menu.setAttribute('role', 'menu'); menu.setAttribute('aria-label', 'Criar');
   L.DomEvent.disableClickPropagation(box); L.DomEvent.disableScrollPropagation(box);
-  b.addEventListener('click', () => abrirCriar());
+  b.addEventListener('click', () => { if (edicao) abrirCriar(); else pedirEdicao({ criar: true }); }); // fora da edição: entra (com sessão) e abre o menu
   menu.addEventListener('click', e => { const it = e.target.closest('[data-criar]'); if (!it) return; abrirCriar(false); criarDoMenu(it.dataset.criar); });
   return box;
 } });
@@ -1617,16 +1642,19 @@ function aviso(txt, ms) {
 const dialogoEl = $('#dialogo');
 // Com «campo» ({ rotulo, valor }) tem uma caixa de texto e devolve { r, valor }; Enter escolhe o botão principal.
 // (Substitui prompt() e confirm(): a aplicação de computador não tem prompt(), e assim o aspeto é o mesmo em todo o lado.)
-// Com «campos» ([{ nome, rotulo, valor, tipo?, opcoes? }]) tem vários campos (opcoes: [{ valor, texto }] faz uma lista) e devolve { r, valores }.
-function dialogo({ titulo, texto, alerta, botoes, campo, campos }) {
-  const htmlCampo = c => `<label class="campo-dialogo">${esc(c.rotulo || '')}${c.opcoes ? `<select class="seletor" name="${esc(c.nome || '')}">${c.opcoes.map(o => `<option value="${esc(o.valor)}">${esc(o.texto)}</option>`).join('')}</select>` : `<input type="${c.tipo || 'text'}" name="${esc(c.nome || '')}" value="${esc(c.valor || '')}" spellcheck="false" autocomplete="off">`}</label>`;
+// Com «campos» ([{ nome, rotulo, valor, tipo?, opcoes?, autocomplete? }]) tem vários campos (opcoes: [{ valor, texto }] faz uma lista;
+// tipo 'checkbox' faz uma caixa de verificação, com valor true/false) e devolve { r, valores }.
+// «corpo» é HTML que vem depois do texto (uma tabela, por exemplo), «largo» alarga a caixa e «foco» é o nome do campo que fica com o cursor.
+function dialogo({ titulo, texto, alerta, botoes, campo, campos, corpo, largo, foco, emLinha }) {
+  const htmlCampo = c => c.tipo === 'checkbox' ? `<label class="campo-dialogo marca"><input type="checkbox" name="${esc(c.nome || '')}"${c.valor ? ' checked' : ''}>${esc(c.rotulo || '')}</label>` : `<label class="campo-dialogo">${esc(c.rotulo || '')}${c.opcoes ? `<select class="seletor" name="${esc(c.nome || '')}">${c.opcoes.map(o => `<option value="${esc(o.valor)}"${String(o.valor) === String(c.valor) ? ' selected' : ''}>${esc(o.texto)}</option>`).join('')}</select>` : `<input type="${c.tipo || 'text'}" name="${esc(c.nome || '')}" value="${esc(c.valor || '')}" spellcheck="false" autocomplete="${c.autocomplete || 'off'}" autocapitalize="off">`}</label>`;
   return new Promise(resolve => {
-    dialogoEl.querySelector('.caixa').innerHTML = `<h2 id="dialogo-titulo">${esc(titulo)}</h2>${texto ? `<p>${texto}</p>` : ''}${campo ? htmlCampo(campo) : ''}${(campos || []).map(htmlCampo).join('')}${alerta ? `<p class="alerta">⚠ ${alerta}</p>` : ''}<div class="botoes">${botoes.map(b => `<button type="button" class="btn ${b.classe || ''}" data-r="${b.id}">${esc(b.texto)}</button>`).join('')}</div>`;
+    const caixa = dialogoEl.querySelector('.caixa'); caixa.classList.toggle('larga', !!largo);
+    caixa.innerHTML = `<h2 id="dialogo-titulo">${esc(titulo)}</h2>${texto ? `<p>${texto}</p>` : ''}${corpo || ''}${campo ? htmlCampo(campo) : ''}${emLinha ? '<div class="filtros-dialogo">' : ''}${(campos || []).map(htmlCampo).join('')}${emLinha ? '</div>' : ''}${alerta ? `<p class="alerta">⚠ ${alerta}</p>` : ''}<div class="botoes">${botoes.map(b => `<button type="button" class="btn ${b.classe || ''}" data-r="${b.id}">${esc(b.texto)}</button>`).join('')}</div>`;
     const anterior = document.activeElement;
-    const entrada = dialogoEl.querySelector('.campo-dialogo input, .campo-dialogo select');
+    const entrada = (foco && dialogoEl.querySelector(`.campo-dialogo [name="${foco}"]`)) || dialogoEl.querySelector('.campo-dialogo input, .campo-dialogo select');
     const fim = r => {
       const valor = entrada ? entrada.value : undefined, valores = {};
-      dialogoEl.querySelectorAll('.campo-dialogo [name]').forEach(e => { valores[e.name] = e.value; });
+      dialogoEl.querySelectorAll('.campo-dialogo [name]').forEach(e => { valores[e.name] = e.type === 'checkbox' ? e.checked : e.value; });
       dialogoEl.classList.remove('aberto'); dialogoEl.removeEventListener('click', clique); window.removeEventListener('keydown', tecla, true); if (anterior && anterior.focus) anterior.focus();
       resolve(campos ? { r, valores } : campo ? { r, valor } : r);
     };
@@ -1660,7 +1688,7 @@ async function sairEdicao() {
   if (alterado) {
     const r = await perguntarGuardar('Sair do modo de edição', 'sair');
     if (r === 'cancelar') return;
-    if (r === 'guardar') { await guardar(); alterado = false; }
+    if (r === 'guardar') { if ((await guardar()) === 'recusado') return; alterado = false; } // recusado: continua a editar (o trabalho está na gravação automática)
     else { descartarAlteracoes(); aviso('Alterações descartadas.', 3000); }
   }
   entrarEdicao(false);
@@ -1693,6 +1721,7 @@ function entrarEdicao(ligar) {
   barra.classList.toggle('aberto', edicao);
   btnEditar.classList.toggle('on', edicao); btnEditar.setAttribute('aria-pressed', String(edicao));
   btnGuiao.disabled = edicao; if (edicao && guiaoAberto()) ligarGuiao(false);
+  $('#btn-criar').title = edicao ? 'Criar ponto, rua ou zona' : 'Criar ponto, rua ou zona (entra no modo de edição)';
   if (edicao && cidade) abrirCidade(false);
   abrirCriar(false);
   const s = selecionado; limparSelecao(); limparRuaDestaque(); fecharCartao();
@@ -1737,15 +1766,27 @@ function zonaEm(ll, excluir) { const p = L.latLng(ll); for (const z of ELEMENTOS
 const arredLL = ll => [+ll.lat.toFixed(6), +ll.lng.toFixed(6)];
 
 // ---- estado: alterações, gravação automática, gravação ----
-// A gravação automática guarda o preset em curso neste browser (localStorage) a cada alteração e repõe-no ao abrir a página,
-// mesmo sem se ter gravado dados/conteudos.js. «Repor do ficheiro» descarta-o.
-const PREFIXO_AUTO = 'co-autosave:' + (CO ? '' : FREG.id + ':'); // uma gravação automática por preset (e por freguesia)
-const chaveAuto = id => PREFIXO_AUTO + (id || C.preset);
+// A gravação automática (o rascunho) guarda o preset em curso neste browser (localStorage) a cada alteração, ao passar a
+// aplicação para segundo plano e ao fechar, mesmo sem se ter gravado dados/conteudos.js. Cada rascunho é da conta que o
+// fez: volta quando essa conta entra no modo de edição, e quem só vê a apresentação vê sempre os ficheiros. «Repor do
+// ficheiro» descarta-o.
+const PREFIXO_ANTIGO = 'co-autosave:' + (CO ? '' : FREG.id + ':'); // os rascunhos de antes das contas (sem dono)
+const prefixoAuto = () => SESSAO ? 'co-autosave:' + normalizarUtilizador(SESSAO.utilizador) + '@' + (CO ? '' : FREG.id + ':') : PREFIXO_ANTIGO;
+const chaveAuto = id => prefixoAuto() + (id || C.preset);
 const CHAVE_ATIVO = CO ? 'co-preset-ativo' : 'co-preset-ativo:' + FREG.id;
-function lerAutosaveDe(id) { try { const r = JSON.parse(localStorage.getItem(chaveAuto(id)) || 'null'); return r && r.dados ? r : null; } catch (err) { return null; } }
+function lerAutosaveDe(id) { // só com sessão: o rascunho desta conta ou, se não houver, um de antes das contas
+  if (!SESSAO) return null;
+  for (const k of [chaveAuto(id), PREFIXO_ANTIGO + (id || C.preset)]) { try { const r = JSON.parse(localStorage.getItem(k) || 'null'); if (r && r.dados) return r; } catch (err) { /* sem armazenamento local */ } }
+  return null;
+}
+function apagarAutosave(id) { try { localStorage.removeItem(chaveAuto(id)); if (SESSAO) localStorage.removeItem(PREFIXO_ANTIGO + (id || C.preset)); } catch (err) { /* sem armazenamento local */ } }
 function estado(txt, sujo) { estadoEl.textContent = txt; barra.classList.toggle('sujo', !!sujo); }
 function autoGuardar() {
-  try { localStorage.setItem(chaveAuto(), JSON.stringify({ quando: Date.now(), dados: serializar() })); $('#estado-auto').textContent = 'gravação automática às ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5); autoFalhou = false; }
+  try {
+    localStorage.setItem(chaveAuto(), JSON.stringify({ quando: Date.now(), utilizador: SESSAO ? SESSAO.utilizador : '', dados: serializar() }));
+    if (SESSAO) localStorage.removeItem(PREFIXO_ANTIGO + C.preset); // um rascunho de antes das contas passa a ser desta conta
+    $('#estado-auto').textContent = 'rascunho guardado às ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5); autoFalhou = false;
+  }
   catch (err) { $('#estado-auto').textContent = 'gravação automática indisponível'; if (!autoFalhou) { autoFalhou = true; aviso('A gravação automática no browser falhou (sem espaço, provavelmente por fotos embebidas). Guarda ou exporta para não perderes o trabalho.', 8000); } }
 }
 // a gravação automática espera meio segundo sem alterações (escrever o preset inteiro a cada tecla custava, com fotos embebidas, megabytes por tecla)
@@ -1756,14 +1797,16 @@ function marcarAlterado() {
 }
 function autoGuardarJa() { if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; autoGuardar(); } } // antes de trocar de preset ou de sair da página
 function cancelarAuto() { clearTimeout(autoTimer); autoTimer = null; }
+// em segundo plano, ao mudar de janela ou ao fechar (mesmo sem passar pelo aviso), o trabalho fica logo em rascunho
 window.addEventListener('pagehide', autoGuardarJa);
+window.addEventListener('blur', autoGuardarJa);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') autoGuardarJa(); });
 // a gravação automática só vale se for mais recente do que o ficheiro do preset (alterado à mão ou noutro browser)
 async function autosaveValido(id, r) {
   try {
     const h = await fetch(BASE + 'presets/' + encodeURIComponent(id) + '.js', { method: 'HEAD', cache: 'no-store' });
     const mod = h.ok && h.headers.get('Last-Modified') ? Date.parse(h.headers.get('Last-Modified')) : 0;
-    if (mod && mod > r.quando) { try { localStorage.removeItem(chaveAuto(id)); } catch (err) { /* sem armazenamento local */ } aviso('O ficheiro do preset é mais recente do que a gravação automática; foi mantida a versão do ficheiro.', 6000); return false; }
+    if (mod && mod > r.quando) { apagarAutosave(id); aviso('O ficheiro do preset é mais recente do que a gravação automática; foi mantida a versão do ficheiro.', 6000); return false; }
   } catch (err) { /* sem servidor: não há como comparar; vale a gravação automática */ }
   return true;
 }
@@ -1785,12 +1828,12 @@ function resumoPreset(d) { const n = (d.elementos || []).length, c = (d.categori
 // ---- vários presets: lista em dados/presets/index.js, cada um em dados/presets/<id>.js; o ativo é copiado para dados/conteudos.js ----
 const PRESETS = Array.isArray(window.PRESETS) ? window.PRESETS : [];
 const PRESETS_LOCAIS = new Set(); // presets que só existem na gravação automática deste browser (sem ficheiro)
-function acrescentarPresetsLocais() { // lista também os presets desta freguesia que só estão neste browser
-  const prefixo = PREFIXO_AUTO;
+function acrescentarPresetsLocais() { // lista também os presets desta freguesia que só estão neste browser (nos rascunhos desta conta)
+  if (!SESSAO) return;
   try {
     for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i); if (!k || !k.startsWith(prefixo)) continue;
-      const id = k.slice(prefixo.length); if (!/^[a-z0-9][a-z0-9-]*$/.test(id) || PRESETS.some(p => p.id === id)) continue; // «co-autosave:alcantara:x» não é de Campo de Ourique
+      const k = localStorage.key(i), prefixo = k && [prefixoAuto(), PREFIXO_ANTIGO].find(p => k.startsWith(p)); if (!prefixo) continue;
+      const id = k.slice(prefixo.length); if (!/^[a-z0-9][a-z0-9-]*$/.test(id) || PRESETS.some(p => p.id === id)) continue; // «co-autosave:alcantara:x» não é de Campo de Ourique; «x@…» é de uma conta
       const r = lerAutosaveDe(id); if (!r) continue;
       PRESETS.push({ id, nome: r.dados.titulo || id, subtitulo: r.dados.subtitulo || '', elementos: (r.dados.elementos || []).length, local: true }); PRESETS_LOCAIS.add(id);
     }
@@ -1826,7 +1869,7 @@ async function mudarPreset(id, silencioso) {
   alterado = usarAuto; estado(usarAuto ? 'Alterações por guardar (gravação automática de ' + new Date(auto.quando).toLocaleString('pt-PT') + ')' : 'Sem alterações', usarAuto);
   try { localStorage.setItem(CHAVE_ATIVO, id); } catch (err) { /* sem armazenamento local */ }
   preencherPresets();
-  if (await verificarServidor()) { try { const r = await fetch('/ativar-preset/' + encodeURIComponent(id) + qsFreguesia, { method: 'POST' }); const j = await r.json(); if (j.presets) atualizarPresets(j.presets); } catch (err) { /* fica só nesta sessão */ } }
+  if (await verificarServidor() && podeEditarEm(SESSAO, FREG.id)) { try { const r = await postLocal('/ativar-preset/' + encodeURIComponent(id) + qsFreguesia, ''); const j = await r.json(); if (j.presets) atualizarPresets(j.presets); } catch (err) { /* fica só nesta sessão */ } } // sem sessão (só a ver), a escolha fica neste browser
   if (!silencioso) aviso(`Preset «${C.titulo || id}» ativo.`, 2500);
 }
 function atualizarPresets(lista) { PRESETS.length = 0; PRESETS.push(...lista); for (const id of [...PRESETS_LOCAIS]) { const r = lerAutosaveDe(id); if (PRESETS.some(p => p.id === id)) PRESETS_LOCAIS.delete(id); else if (r) PRESETS.push({ id, nome: r.dados.titulo || id, subtitulo: r.dados.subtitulo || '', elementos: (r.dados.elementos || []).length, local: true }); } garantirPresetAtual(); preencherPresets(); }
@@ -1848,9 +1891,9 @@ async function apagarPreset() {
   if (!(await confirmar('Apagar preset', `Apagar o preset «${esc(nome)}» e o ficheiro ${esc(BASE)}presets/${esc(id)}.js? Recomenda-se exportá-lo antes. Fica uma cópia .apagado.bak na pasta.`, 'Apagar', true))) return;
   const outro = PRESETS.find(p => p.id !== id).id;
   PRESETS.splice(PRESETS.findIndex(p => p.id === id), 1);
-  cancelarAuto(); try { localStorage.removeItem(chaveAuto(id)); } catch (err) { /* sem armazenamento local */ }
+  cancelarAuto(); apagarAutosave(id);
   PRESETS_LOCAIS.delete(id); alterado = false;
-  if (await verificarServidor()) { try { await fetch('/apagar-preset/' + encodeURIComponent(id) + qsFreguesia, { method: 'POST' }); } catch (err) { /* o ficheiro fica, mas sai da lista desta sessão */ } }
+  if (await verificarServidor()) { try { const r = await postLocal('/apagar-preset/' + encodeURIComponent(id) + qsFreguesia, ''); if (!r.ok) aviso('O ficheiro do preset não foi apagado: ' + ((await r.json().catch(() => ({}))).erro || r.status) + '.', 6000); } catch (err) { /* o ficheiro fica, mas sai da lista desta sessão */ } }
   await mudarPreset(outro);
   aviso(`Preset «${nome}» apagado.`, 3000);
 }
@@ -1867,14 +1910,15 @@ async function importarPreset(ficheiro) {
   let d; try { d = lerPreset(await ficheiro.text()); } catch (err) { aviso('Não foi possível importar: ' + err.message, 5000); return; }
   const outra = d.freguesia && d.freguesia !== FREG.id ? FREGUESIAS.find(f => f.id === d.freguesia) : null;
   if (outra) {
+    const podeLa = podeEditarEm(SESSAO, outra.id); // levá-lo para lá só com uma conta que edite essa freguesia
     const r = await dialogo({ titulo: 'Preset de outra freguesia',
-      texto: `«${esc(resumoPreset(d))}» foi feito para <b>${esc(outra.nome)}</b>. Cada freguesia tem os seus presets: abri-lo em ${esc(outra.nome)} acrescenta-o lá como preset alternativo e não mexe nos de ${esc(FREG.nome)}.`,
+      texto: `«${esc(resumoPreset(d))}» foi feito para <b>${esc(outra.nome)}</b>. Cada freguesia tem os seus presets: ${podeLa ? `abri-lo em ${esc(outra.nome)} acrescenta-o lá como preset alternativo e não mexe nos de ${esc(FREG.nome)}` : `a conta ${esc(SESSAO ? SESSAO.utilizador : '')} não edita ${esc(outra.nome)}, por isso só o podes importar aqui`}.`,
       alerta: `Importado aqui, os pontos e as zonas ficam nos sítios de ${esc(outra.nome)}, fora do mapa de ${esc(FREG.nome)}.`,
-      botoes: [{ id: 'cancelar', texto: 'Cancelar' }, { id: 'aqui', texto: 'Importar aqui' }, { id: 'ir', texto: 'Abrir em ' + outra.nome, classe: 'on' }] });
+      botoes: [{ id: 'cancelar', texto: 'Cancelar' }, { id: 'aqui', texto: 'Importar aqui', classe: podeLa ? '' : 'on' }, ...(podeLa ? [{ id: 'ir', texto: 'Abrir em ' + outra.nome, classe: 'on' }] : [])] });
     if (r === 'cancelar') return;
     if (r === 'ir') {
       try { localStorage.setItem('co-importar:' + outra.id, JSON.stringify(d)); } catch (err) { aviso(`Não há espaço neste browser para levar o preset; abre ${outra.nome} e importa-o lá.`, 7000); return; }
-      if (!(await irParaFreguesia(outra.id))) try { localStorage.removeItem('co-importar:' + outra.id); } catch (err) { /* sem armazenamento local */ } // cancelado: fica cá
+      if (!(await irParaFreguesia(outra.id, { editar: true }))) try { localStorage.removeItem('co-importar:' + outra.id); } catch (err) { /* sem armazenamento local */ } // cancelado: fica cá
       return;
     }
   }
@@ -1897,7 +1941,7 @@ async function acrescentarPresetImportado(d, opcoes = {}) {
 function descartarAlteracoes() {
   cancelarAuto();
   const id = C.preset; carregar(clonar(FICHEIRO)); C.preset = id; alterado = false;
-  try { if (PRESETS_LOCAIS.has(id)) autoGuardar(); else localStorage.removeItem(chaveAuto()); } catch (err) { /* sem armazenamento local */ } // um preset sem ficheiro fica só com a versão de partida
+  if (PRESETS_LOCAIS.has(id)) autoGuardar(); else apagarAutosave(id); // um preset sem ficheiro fica só com a versão de partida
   estado('Alterações descartadas'); $('#estado-auto').textContent = 'gravação automática ligada';
 }
 async function reporDoFicheiro() {
@@ -1909,7 +1953,8 @@ async function arrancarPresets() { // ao abrir: ativa o preset escolhido na sess
   let ativo = null; try { ativo = localStorage.getItem(CHAVE_ATIVO); } catch (err) { /* sem armazenamento local */ }
   if (ativo && ativo !== C.preset && (PRESETS.some(p => p.id === ativo) || lerAutosaveDe(ativo))) await mudarPreset(ativo, true);
   else await restaurarAutosave();
-  // preset importado noutra freguesia e trazido para esta
+  // preset importado noutra freguesia e trazido para esta (grava-se com a sessão de quem o trouxe)
+  await sessaoPronta;
   let trazido = null; try { trazido = JSON.parse(localStorage.getItem('co-importar:' + FREG.id) || 'null'); localStorage.removeItem('co-importar:' + FREG.id); } catch (err) { trazido = null; }
   if (trazido && Array.isArray(trazido.elementos)) await acrescentarPresetImportado(trazido);
 }
@@ -1918,8 +1963,8 @@ async function restaurarAutosave() { // repõe o preset em curso da sessão ante
   if (!r || JSON.stringify(r.dados) === JSON.stringify(FICHEIRO)) return;
   if (!PRESETS_LOCAIS.has(C.preset) && !(await autosaveValido(C.preset, r))) return;
   const id = C.preset; carregar(clonar(r.dados)); C.preset = id; alterado = true;
-  estado('Alterações por guardar (recuperadas de ' + new Date(r.quando).toLocaleString('pt-PT') + ')', true);
-  aviso('Trabalho da sessão anterior recuperado; ainda não está guardado no ficheiro do preset.', 7000);
+  marcarAlterado(); estado('Alterações por guardar (rascunho de ' + new Date(r.quando).toLocaleString('pt-PT') + ')', true);
+  aviso('Rascunho de ' + dataHora(r.quando) + ' recuperado: ainda não está guardado no ficheiro do preset.', 7000);
 }
 function limpo(el, completo) { // completo: as ruas levam também o traçado (para o servidor central, que não tem ruas.js)
   const c = { id: el.id, tipo: el.tipo, nome: el.nome };
@@ -1962,20 +2007,26 @@ async function verificarServidor() { // o servidor local (tools/serve.mjs) aceit
   barra.classList.toggle('offline', !servidorOk);
   return servidorOk;
 }
+// devolve 'servidor' (gravado no servidor local), 'transferido' (sem servidor: o ficheiro foi transferido) ou
+// 'recusado' (sem sessão ou sem permissão para esta freguesia: o trabalho fica na gravação automática)
 async function guardar(opcoes = {}) {
-  const dados = serializar();
-  if (!opcoes.semCentral && CONFIG_CENTRAL.enviarAoGuardar !== false) enfileirarCentral(serializar(true)); // também para o servidor central, se houver (com fila, se não houver rede)
+  const dados = serializar(), paraCentral = !opcoes.semCentral && CONFIG_CENTRAL.enviarAoGuardar !== false;
   if (await verificarServidor()) {
     try {
-      const r = await fetch('/guardar' + qsFreguesia, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) });
+      const r = await postLocal('/guardar' + qsFreguesia, JSON.stringify(dados));
       const j = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(j.erro || r.statusText);
+      if (!r.ok) throw Object.assign(new Error(j.erro || r.statusText), { codigo: r.status });
       alterado = false; FICHEIRO = clonar(dados); cancelarAuto(); autoGuardar(); PRESETS_LOCAIS.delete(C.preset);
       if (j.presets) atualizarPresets(j.presets); else preencherPresets();
       estado('Guardado em ' + BASE + 'presets/' + C.preset + '.js · ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5)); aviso('Preset guardado e ativo em ' + BASE + 'conteudos.js.', 2500);
+      if (paraCentral) enfileirarCentral(serializar(true)); // também para o servidor central, se houver (com fila, se não houver rede)
       return 'servidor';
-    } catch (err) { aviso('Não foi possível guardar no servidor (' + err.message + '); a transferir o ficheiro.', 6000); }
-  }
+    } catch (err) {
+      if (err.codigo === 401 || err.codigo === 403) { autoGuardarJa(); aviso('Não foi guardado: ' + (err.codigo === 403 && SESSAO ? `a conta ${SESSAO.utilizador} não pode editar ${FREG.nome}` : err.message) + '. O trabalho fica na gravação automática deste ' + (AMBIENTE.app ? 'computador' : 'browser') + '.', 7000); return 'recusado'; }
+      aviso('Não foi possível guardar no servidor (' + err.message + '); a transferir o ficheiro.', 6000);
+    }
+  } else if (!podeEditarEm(SESSAO, FREG.id)) { autoGuardarJa(); aviso('Para guardar, inicia sessão com uma conta que edite ' + FREG.nome + '.', 6000); return 'recusado'; }
+  if (paraCentral) enfileirarCentral(serializar(true));
   autoGuardarJa(); transferir(dados); // sem servidor o trabalho fica também na gravação automática
   return 'transferido';
 }
@@ -1986,17 +2037,21 @@ async function guardar(opcoes = {}) {
 const CONFIG_CENTRAL = window.CONFIG_CENTRAL || {};
 const CHAVE_CENTRAL = 'co-central', CHAVE_FILA = 'co-central-fila';
 let AMBIENTE = { app: false, versao: '' }, estadoCentral = '', aEnviar = false;
-function lerCentral() { let c = {}; try { c = JSON.parse(localStorage.getItem(CHAVE_CENTRAL) || '{}'); } catch (err) { c = {}; } return { url: (c.url !== undefined ? c.url : CONFIG_CENTRAL.url) || '', autor: c.autor || '', chave: c.chave || '' }; }
+function lerCentral() { let c = {}; try { c = JSON.parse(localStorage.getItem(CHAVE_CENTRAL) || '{}'); } catch (err) { c = {}; } return { url: (c.url !== undefined ? c.url : CONFIG_CENTRAL.url) || '', chave: c.chave || '' }; }
 function gravarCentral(c) { try { localStorage.setItem(CHAVE_CENTRAL, JSON.stringify(c)); } catch (err) { /* sem armazenamento local */ } }
 const urlCentral = () => lerCentral().url.trim().replace(/\/+$/, '');
 function filaCentral() { try { return JSON.parse(localStorage.getItem(CHAVE_FILA) || '[]'); } catch (err) { return []; } }
 function gravarFila(f) { try { localStorage.setItem(CHAVE_FILA, JSON.stringify(f)); return true; } catch (err) { aviso('Sem espaço neste browser para a fila do servidor central (fotos embebidas?).', 6000); return false; } }
+// pedido ao servidor central com a sessão aberta lá (ou, sem ela, com a chave de acesso do painel)
 async function pedirCentral(caminho, opcoes = {}) {
   const c = lerCentral(); if (!urlCentral()) throw Object.assign(new Error('o servidor central não está configurado'), { codigo: 0 });
+  const s = opcoes.semSessao ? null : lerSessaoCentral(), credencial = s ? s.testemunho : opcoes.semSessao ? '' : c.chave;
+  const { texto, semSessao, ...pedido } = opcoes;
   let r;
-  try { r = await fetch(urlCentral() + caminho, { ...opcoes, headers: { 'Content-Type': 'application/json', ...(c.chave ? { Authorization: 'Bearer ' + c.chave } : {}) }, signal: AbortSignal.timeout(30000) }); }
+  try { r = await fetch(urlCentral() + caminho, { ...pedido, headers: { 'Content-Type': 'application/json', ...(credencial ? { Authorization: 'Bearer ' + credencial } : {}) }, signal: AbortSignal.timeout(30000) }); }
   catch (err) { throw Object.assign(new Error('sem ligação ao servidor central'), { codigo: 0 }); }
-  if (r.ok && opcoes.texto) return r.text(); // o objeto tal como está (cópia local)
+  if (r.status === 401 && s) gravarSessaoCentral(null); // a sessão lá terminou (ou a palavra-passe mudou noutro sítio)
+  if (r.ok && texto) return r.text(); // o objeto tal como está (cópia local)
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw Object.assign(new Error(j.erro || 'erro ' + r.status), { codigo: r.status });
   return j;
@@ -2011,6 +2066,8 @@ async function copiarCentral(manual) {
   if (aCopiar) return;
   if (!urlCentral()) { if (manual) aviso('Configura primeiro o servidor central.', 4000); return; }
   if (!(await verificarServidor())) { if (manual) aviso('A cópia local precisa da aplicação de computador ou do servidor local (npm start).', 6000); return; }
+  const sc = lerSessaoCentral(); // a cópia tem tudo, incluindo quem fez o quê: só a administração a faz
+  if (!(sc && sc.papel === 'admin') && !lerCentral().chave) { if (manual) aviso('A cópia local precisa de uma sessão da administração no servidor central (ou de uma chave de acesso da administração no painel).', 7000); return; }
   aCopiar = true; if (manual) aviso('A copiar o servidor central para este computador…');
   try {
     const { objetos } = await pedirCentral('/copia');
@@ -2030,26 +2087,34 @@ setInterval(() => { if (HORAS_COPIA > 0 && urlCentral() && copiaEmAtraso()) copi
 function enfileirarCentral(dados) {
   if (!urlCentral()) return;
   const f = filaCentral().filter(x => !(x.freguesia === FREG.id && x.preset === dados.preset)); // só a versão mais recente de cada preset
-  f.push({ freguesia: FREG.id, preset: dados.preset, quando: Date.now(), dados });
+  f.push({ freguesia: FREG.id, preset: dados.preset, quando: Date.now(), utilizador: SESSAO ? SESSAO.utilizador : '', dados });
   if (gravarFila(f)) { atualizarEstadoCentral(); enviarFilaCentral(); }
+}
+// cada envio segue com a sessão de quem o fez: um envio de outra conta espera que essa conta entre outra vez
+function podeEnviar(x) {
+  const s = lerSessaoCentral();
+  if (s) return !x.utilizador || normalizarUtilizador(x.utilizador) === normalizarUtilizador(s.utilizador);
+  return !!lerCentral().chave; // sem sessão, só com uma chave de acesso
 }
 async function enviarFilaCentral() {
   if (aEnviar || !urlCentral() || !filaCentral().length) { atualizarEstadoCentral(); return; }
   if (navigator.onLine === false) { estadoCentral = 'sem rede'; atualizarEstadoCentral(); return; }
   aEnviar = true;
   try {
-    for (let f = filaCentral(); f.length; f = filaCentral()) {
+    for (let f = filaCentral().filter(podeEnviar); f.length; f = filaCentral().filter(podeEnviar)) {
       const x = f[0];
       try {
-        await pedirCentral('/presets/' + encodeURIComponent(x.freguesia) + '/' + encodeURIComponent(x.preset), { method: 'POST', body: JSON.stringify({ dados: x.dados, autor: lerCentral().autor, origem: AMBIENTE.app ? 'aplicacao' : 'browser', versao: AMBIENTE.versao || '', quando: x.quando }) });
+        await pedirCentral('/presets/' + encodeURIComponent(x.freguesia) + '/' + encodeURIComponent(x.preset), { method: 'POST', body: JSON.stringify({ dados: x.dados, origem: AMBIENTE.app ? 'aplicacao' : 'browser', versao: AMBIENTE.versao || '', quando: x.quando }) });
         estadoCentral = 'enviado às ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5);
       } catch (err) {
-        // sem rede, servidor em baixo ou chave errada: fica na fila e tenta-se mais tarde; um preset recusado (400, 409, 413) sai da fila
-        if (err.codigo && err.codigo >= 400 && err.codigo < 500 && err.codigo !== 401 && err.codigo !== 403 && err.codigo !== 408 && err.codigo !== 429) aviso(`O servidor central recusou «${x.preset}»: ${err.message}.`, 7000);
-        else { estadoCentral = err.message; break; }
+        // sem rede, servidor em baixo ou sessão terminada: fica na fila e tenta-se mais tarde; um preset recusado (400, 403 sem
+        // permissão para a freguesia, 409, 413) sai da fila (está guardado neste computador)
+        if (err.codigo && err.codigo >= 400 && err.codigo < 500 && err.codigo !== 401 && err.codigo !== 408 && err.codigo !== 429) aviso(`O servidor central recusou «${x.preset}»: ${err.message}.`, 7000);
+        else { estadoCentral = err.codigo === 401 ? 'inicia sessão para enviar' : err.message; break; }
       }
       gravarFila(filaCentral().filter(y => !(y.freguesia === x.freguesia && y.preset === x.preset && y.quando === x.quando)));
     }
+    const resto = filaCentral(); if (resto.length && !resto.some(podeEnviar)) estadoCentral = 'inicia sessão' + (resto[0].utilizador ? ' como ' + resto[0].utilizador : '') + ' para enviar';
   } finally { aEnviar = false; atualizarEstadoCentral(); }
 }
 function atualizarEstadoCentral() {
@@ -2063,20 +2128,22 @@ setInterval(() => { if (filaCentral().length) enviarFilaCentral(); }, 60000);
 async function painelCentral() {
   const c = lerCentral(), n = filaCentral().length, ec = estadoCopia();
   const txtCopia = urlCentral() ? `<br>Cópia neste computador: ${ec ? new Date(ec.quando).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' }) + ` (${ec.objetos} ficheiros)` : 'ainda não feita'}${HORAS_COPIA > 0 ? `, renovada de ${HORAS_COPIA} em ${HORAS_COPIA} horas` : ''}${AMBIENTE.copia ? ', em ' + esc(AMBIENTE.copia) : ''}.` : '';
+  const sc = lerSessaoCentral();
+  const txtSessao = urlCentral() ? `<br>Sessão no servidor central: ${sc ? `<b>${esc(sc.utilizador)}</b>, até ${esc(dataHora(sc.expira))}` : 'nenhuma (entra no modo de edição para a abrir)'}.` : '';
   const { r, valores } = await dialogo({ titulo: 'Servidor central',
-    texto: `Cada «Guardar» envia também o preset para um servidor central, onde se recolhem e consultam os dados de todas as freguesias. Sem rede, os envios ficam numa fila neste ${AMBIENTE.app ? 'computador' : 'browser'} e seguem quando a rede voltar.${urlCentral() ? `<br><b>${n ? n + ' envio' + (n > 1 ? 's' : '') + ' por fazer' : 'Tudo enviado'}</b>${estadoCentral ? ' · ' + esc(estadoCentral) : ''}.` : ''}${txtCopia}`,
+    texto: `Cada «Guardar» envia também o preset para um servidor central, onde se recolhem e consultam os dados de todas as freguesias, com o nome da conta que o fez. Sem rede, os envios ficam numa fila neste ${AMBIENTE.app ? 'computador' : 'browser'} e seguem quando a rede voltar.${urlCentral() ? `<br><b>${n ? n + ' envio' + (n > 1 ? 's' : '') + ' por fazer' : 'Tudo enviado'}</b>${estadoCentral ? ' · ' + esc(estadoCentral) : ''}.` : ''}${txtSessao}${txtCopia}`,
     campos: [
       { nome: 'url', rotulo: 'Endereço da API (por exemplo https://dados.exemplo.pt/api/v1; vazio = sem servidor central)', valor: c.url },
-      { nome: 'autor', rotulo: 'O teu nome (fica registado com cada envio)', valor: c.autor },
-      { nome: 'chave', rotulo: 'Chave de acesso (dada por quem gere o servidor)', valor: c.chave, tipo: 'password' }],
-    botoes: [{ id: 'cancelar', texto: 'Fechar' }, { id: 'consultar', texto: 'Consultar os dados' }, { id: 'abrir', texto: 'Abrir do servidor…' }, { id: 'copiar', texto: 'Copiar agora para este computador' }, { id: 'testar', texto: 'Testar a ligação' }, { id: 'gravar', texto: 'Guardar', classe: 'on' }] });
+      { nome: 'chave', rotulo: 'Chave de acesso (opcional: só para um computador sem sessão, por exemplo o que faz a cópia local)', valor: c.chave, tipo: 'password' }],
+    botoes: [{ id: 'cancelar', texto: 'Fechar' }, { id: 'consultar', texto: 'Consultar os dados' }, { id: 'abrir', texto: 'Abrir do servidor…' }, { id: 'copiar', texto: 'Copiar agora para este computador' }, ...(SESSAO && !sc ? [{ id: 'entrar', texto: 'Entrar no servidor central' }] : []), { id: 'testar', texto: 'Testar a ligação' }, { id: 'gravar', texto: 'Guardar', classe: 'on' }] });
   if (r === 'cancelar') return;
-  gravarCentral({ url: valores.url.trim(), autor: valores.autor.trim(), chave: valores.chave.trim() }); estadoCentral = ''; atualizarEstadoCentral();
+  gravarCentral({ url: valores.url.trim(), chave: valores.chave.trim() }); estadoCentral = ''; atualizarEstadoCentral();
   if (!urlCentral()) { aviso('Sem servidor central: os presets ficam só neste ' + (AMBIENTE.app ? 'computador' : 'browser') + ' e nos ficheiros.', 4000); return; }
   if (r === 'testar') {
-    try { const e = await pedirCentral('/estado'); await pedirCentral('/presets?freguesia=' + encodeURIComponent(FREG.id)); aviso(`Ligação ao servidor central «${e.nome || urlCentral()}» certa; a chave dá acesso.`, 5000); }
+    try { const e = await pedirCentral('/estado'); await pedirCentral('/presets?freguesia=' + encodeURIComponent(FREG.id)); aviso(`Ligação ao servidor central «${e.nome || urlCentral()}» certa${e.chave ? ', com acesso de ' + e.chave.nome : ''}.`, 5000); }
     catch (err) { aviso('Ligação ao servidor central falhou: ' + err.message + '.', 6000); }
-  } else if (r === 'abrir') abrirDoCentral();
+  } else if (r === 'entrar') { if (await dialogoEntrar({ soCentral: true })) enviarFilaCentral(); }
+  else if (r === 'abrir') abrirDoCentral();
   else if (r === 'copiar') copiarCentral(true);
   else if (r === 'consultar') window.open(urlCentral().replace(/\/api\/v\d+$/, '') + '/', '_blank', 'noopener');
   else { aviso('Ligação ao servidor central guardada.', 2500); enviarFilaCentral(); }
@@ -2092,6 +2159,277 @@ async function abrirDoCentral() { // traz um preset do servidor central como pre
   try { const j = await pedirCentral('/presets/' + encodeURIComponent(FREG.id) + '/' + encodeURIComponent(valores.p)); await acrescentarPresetImportado(j.dados, { semCentral: true }); }
   catch (err) { aviso('Não foi possível abrir o preset: ' + err.message + '.', 6000); }
 }
+// ---------- contas: o modo de edição precisa de uma sessão, e cada conta só edita as suas freguesias ----------
+// A palavra-passe não sai daqui: o browser deriva dela uma chave de entrada (o mesmo cálculo de servidor-central/contas.mjs)
+// e só essa vai para o servidor local (aplicação de computador ou npm start) e para o servidor central, se houver. O
+// servidor local guarda a sessão num cookie; o servidor central devolve um testemunho, que fica neste browser.
+// Sem servidor local nem servidor central não há onde verificar a conta, e por isso não há modo de edição.
+const PAPEL_CONTA = { freguesia: 'Freguesia', cidade: 'Cidade', admin: 'Administração' };
+const CHAVE_SESSAO_CENTRAL = 'co-central-sessao', CHAVE_ULTIMO = 'co-ultimo-utilizador', CHAVE_LEMBRAR = 'co-lembrar';
+let SESSAO = null; // { utilizador, nome, papel, freguesias }
+const dataHora = q => q ? new Date(q).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' }) : '';
+const normalizarUtilizador = u => String(u || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[\s'’-]+/g, '').slice(0, 80);
+async function chaveDeEntrada(utilizador, palavraPasse) {
+  if (!window.crypto || !crypto.subtle) throw new Error('este browser não deixa verificar a palavra-passe nesta página (abre-a por http://127.0.0.1 ou https://)');
+  const enc = new TextEncoder(), base = await crypto.subtle.importKey('raw', enc.encode(String(palavraPasse)), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: enc.encode('campo-de-ourique/' + normalizarUtilizador(utilizador)), iterations: 100000 }, base, 256);
+  return [...new Uint8Array(bits)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+const podeEditarEm = (s, f) => !!s && Array.isArray(s.freguesias) && (s.freguesias.includes('*') || s.freguesias.includes(f));
+const nomeFreguesia = id => (FREGUESIAS.find(f => f.id === id) || { nome: id }).nome;
+const nomesFreguesias = s => s.freguesias.includes('*') ? 'todas as freguesias' : s.freguesias.map(nomeFreguesia).join(', ');
+const contasLocais = () => !!AMBIENTE.contas; // o servidor local tem contas (aplicação de computador ou npm start)
+// o testemunho do servidor central: com «lembrar-me» fica neste dispositivo (localStorage); sem ele, só até fechar (sessionStorage)
+function lerSessaoCentral() {
+  for (const armazem of [sessionStorage, localStorage]) {
+    let s = null; try { s = JSON.parse(armazem.getItem(CHAVE_SESSAO_CENTRAL) || 'null'); } catch (err) { s = null; }
+    if (s && s.testemunho && s.expira > Date.now() && s.url === urlCentral()) return s;
+  }
+  return null;
+}
+function gravarSessaoCentral(s) {
+  try { sessionStorage.removeItem(CHAVE_SESSAO_CENTRAL); localStorage.removeItem(CHAVE_SESSAO_CENTRAL); if (s) (s.lembrar ? localStorage : sessionStorage).setItem(CHAVE_SESSAO_CENTRAL, JSON.stringify(s)); } catch (err) { /* sem armazenamento local */ }
+}
+const sessaoCentralDe = j => ({ ...j.sessao, testemunho: j.testemunho, expira: j.expira, url: urlCentral(), lembrar: !!j.lembrar });
+async function pedirLocal(caminho, corpo) { // pedidos de conta ao servidor local (GET sem corpo, POST com corpo); lança com .codigo
+  const r = await fetch(caminho, corpo === undefined ? { cache: 'no-store' } : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(j.erro || 'erro ' + r.status), { codigo: r.status });
+  return j;
+}
+// gravação no servidor local; se a sessão terminou a meio da edição, pede para entrar outra vez e repete
+async function postLocal(caminho, corpo, tipo = 'application/json') {
+  const pedir = () => fetch(caminho, { method: 'POST', headers: tipo ? { 'Content-Type': tipo } : {}, body: corpo });
+  let r = await pedir();
+  if (r.status === 401 && edicao && await dialogoEntrar({ motivo: 'A sessão terminou: entra outra vez para gravar.' })) r = await pedir();
+  return r;
+}
+async function lerSessao() { // a sessão que há: a do servidor local ou, sem ele, a do servidor central
+  await ambientePronto;
+  const c = lerSessaoCentral();
+  if (contasLocais()) { try { SESSAO = (await pedirLocal('/sessao')).sessao || null; } catch (err) { SESSAO = null; } }
+  else SESSAO = c ? { utilizador: c.utilizador, nome: c.nome, papel: c.papel, freguesias: c.freguesias } : null;
+  if (c && (!SESSAO || normalizarUtilizador(c.utilizador) !== normalizarUtilizador(SESSAO.utilizador))) gravarSessaoCentral(null); // outra conta entrou entretanto
+  mostrarSessao(); return SESSAO;
+}
+// o botão da conta, ao lado do lápis: as iniciais (CL para Concelhia.Lisboa) e, ao carregar, a conta e «Terminar a sessão»
+function mostrarSessao() {
+  const b = $('#btn-sessao');
+  document.body.classList.toggle('com-sessao', !!SESSAO);
+  b.textContent = SESSAO ? SESSAO.utilizador.split(/[.\s]+/).filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('') : '';
+  b.title = SESSAO ? `${SESSAO.utilizador} (${PAPEL_CONTA[SESSAO.papel] || SESSAO.papel}): ${SESSAO.papel === 'admin' ? 'histórico, contas, ' : ''}palavra-passe e terminar a sessão` : '';
+  b.setAttribute('aria-label', SESSAO ? 'Conta ' + SESSAO.utilizador : 'Conta');
+  btnEditar.title = SESSAO ? `Modo de edição (${SESSAO.utilizador})` : 'Modo de edição (precisa de iniciar sessão)';
+}
+async function entrarCentral(utilizador, chave, lembrar) {
+  const j = await pedirCentral('/sessao', { method: 'POST', body: JSON.stringify({ utilizador, chave, lembrar: !!lembrar }), semSessao: true });
+  gravarSessaoCentral(sessaoCentralDe(j));
+  return j.sessao;
+}
+// pede o utilizador e a palavra-passe e abre a sessão no servidor local e no servidor central (soCentral: só lá)
+async function dialogoEntrar({ motivo, soCentral } = {}) {
+  await ambientePronto;
+  const local = contasLocais() && !soCentral, central = !!urlCentral();
+  if (!local && !central) {
+    await dialogo({ titulo: 'Modo de edição', texto: 'Para editar é preciso iniciar sessão com uma conta, e isso só é possível na <b>aplicação de computador</b>, com o <b>servidor local</b> (<code>npm start</code>) ou com um <b>servidor central</b> configurado em <code>config.js</code>. Aberta assim, a apresentação fica só para ver.', botoes: [{ id: 'ok', texto: 'Fechar', classe: 'on' }] });
+    return null;
+  }
+  let ultimo = soCentral && SESSAO ? SESSAO.utilizador : '';
+  if (!ultimo) try { ultimo = localStorage.getItem(CHAVE_ULTIMO) || ''; } catch (err) { /* sem armazenamento local */ }
+  let erro = '', lembrar = false; try { lembrar = localStorage.getItem(CHAVE_LEMBRAR) === '1'; } catch (err) { /* sem armazenamento local */ }
+  for (;;) {
+    const { r, valores } = await dialogo({ titulo: soCentral ? 'Entrar no servidor central' : 'Iniciar sessão',
+      texto: (motivo ? esc(motivo) + '<br>' : '') + (soCentral ? 'Os envios para o servidor central seguem com a tua conta.' : 'O modo de edição precisa de uma conta. Cada freguesia edita só a sua; a Concelhia e a administração editam todas.'),
+      alerta: erro, foco: ultimo ? 'p' : 'u',
+      campos: [{ nome: 'u', rotulo: 'Utilizador', valor: ultimo, autocomplete: 'username' }, { nome: 'p', rotulo: 'Palavra-passe', tipo: 'password', autocomplete: 'current-password' },
+        { nome: 'lembrar', tipo: 'checkbox', valor: lembrar, rotulo: 'Lembrar-me neste dispositivo (30 dias; sem isto, a sessão acaba ao fechar)' }],
+      botoes: [{ id: 'cancelar', texto: 'Cancelar' }, { id: 'entrar', texto: 'Entrar', classe: 'on' }] });
+    if (r !== 'entrar') return null;
+    const u = valores.u.trim(); ultimo = u; lembrar = !!valores.lembrar;
+    try { localStorage.setItem(CHAVE_LEMBRAR, lembrar ? '1' : '0'); } catch (err) { /* sem armazenamento local */ }
+    if (!u || !valores.p) { erro = 'Escreve o utilizador e a palavra-passe.'; continue; }
+    aviso('A verificar a palavra-passe…');
+    try {
+      const { sessao, avisoCentral } = await entrarConta(u, valores.p, { soCentral, lembrar });
+      $('#aviso').classList.remove('aberto');
+      aviso(avisoCentral || `Sessão iniciada: ${sessao.utilizador}.`, avisoCentral ? 7000 : 2500);
+      return sessao;
+    } catch (err) { $('#aviso').classList.remove('aberto'); erro = esc(err.message) + '.'; }
+  }
+}
+// abre a sessão sem diálogo (o diálogo acima e o teste da aplicação de computador)
+async function entrarConta(u, palavraPasse, { soCentral, lembrar } = {}) {
+  await ambientePronto;
+  const local = contasLocais() && !soCentral, central = !!urlCentral();
+  const chave = await chaveDeEntrada(u, palavraPasse);
+  let sessao = local ? (await pedirLocal('/sessao', { utilizador: u, chave, lembrar: !!lembrar })).sessao : null, avisoCentral = '';
+  if (central) {
+    try { const sc = await entrarCentral(u, chave, lembrar); if (!sessao) sessao = sc; }
+    catch (err) { if (!sessao) throw err; avisoCentral = err.codigo === 0 ? 'Sessão iniciada, mas o servidor central não respondeu: os envios esperam na fila.' : `Sessão iniciada, mas o servidor central não a aceitou (${err.message}): os envios esperam na fila.`; }
+  }
+  if (!sessao) throw new Error('sem onde verificar a conta');
+  try { localStorage.setItem(CHAVE_ULTIMO, sessao.utilizador); } catch (err) { /* sem armazenamento local */ }
+  if (!soCentral) { SESSAO = sessao; mostrarSessao(); }
+  enviarFilaCentral();
+  return { sessao, avisoCentral };
+}
+// o lápis (e o «+», com criar: abre logo o menu de criar): entra no modo de edição se a conta puder editar esta freguesia;
+// ao entrar, volta o rascunho que esta conta tenha deixado
+async function pedirEdicao({ criar } = {}) {
+  if (edicao) { if (criar) abrirCriar(true); return true; }
+  let s = await lerSessao();
+  if (!s) s = await dialogoEntrar(); if (!s) return false;
+  if (!podeEditarEm(s, FREG.id)) {
+    const propria = s.freguesias.length === 1 && FREGUESIAS.some(f => f.id === s.freguesias[0]) ? s.freguesias[0] : null;
+    const r = await dialogo({ titulo: 'Esta freguesia não é da tua conta', texto: `A conta <b>${esc(s.utilizador)}</b> só edita ${esc(nomesFreguesias(s))}. ${esc(FREG.nome)} fica só para ver.`,
+      botoes: [{ id: 'cancelar', texto: 'Fechar' }, { id: 'outra', texto: 'Entrar com outra conta' }, ...(propria ? [{ id: 'ir', texto: 'Editar ' + nomeFreguesia(propria), classe: 'on' }] : [])] });
+    if (r === 'ir') irParaFreguesia(propria, { editar: true, criar });
+    else if (r === 'outra' && (await terminarSessao())) return pedirEdicao({ criar });
+    return false;
+  }
+  if (!alterado) { acrescentarPresetsLocais(); preencherPresets(); await restaurarAutosave(); }
+  entrarEdicao(true);
+  if (criar) { abrirCriar(true); if (PARAMS.has('criar')) { const qs = new URLSearchParams(location.search); qs.delete('criar'); history.replaceState(null, '', location.pathname + qsTexto(qs) + location.hash); } }
+  return true;
+}
+// terminar a sessão: com alterações por guardar, pergunta; o que fica por guardar fica em rascunho desta conta
+async function terminarSessao() {
+  if (edicao && alterado) {
+    const r = await dialogo({ titulo: 'Terminar a sessão', texto: `Há alterações por guardar no preset «${esc(C.titulo || C.preset)}».`,
+      alerta: 'Em rascunho, ficam só neste dispositivo e voltam quando esta conta entrar outra vez no modo de edição. Descartadas, não se podem recuperar.',
+      botoes: [{ id: 'cancelar', texto: 'Continuar a editar' }, { id: 'descartar', texto: 'Descartar e terminar', classe: 'perigo' }, { id: 'rascunho', texto: 'Manter em rascunho e terminar' }, { id: 'guardar', texto: 'Guardar e terminar', classe: 'on' }] });
+    if (r === 'cancelar') return false;
+    if (r === 'guardar' && (await guardar()) === 'recusado') return false;
+    if (r === 'descartar') descartarAlteracoes();
+    if (r === 'rascunho') autoGuardarJa();
+  }
+  if (edicao) entrarEdicao(false);
+  if (alterado) { cancelarAuto(); const id = C.preset; carregar(clonar(FICHEIRO)); C.preset = id; alterado = false; estado('Sem alterações'); } // quem fica a ver vê o ficheiro
+  if (contasLocais()) { try { await pedirLocal('/sessao/terminar', {}); } catch (err) { /* o cookie expira sozinho */ } }
+  gravarSessaoCentral(null); SESSAO = null; mostrarSessao();
+  if (PRESETS_LOCAIS.size) { // os presets que só existem nos rascunhos desta conta saem da lista
+    const ficheiro = PRESETS.find(p => !PRESETS_LOCAIS.has(p.id));
+    if (PRESETS_LOCAIS.has(C.preset) && ficheiro) await mudarPreset(ficheiro.id, true);
+    for (let i = PRESETS.length - 1; i >= 0; i--) if (PRESETS_LOCAIS.has(PRESETS[i].id) && PRESETS[i].id !== C.preset) PRESETS.splice(i, 1);
+    PRESETS_LOCAIS.clear(); preencherPresets();
+  }
+  aviso('Sessão terminada.', 2500); return true;
+}
+async function menuConta() {
+  if (!SESSAO) return;
+  const admin = SESSAO.papel === 'admin', sc = lerSessaoCentral();
+  const r = await dialogo({ titulo: 'Conta ' + SESSAO.utilizador,
+    texto: `${esc(SESSAO.nome)} · ${esc(PAPEL_CONTA[SESSAO.papel] || SESSAO.papel)} · edita ${esc(nomesFreguesias(SESSAO))}.${urlCentral() ? '<br>Servidor central: ' + (sc ? 'sessão aberta até ' + esc(dataHora(sc.expira)) : 'sem sessão (os envios esperam na fila)') + '.' : ''}`,
+    botoes: [{ id: 'cancelar', texto: 'Fechar' }, ...(admin ? [{ id: 'historico', texto: 'Histórico de alterações' }, { id: 'contas', texto: 'Contas' }] : []), { id: 'palavra', texto: 'Mudar a palavra-passe' },
+      ...(urlCentral() && !sc ? [{ id: 'central', texto: 'Entrar no servidor central' }] : []), { id: 'sair', texto: 'Terminar a sessão', classe: 'perigo' }] });
+  if (r === 'historico') verHistorico();
+  else if (r === 'contas') gerirContas();
+  else if (r === 'palavra') mudarPalavraPasse();
+  else if (r === 'central') { if (await dialogoEntrar({ soCentral: true })) enviarFilaCentral(); }
+  else if (r === 'sair') terminarSessao();
+}
+const camposPalavra = (nome, rotulo) => ({ nome, rotulo, tipo: 'password', autocomplete: nome === 'atual' ? 'current-password' : 'new-password' });
+async function mudarPalavraPasse() {
+  let erro = '';
+  for (;;) {
+    const { r, valores } = await dialogo({ titulo: 'Mudar a palavra-passe', texto: `Conta <b>${esc(SESSAO.utilizador)}</b>. Usa pelo menos 8 caracteres; uma frase com várias palavras é fácil de lembrar e difícil de adivinhar.`, alerta: erro,
+      campos: [camposPalavra('atual', 'Palavra-passe atual'), camposPalavra('nova', 'Palavra-passe nova'), camposPalavra('repetir', 'Repete a palavra-passe nova')],
+      botoes: [{ id: 'cancelar', texto: 'Cancelar' }, { id: 'mudar', texto: 'Mudar', classe: 'on' }] });
+    if (r !== 'mudar') return;
+    if (valores.nova.length < 8) { erro = 'A palavra-passe nova precisa de pelo menos 8 caracteres.'; continue; }
+    if (valores.nova !== valores.repetir) { erro = 'As duas palavras-passe novas não são iguais.'; continue; }
+    aviso('A mudar a palavra-passe…');
+    try {
+      const atual = await chaveDeEntrada(SESSAO.utilizador, valores.atual), nova = await chaveDeEntrada(SESSAO.utilizador, valores.nova), feito = [];
+      if (contasLocais()) { await pedirLocal('/sessao/palavra-passe', { atual, nova }); feito.push(AMBIENTE.app ? 'nesta aplicação' : 'no servidor local'); }
+      let falhaCentral = '';
+      if (lerSessaoCentral()) {
+        try { const j = await pedirCentral('/sessao/palavra-passe', { method: 'POST', body: JSON.stringify({ atual, nova }) }); gravarSessaoCentral(sessaoCentralDe(j)); feito.push('no servidor central'); }
+        catch (err) { if (!feito.length) throw err; falhaCentral = err.message; }
+      }
+      $('#aviso').classList.remove('aberto');
+      await dialogo({ titulo: 'Palavra-passe mudada', texto: `A palavra-passe de <b>${esc(SESSAO.utilizador)}</b> mudou ${feito.join(' e ')}. As sessões abertas noutros sítios com a antiga terminam.`,
+        alerta: falhaCentral ? `O servidor central não mudou (${esc(falhaCentral)}): lá continua a valer a antiga. Muda-a outra vez quando houver ligação.` : urlCentral() && !feito.includes('no servidor central') ? 'Sem sessão no servidor central, a palavra-passe de lá não mudou: entra lá com a antiga e muda-a também.' : '',
+        botoes: [{ id: 'ok', texto: 'Fechar', classe: 'on' }] });
+      return;
+    } catch (err) { $('#aviso').classList.remove('aberto'); erro = esc(err.message) + '.'; }
+  }
+}
+// ---- administração: histórico de alterações e contas (o servidor só responde a uma sessão da administração) ----
+function fontesAdmin() { // onde há uma sessão da administração: este computador e/ou o servidor central
+  const l = [], sc = lerSessaoCentral();
+  if (contasLocais() && SESSAO && SESSAO.papel === 'admin') l.push(AMBIENTE.app ? { valor: 'local', texto: 'Esta aplicação', de: 'desta aplicação', em: 'nesta aplicação' } : { valor: 'local', texto: 'Este servidor local', de: 'deste servidor local', em: 'neste servidor local' });
+  if (sc && sc.papel === 'admin') l.push({ valor: 'central', texto: 'Servidor central', de: 'do servidor central', em: 'no servidor central' });
+  return l;
+}
+const pedirAdmin = (fonte, caminho, corpo) => fonte === 'central' ? pedirCentral(caminho, corpo === undefined ? {} : { method: 'POST', body: JSON.stringify(corpo) }) : pedirLocal(caminho, corpo);
+function textoAlteracoes(e) {
+  const r = e.resumo; if (!r) return e.alvo ? 'conta ' + esc(e.alvo) : '';
+  const lista = (l, n) => esc(l.join(', ')) + (n > l.length ? ` e mais ${n - l.length}` : ''), p = [];
+  if (r.novo) p.push('preset novo');
+  if (r.n.acrescentados) p.push('acrescentou ' + lista(r.acrescentados, r.n.acrescentados));
+  if (r.n.mudados) p.push('mudou ' + lista(r.mudados, r.n.mudados));
+  if (r.n.tirados) p.push('tirou ' + lista(r.tirados, r.n.tirados));
+  if (r.outros && r.outros.length) p.push('mudou ' + esc(r.outros.join(', ')));
+  return (p.join('; ') || 'sem mudanças nos elementos') + ` <small>(${r.elementos} elemento${r.elementos === 1 ? '' : 's'})</small>`;
+}
+function csvHistorico(lista) {
+  const c = v => { const s = v == null ? '' : String(v); return /[",;\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const linhas = lista.map(e => [e.quando, e.utilizador, e.nome, e.papel, e.acao, e.freguesia || '', e.preset || '', e.revisao || '', e.alvo || '', textoAlteracoes(e).replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'"), e.origem || ''].map(c).join(';'));
+  return '﻿quando;utilizador;nome;papel;acao;freguesia;preset;revisao;conta;alteracoes;origem\r\n' + linhas.join('\r\n') + '\r\n';
+}
+async function verHistorico() {
+  const fontes = fontesAdmin(); if (!fontes.length) { aviso('O histórico só se vê com uma sessão da administração.', 5000); return; }
+  let f = { fonte: fontes[0].valor, freguesia: '', utilizador: '' };
+  for (;;) {
+    let lista = [], erro = '';
+    aviso('A ler o histórico…');
+    try { const q = new URLSearchParams({ limite: '1000', meses: '12' }); if (f.freguesia) q.set('freguesia', f.freguesia); if (f.utilizador) q.set('utilizador', f.utilizador); lista = (await pedirAdmin(f.fonte, '/historico?' + q)).historico || []; }
+    catch (err) { erro = esc(err.message); }
+    $('#aviso').classList.remove('aberto');
+    const linhas = lista.map(e => `<tr><td>${esc(dataHora(e.quando))}</td><td>${esc(e.utilizador)}<br><small>${esc(PAPEL_CONTA[e.papel] || e.papel || '')}</small></td><td>${esc(e.acao)}</td><td>${e.freguesia ? esc(nomeFreguesia(e.freguesia)) : ''}${e.preset ? `<br><small>${esc(e.preset)}${e.revisao ? ' · revisão ' + e.revisao : ''}</small>` : ''}</td><td>${textoAlteracoes(e)}</td><td><small>${esc(e.origem === 'aplicacao' ? 'aplicação' : e.origem || '')}</small></td></tr>`).join('');
+    const { r, valores } = await dialogo({ titulo: 'Histórico de alterações', largo: true, emLinha: true,
+      texto: `Quem fez o quê, do mais recente para o mais antigo (últimos 12 meses, até 1000 registos). Só a administração vê esta lista.`,
+      corpo: `<div class="tabela-dialogo"><table><thead><tr><th>Quando</th><th>Conta</th><th>Ação</th><th>Freguesia · preset</th><th>Alterações</th><th>Onde</th></tr></thead><tbody>${linhas || '<tr><td colspan="6" class="nota">Nada registado com estes filtros.</td></tr>'}</tbody></table></div>`,
+      alerta: erro && 'Não foi possível ler o histórico: ' + erro + '.',
+      campos: [...(fontes.length > 1 ? [{ nome: 'fonte', rotulo: 'Histórico de', opcoes: fontes, valor: f.fonte }] : []),
+        { nome: 'freguesia', rotulo: 'Freguesia', valor: f.freguesia, opcoes: [{ valor: '', texto: 'Todas' }, ...FREGUESIAS.map(x => ({ valor: x.id, texto: x.nome }))] },
+        { nome: 'utilizador', rotulo: 'Conta', valor: f.utilizador }],
+      botoes: [{ id: 'cancelar', texto: 'Fechar' }, { id: 'csv', texto: 'Exportar CSV' }, { id: 'filtrar', texto: 'Filtrar', classe: 'on' }] });
+    if (r === 'cancelar') return;
+    if (r === 'csv') { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csvHistorico(lista)], { type: 'text/csv' })); a.download = `historico-${f.fonte}-${new Date().toISOString().slice(0, 10)}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000); continue; }
+    f = { fonte: valores.fonte || f.fonte, freguesia: valores.freguesia || '', utilizador: (valores.utilizador || '').trim() };
+  }
+}
+function palavraAleatoria() { // 3 grupos de 4 letras e algarismos, sem os que se confundem (0/O, 1/l/I)
+  const A = 'abcdefghijkmnpqrstuvwxyz23456789', b = new Uint8Array(12); crypto.getRandomValues(b);
+  return [...b].map(x => A[x % A.length]).join('').replace(/(.{4})(?=.)/g, '$1-');
+}
+async function gerirContas() {
+  const fontes = fontesAdmin(); if (!fontes.length) { aviso('As contas só se gerem com uma sessão da administração.', 5000); return; }
+  let erro = '', nova = '', alvo = '', info = '';
+  for (;;) {
+    let lista = [];
+    try { lista = (await pedirAdmin(fontes[0].valor, '/contas')).contas || []; } catch (err) { erro = esc(err.message); }
+    const linhas = lista.map(c => `<tr><td>${esc(c.utilizador)}</td><td>${esc(c.nome)}</td><td>${esc(PAPEL_CONTA[c.papel] || c.papel)}</td><td>${esc(nomesFreguesias(c))}</td><td>${esc(dataHora(c.ultimaEntrada)) || '<small>nunca</small>'}</td><td>${c.bloqueadaAte ? 'bloqueada até ' + esc(dataHora(c.bloqueadaAte)) : c.ativa ? (c.alterada ? '<small>palavra-passe mudada a ' + esc(dataHora(c.alterada)) + '</small>' : '<small>palavra-passe inicial</small>') : 'desativada'}</td></tr>`).join('');
+    const { r, valores } = await dialogo({ titulo: 'Contas', largo: true, emLinha: true,
+      texto: `As contas ${fontes[0].de}. Repor a palavra-passe muda-a ${fontes.map(x => x.em).join(' e ')}, desbloqueia a conta e termina as sessões dela. ${info ? '<br>' + info : ''}`,
+      corpo: `<div class="tabela-dialogo"><table><thead><tr><th>Utilizador</th><th>Nome</th><th>Papel</th><th>Edita</th><th>Última entrada</th><th>Estado</th></tr></thead><tbody>${linhas}</tbody></table></div>`,
+      alerta: erro, campos: [{ nome: 'alvo', rotulo: 'Conta', valor: alvo, opcoes: lista.map(c => ({ valor: c.utilizador, texto: c.utilizador + ' · ' + c.nome })) }, { nome: 'nova', rotulo: 'Palavra-passe nova (pelo menos 8 caracteres)', valor: nova, autocomplete: 'new-password' }],
+      botoes: [{ id: 'cancelar', texto: 'Fechar' }, { id: 'gerar', texto: 'Gerar uma palavra-passe' }, { id: 'repor', texto: 'Repor a palavra-passe', classe: 'on' }] });
+    if (r === 'cancelar') return;
+    alvo = valores.alvo; nova = valores.nova; erro = ''; info = '';
+    if (r === 'gerar') { nova = palavraAleatoria(); continue; }
+    if (nova.length < 8) { erro = 'A palavra-passe nova precisa de pelo menos 8 caracteres.'; continue; }
+    if (normalizarUtilizador(alvo) === normalizarUtilizador(SESSAO.utilizador)) { erro = 'Para a tua própria conta usa «Mudar a palavra-passe».'; continue; }
+    const chave = await chaveDeEntrada(alvo, nova), feito = [], falhas = [];
+    for (const fo of fontes) { try { await pedirAdmin(fo.valor, '/contas/' + encodeURIComponent(alvo) + '/palavra-passe', { nova: chave }); feito.push(fo.em); } catch (err) { falhas.push(fo.em + ': ' + err.message); } }
+    if (feito.length) info = `<b>Palavra-passe de ${esc(alvo)} reposta</b> (${esc(feito.join(' e '))}): <code>${esc(nova)}</code>. Entrega-a à pessoa; não volta a ser mostrada.`;
+    if (falhas.length) erro = 'Não foi reposta ' + esc(falhas.join('; ')) + '.';
+    nova = '';
+  }
+}
+
 function transferir(dados) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([ficheiroConteudos(dados || serializar())], { type: 'text/javascript' }));
@@ -2342,7 +2680,7 @@ async function adicionarFicheiros(el, ficheiros) {
   for (const f of ficheiros) {
     try {
       if (comServidor) {
-        const r = await fetch('/guardar-foto/' + encodeURIComponent(f.name), { method: 'POST', body: f });
+        const r = await postLocal('/guardar-foto/' + encodeURIComponent(f.name), f, null);
         const j = await r.json(); if (!r.ok) throw new Error(j.erro || r.statusText);
         el.fotos.push({ src: j.caminho, legenda: '' });
       } else el.fotos.push({ src: await redimensionar(f, 1600), legenda: '' });
@@ -2438,7 +2776,8 @@ const contentor = map.getContainer();
 contentor.addEventListener('touchstart', e => { if (edicao && ferramenta === 'pincel' && e.touches.length === 1) { aPintar = true; desenho = [map.mouseEventToLatLng(e.touches[0])]; e.preventDefault(); } }, { passive: false });
 contentor.addEventListener('touchmove', e => { if (aPintar && e.touches.length) { desenho.push(map.mouseEventToLatLng(e.touches[0])); atualizarTemp(); e.preventDefault(); } }, { passive: false });
 contentor.addEventListener('touchend', () => { if (aPintar) terminarPincel(); });
-btnEditar.addEventListener('click', () => { if (edicao) sairEdicao(); else entrarEdicao(true); });
+btnEditar.addEventListener('click', () => { if (edicao) sairEdicao(); else pedirEdicao(); });
+$('#btn-sessao').addEventListener('click', menuConta);
 $('#btn-sair-edicao').addEventListener('click', sairEdicao);
 $('#btn-mais').addEventListener('click', () => { const mais = barra.classList.toggle('mais'); $('#btn-mais').setAttribute('aria-expanded', String(mais)); $('#btn-mais').classList.toggle('on', mais); posicionarDesmat(); });
 if (window.ResizeObserver) new ResizeObserver(posicionarDesmat).observe(barra);
@@ -2455,11 +2794,14 @@ $('#ficheiro-preset').addEventListener('change', e => { if (e.target.files[0]) i
 $('#btn-repor-ficheiro').addEventListener('click', reporDoFicheiro);
 $('#btn-central').addEventListener('click', painelCentral);
 // a aplicação de computador e o servidor local dizem quem são (em file:// ou num servidor qualquer não há resposta)
-fetch('ambiente.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : {}).then(a => { AMBIENTE = Object.assign(AMBIENTE, a); document.body.classList.toggle('na-app', !!AMBIENTE.app); }).catch(() => {}).finally(() => { atualizarEstadoCentral(); enviarFilaCentral(); if (HORAS_COPIA > 0 && urlCentral() && copiaEmAtraso()) setTimeout(() => copiarCentral(false), 8000); });
+const ambientePronto = fetch('ambiente.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : {}).then(a => { AMBIENTE = Object.assign(AMBIENTE, a); document.body.classList.toggle('na-app', !!AMBIENTE.app); }).catch(() => {});
+const sessaoPronta = ambientePronto.then(lerSessao).catch(() => null);
+sessaoPronta.finally(() => { atualizarEstadoCentral(); enviarFilaCentral(); if (HORAS_COPIA > 0 && urlCentral() && copiaEmAtraso()) setTimeout(() => copiarCentral(false), 8000); });
 barra.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => porFerramenta(b.dataset.tool)));
 $('#ed-titulo').addEventListener('input', e => { C.titulo = e.target.value.trim(); aplicarTitulo(); marcarAlterado(); });
 $('#ed-subtitulo').addEventListener('input', e => { C.subtitulo = e.target.value.trim(); aplicarTitulo(); marcarAlterado(); });
-window.addEventListener('beforeunload', e => { if (alterado && edicao) { e.preventDefault(); e.returnValue = ''; } }); // só avisa quem está a editar; o trabalho fica na gravação automática
+// ao fechar com alterações por guardar: o trabalho fica já em rascunho, e o browser (ou a aplicação) pergunta se fecha mesmo
+window.addEventListener('beforeunload', e => { if (alterado && edicao) { autoGuardarJa(); e.preventDefault(); e.returnValue = ''; } });
 
 // ---------- arranque ----------
 construir(); construirIndice(); construirRuas(); construirPesquisa();
@@ -2468,9 +2810,11 @@ try { if (localStorage.getItem('co-fundo') === 'mapa') ligarMapa(true); } catch 
 let idInicial = ''; try { idInicial = decodeURIComponent(location.hash.slice(1)); } catch (err) { /* endereço com # malformado: ignora */ }
 // o elemento do endereço (#id) só se procura depois de repostos o preset ativo e a gravação automática, que recriam os elementos
 arrancarPresets().then(() => { const el = POR_ID[idInicial]; if (el && !cidade) map.whenReady(() => setTimeout(() => { if (POR_ID[idInicial] === el) selecionar(el, true); }, 300)); });
-if (new URLSearchParams(location.search).has('cidade') && !EDITOR) map.whenReady(() => abrirCidade(true)); // ?cidade abre no mapa de Lisboa
-if (EDITOR) entrarEdicao(true); // ?editor abre logo em modo de edição; por predefinição arranca em visualização
-window.__mapa = { map, C, FREG, ELEMENTOS, POR_ID, RUAS_VISTA, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, ligarVerdes, ligarMapa, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva, entrarEdicao, porFerramenta, serializar, guardar, carregar, lerPreset, novoPreset, apagarPreset, mudarPreset, PRESETS, importarPreset, reporDoFicheiro, largarPonto, novoPonto, criarRua, criarDeLote, painelCentral, abrirDoCentral, enviarFilaCentral, copiarCentral, estadoCopia, filaCentral, lerCentral, gravarCentral, get AMBIENTE() { return AMBIENTE; }, confirmar, perguntarTexto, abrirCidade, irParaFreguesia, sairEdicao, descartarAlteracoes, dialogo, construirDesmat, expandirDesmat, pontoDeGrupo, emConjunto, novoDesmaterializado, desmaterializar, colocarNoMapa, criarAqui, ruaMaisProxima, abrirCriar, acrescentarPresetImportado, PRESETS_LOCAIS, get cidade() { return cidade; }, get alterado() { return alterado; }, novaCategoria, definirMembro, alternarCategoria, editarVisita, mostrarCategoria, categoriasAtivas, get edicao() { return edicao; }, get ferramenta() { return ferramenta; }, get passos() { return passos; } };
+// sem freguesia no endereço (ou com ?cidade), abre no mapa de Lisboa; ?freguesia=<id> abre essa freguesia
+const PARAMS = new URLSearchParams(location.search);
+if ((PARAMS.has('cidade') || (!PARAMS.has('freguesia') && !idInicial)) && !EDITOR) map.whenReady(() => abrirCidade(true));
+if (EDITOR) pedirEdicao({ criar: PARAMS.has('criar') }); // ?editor abre logo em modo de edição (depois de iniciar sessão); ?criar abre também o «+»
+window.__mapa = { map, C, FREG, ELEMENTOS, POR_ID, RUAS_VISTA, pedirEdicao, entrarConta, lerSessao, terminarSessao, menuConta, verHistorico, gerirContas, mudarPalavraPasse, dialogoEntrar, get SESSAO() { return SESSAO; }, lerSessaoCentral, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, ligarVerdes, ligarMapa, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva, entrarEdicao, porFerramenta, serializar, guardar, carregar, lerPreset, novoPreset, apagarPreset, mudarPreset, PRESETS, importarPreset, reporDoFicheiro, largarPonto, novoPonto, criarRua, criarDeLote, painelCentral, abrirDoCentral, enviarFilaCentral, copiarCentral, estadoCopia, filaCentral, lerCentral, gravarCentral, get AMBIENTE() { return AMBIENTE; }, confirmar, perguntarTexto, abrirCidade, irParaFreguesia, sairEdicao, descartarAlteracoes, dialogo, construirDesmat, expandirDesmat, pontoDeGrupo, emConjunto, novoDesmaterializado, desmaterializar, colocarNoMapa, criarAqui, ruaMaisProxima, abrirCriar, acrescentarPresetImportado, PRESETS_LOCAIS, get cidade() { return cidade; }, get alterado() { return alterado; }, novaCategoria, definirMembro, alternarCategoria, editarVisita, mostrarCategoria, categoriasAtivas, get edicao() { return edicao; }, get ferramenta() { return ferramenta; }, get passos() { return passos; } };
 });
 </script>
 </body>

@@ -30,14 +30,16 @@ function armazemR2(r2) {
   };
 }
 
+let api = null; // uma por instância do Worker (guarda a chave das sessões já preparada entre pedidos)
 export default {
   async fetch(request, env) {
-    const api = criarAPI({
+    api = api || criarAPI({
       armazem: armazemR2(env.DADOS),
       nome: env.NOME || 'Servidor central das freguesias',
       origens: String(env.ORIGENS || '*').split(',').map(s => s.trim()).filter(Boolean),
       leituraPublica: env.LEITURA_PUBLICA === '1',
       chaveAdmin: env.CHAVE_ADMIN || '', // segredo: npx wrangler secret put CHAVE_ADMIN
+      segredoSessoes: env.SEGREDO_SESSOES || '', // opcional; sem ele, o segredo das sessões é gerado na primeira vez e fica no R2
       pagina,
     });
     return api.tratar(request);

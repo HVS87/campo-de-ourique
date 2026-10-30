@@ -6,10 +6,10 @@ que abrem um painel de informação.
 
 ## Freguesias
 
-A apresentação cobre as 24 freguesias de Lisboa. No painel do índice (☰), o botão «⇄ Freguesia», ao lado do nome,
-abre a lista: escolher outra recarrega a página só com os dados dessa freguesia (`?freguesia=<id>` no endereço;
-a última escolhida fica lembrada neste browser). Cada freguesia tem os seus presets, a sua gravação automática e o
-seu `conteudos.js`.
+A apresentação cobre as 24 freguesias de Lisboa e abre no mapa da cidade, com as 24 (ver «Mapa de Lisboa»): um clique
+numa freguesia abre-a. No painel do índice (☰), o botão «⇄ Freguesia», ao lado do nome, abre a lista: escolher outra
+recarrega a página só com os dados dessa freguesia (`?freguesia=<id>` no endereço, que abre logo essa freguesia).
+Cada freguesia tem os seus presets, os seus rascunhos e o seu `conteudos.js`.
 
 - **Campo de Ourique**: dados em `dados/` (limite e ruas do OpenStreetMap, edificado e espaços verdes da CML).
 - **As outras 23**: dados em `dados/freguesias/<id>/`, gerados por `node tools/freguesias.mjs` a partir dos serviços
@@ -27,7 +27,8 @@ Lisboa» na lista das freguesias afastam o mapa até à cidade inteira, dividida
 cada uma. Também se chega lá ao continuar a afastar (roda do rato ou «−») depois da vista geral da freguesia.
 Ao passar o cursor, a freguesia pulsa e a barra de baixo mostra o nome e a área; um clique abre-a. No ecrã tátil,
 o primeiro toque realça a freguesia e o segundo (ou «Abrir …» na barra) abre-a. «← Voltar» (ou Esc) regressa à
-freguesia aberta, e a pesquisa encontra também as freguesias. `?cidade` no endereço abre logo neste mapa. Os
+freguesia aberta, e a pesquisa encontra também as freguesias. É aqui que a apresentação abre, quando o endereço não
+diz a freguesia (`?cidade` também abre neste mapa). Os
 limites (`dados/freguesias/limites.js`, 38 kB) só se transferem quando se abre o mapa de Lisboa. No ecrã tátil, juntar
 os dedos (pinça) na vista geral da freguesia também abre o mapa de Lisboa.
 
@@ -69,10 +70,11 @@ O servidor só responde neste computador; `HOST=0.0.0.0 node tools/serve.mjs` ab
 noutro aparelho; a gravação continua a aceitar-se só a partir deste computador, e os ficheiros escondidos, como
 `.git`, nunca são servidos).
 
-Depois: http://localhost:8081/ (arranca em modo de visualização; o lápis no canto superior direito liga o
-modo de edição, e `?editor` abre-o logo). Também abre diretamente a partir do ficheiro `index.html`, sem
-servidor; só a imagem de satélite em direto precisa de internet, e sem o servidor local o modo de edição
-não grava diretamente (transfere o ficheiro).
+Depois: http://localhost:8081/ (arranca no mapa de Lisboa, em modo de visualização; o lápis no canto superior direito liga o
+modo de edição, depois de iniciar sessão, e `?editor` abre-o logo). Também abre diretamente a partir do ficheiro
+`index.html`, sem servidor; só a imagem de satélite em direto precisa de internet. Aberta assim, sem servidor local,
+a apresentação fica só para ver, a não ser que haja um servidor central configurado: é aí que se verifica a conta,
+e «Guardar» transfere o ficheiro e envia o preset para o servidor central.
 
 ### Servidor central (opcional)
 
@@ -108,17 +110,56 @@ Para publicar uma versão nova das duas:
    Linux e junta-os à release dessa tag. As aplicações instaladas atualizam-se a partir daí. Se o repositório tiver
    o segredo `CLOUDFLARE_API_TOKEN`, republica também o servidor central.
 
+## Contas e histórico
+
+O modo de edição precisa de iniciar sessão. Há uma conta por freguesia, que edita só essa freguesia, e duas para a
+cidade toda:
+
+| Conta | Edita | Também |
+|---|---|---|
+| uma por freguesia (o nome sem espaços nem acentos, por exemplo `Campodeourique`) | só essa freguesia | — |
+| `Concelhia.Lisboa` | todas as freguesias | — |
+| `System.Admin` | todas as freguesias | vê o histórico de alterações e gere as contas |
+
+- **Entrar:** o utilizador escreve-se como se quiser («Campo de Ourique», «campodeourique» e «CampoDeOurique» são o
+  mesmo). As palavras-passe iniciais foram entregues a cada pessoa e não estão neste repositório (só os
+  verificadores, em `servidor-central/contas-iniciais.mjs`). Muda-as logo: são fáceis de adivinhar.
+- **Outra freguesia:** uma conta de freguesia vê as outras, mas não as edita. O lápis diz de quem é a freguesia e
+  oferece abrir a sua.
+- **Lembrar-me:** no login, «Lembrar-me neste dispositivo» mantém a sessão durante 30 dias neste browser ou nesta
+  aplicação, mesmo depois de os fechar. Sem isso, a sessão acaba ao fechar (e, no máximo, ao fim de 12 horas).
+- **O botão da conta** (as iniciais, ao lado do lápis, sempre que há sessão):
+  - todas as contas mudam a sua palavra-passe e **terminam a sessão**. Com alterações por guardar, pergunta antes:
+    «Guardar e terminar», «Manter em rascunho e terminar», «Descartar e terminar» ou «Continuar a editar»;
+  - a administração vê também o **histórico de alterações** (quem entrou, guardou, ativou ou apagou presets e
+    fotos, com o que mudou em cada gravação: elementos acrescentados, mudados e tirados), que exporta em CSV;
+  - e gere as **contas**: vê a última entrada de cada uma e repõe palavras-passe (gera uma, se quiseres), o que também
+    desbloqueia a conta.
+- **Proteção:** a verificação é feita pelo servidor, não pela página. Cada gravação sem sessão, ou numa freguesia que
+  não é da conta, é recusada. Cinco palavras-passe erradas seguidas bloqueiam a conta por um minuto, e o bloqueio
+  dobra a cada erro, até 15 minutos.
+- **Palavras-passe:** nunca saem do browser. Viaja uma chave derivada delas (PBKDF2), e os servidores guardam um
+  resumo dessa chave.
+- **Onde ficam as contas e o histórico:** cada servidor tem as suas.
+  - Na aplicação de computador ficam na pasta dos dados do utilizador (`.contas/`).
+  - Na versão browser ficam na pasta do projeto (`.contas/`, que o git ignora e o servidor nunca serve).
+  - No servidor central ficam no armazém dele.
+  Ao entrar, a apresentação abre a sessão no servidor local e no servidor central com a mesma palavra-passe; ao
+  mudá-la, muda nos dois. Se o servidor central recusar, a página avisa e os envios esperam na fila até a conta
+  entrar lá.
+
 ## Modo de edição
 
-Liga-se no lápis (canto superior direito). Barra de ferramentas no topo (em telemóvel mostra só as
-ferramentas; «⋯ Mais» abre o título, o subtítulo e os presets):
+Liga-se no lápis (canto superior direito), depois de iniciar sessão. Barra de ferramentas no topo (em telemóvel
+mostra só as ferramentas; «⋯ Mais» abre o título, o subtítulo e os presets):
 
 - **Mover**: clicar num elemento abre o cartão em modo de formulário; arrastar um ponto muda a posição; largar
   um ponto sobre uma zona mete-o dentro dela (enquanto se arrasta sobre a zona, o ponto encolhe e pulsa e a
   zona pisca, a indicar que vai «mergulhar»); arrastar um ponto para fora da zona tira-o de lá. Numa zona
   selecionada aparecem os vértices: arrastam-se, os pontos médios criam vértices novos e um duplo clique num
   vértice apaga-o.
-- **Botão «+»** (canto inferior direito, só em edição): abre a lista do que se pode criar: ponto, conjunto de
+- **Botão «+»** (canto inferior direito): abre a lista do que se pode criar. Fora da edição é um atalho: pede o
+  login, se ainda não houver sessão, entra no modo de edição e abre a lista. O que se pode criar: ponto, conjunto de
   pontos, ponto desmaterializado, rua, zona, zona livre e lote. Em telemóveis e tablets tem também «Ponto onde
   estou» e «Rua onde estou», que usam a localização do aparelho (a rua é a mais próxima, até 60 m; fora da
   freguesia, pergunta antes). O browser só dá a localização a páginas em https ou abertas no próprio aparelho.
@@ -168,14 +209,21 @@ ferramentas; «⋯ Mais» abre o título, o subtítulo e os presets):
   **Transferir conteudos.js** transfere
   o ficheiro no formato de `dados/conteudos.js`, para quando a apresentação não está servida por
   `tools/serve.mjs` (nesse caso as fotos ficam embebidas); **Repor do ficheiro** descarta o trabalho em curso
-  e volta ao preset tal como está gravado. A gravação automática é independente por preset, e o preset escolhido fica
+  e volta ao preset tal como está gravado. O rascunho é independente por preset, e o preset escolhido fica
   lembrado neste browser entre sessões.
-- **Gravação automática**: cada alteração fica guardada no browser (localStorage) e é reposta automaticamente ao
-  abrir a página, mesmo que não se tenha gravado o ficheiro; a barra indica «Alterações por guardar
-  (recuperadas de …)». Se o ficheiro do preset tiver sido alterado depois (à mão ou noutro browser), vale o
-  ficheiro, ao abrir a página e ao trocar de preset. Grava meio segundo depois da última alteração (e logo ao
-  fechar a página). Perde-se com «Sair sem guardar», «Repor do ficheiro», ao apagar o preset ou ao limpar os
-  dados do site. O aviso ao fechar a página só aparece em modo de edição.
+- **Rascunho (gravação automática)**: cada alteração fica guardada neste dispositivo (localStorage), mesmo que não se
+  tenha gravado o ficheiro.
+  - **Quando grava:** meio segundo depois da última alteração, e logo que a página vai para segundo plano, se muda
+    de janela ou se fecha, mesmo que se feche sem passar pelo aviso.
+  - **De quem é:** cada rascunho é da conta que o fez. Volta quando essa conta entra outra vez no modo de edição; a
+    barra indica «Alterações por guardar (rascunho de …)». Quem só vê a apresentação, ou entra com outra conta, vê
+    os ficheiros.
+  - **Ficheiro mais recente:** se o ficheiro do preset tiver sido alterado depois (à mão ou noutro browser), vale o
+    ficheiro.
+  - **Quando se perde:** com «Sair sem guardar», «Descartar e terminar», «Repor do ficheiro», ao apagar o preset ou ao
+    limpar os dados do site.
+  - **Ao fechar com alterações por guardar:** o browser pergunta se fecha mesmo, e a aplicação de computador também.
+    O rascunho já ficou feito antes da pergunta.
 
 ## Modelo de `dados/conteudos.js`
 
@@ -259,9 +307,11 @@ ferramentas; «⋯ Mais» abre o título, o subtítulo e os presets):
   apresentação numa janela; atualizações pelas releases do GitHub. `desktop/testar-app.mjs` verifica o arranque.
 - `config.js` — configuração comum (endereço do servidor central).
 - `servidor-central/` — servidor central de referência, página de consulta e testes.
-- `tools/serve.mjs` — servidor local simples (porta 8081), sem dependências; aceita do modo de edição a gravação
-  dos presets (`dados/presets/`, cópia ativa em `dados/conteudos.js`) e das fotos em `assets/fotos/` (só a
-  partir desta máquina e da própria página).
+- `servidor-central/contas.mjs` — contas, sessões e histórico de alterações, o mesmo código nos dois servidores;
+  `servidor-central/contas-iniciais.mjs` — as 26 contas com que arrancam (só os verificadores).
+- `tools/serve.mjs` — servidor local simples (porta 8081), sem dependências; aceita do modo de edição, com uma
+  sessão, a gravação dos presets (`dados/presets/`, cópia ativa em `dados/conteudos.js`) e das fotos em
+  `assets/fotos/` (só a partir desta máquina e da própria página).
 - `tools/ruas-osm.mjs` — regenera `dados/ruas.js` a partir do OpenStreetMap (precisa de internet).
 - `tools/freguesias.mjs` — gera `dados/freguesias/` (lista, limites do mapa de Lisboa e dados de cada freguesia) e
   `dados/verdes.js`; não apaga presets que já existam. `node tools/freguesias.mjs ajuda belem` refaz só essas;

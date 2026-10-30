@@ -8,7 +8,18 @@
 //   POST /apagar-preset/<id>    → apaga o preset (fica uma cópia .apagado.bak)
 //   POST /guardar-foto/<nome>   → escreve a imagem em assets/fotos/<nome> e devolve o caminho
 //   POST /copia-central?chave=&versao= → grava um objeto do servidor central na cópia local (<gravável>/copia-central/)
-//   GET  /ambiente.json         → { app: true|false, versao, dados, copia } (a página sabe se corre na aplicação de computador)
+//   GET  /ambiente.json         → { app: true|false, versao, dados, copia, contas } (a página sabe se corre na aplicação de computador)
+//
+// Gravar (guardar, ativar, apagar, foto) precisa de uma sessão, e cada conta só grava nas suas freguesias. As contas e o
+// histórico de quem fez o quê ficam em <gravável>/.contas/, que nunca é servido (ver servidor-central/contas.mjs):
+//   GET  /sessao                → { sessao: { utilizador, nome, papel, freguesias } | null }
+//   POST /sessao                → { utilizador, chave, lembrar } abre a sessão (num cookie); a chave é derivada da palavra-passe no
+//                                 browser; com «lembrar», a sessão dura 30 dias neste dispositivo, sem ele acaba ao fechar
+//   POST /sessao/terminar       → fecha a sessão
+//   POST /sessao/palavra-passe  → { atual, nova } muda a palavra-passe da própria conta
+//   GET  /historico?freguesia=&utilizador=&limite=&meses=  → quem fez o quê (só a administração)
+//   GET  /contas                → as contas, sem os verificadores (só a administração)
+//   POST /contas/<utilizador>/palavra-passe → { nova } repõe a palavra-passe de outra conta (só a administração)
 //
 // Duas pastas: «raiz» (a apresentação: index.html, dados/, assets/…) e «gravavel» (onde se escreve). Na versão browser
 // são a mesma. Na aplicação de computador a raiz vem dentro do programa (só leitura) e a pasta gravável fica nos dados
@@ -16,6 +27,8 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
+import { criarContas, podeEditar, resumoAlteracoes } from '../servidor-central/contas.mjs';
+import CONTAS_INICIAIS from '../servidor-central/contas-iniciais.mjs';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -42,10 +55,30 @@ const LIMITE_CORPO = 40 * 1024 * 1024; // 40 MB
 const idValido = id => /^[a-z0-9][a-z0-9-]{0,60}$/.test(id);
 // objetos do servidor central que a cópia local aceita (os mesmos de servidor-central/nucleo.mjs)
 const ID = '[a-z0-9][a-z0-9-]{0,60}';
-const CHAVE_COPIA = new RegExp(`^(presets/${ID}/${ID}/(\\d+|atual|revisoes)\\.json|(indice|elementos)/${ID}\\.json|registo/\\d{4}-\\d{2}\\.json|chaves\\.json)$`);
+const CHAVE_COPIA = new RegExp(`^(presets/${ID}/${ID}/(\\d+|atual|revisoes)\\.json|(indice|elementos)/${ID}\\.json|historico/\\d{4}-\\d{2}\\.json|chaves\\.json|contas/contas\\.json)$`);
 const agora = () => new Date().toISOString().slice(0, 16).replace('T', ' ');
 const local = req => ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress);
-const json = (res, codigo, obj) => { res.writeHead(codigo, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(obj)); };
+const json = (res, codigo, obj, extra = {}) => { res.writeHead(codigo, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...extra }); res.end(JSON.stringify(obj)); };
+// armazém em ficheiros para as contas (a mesma interface do servidor central); atualizar não tem esperas pelo meio, por
+// isso dois pedidos ao mesmo tempo não se pisam
+function armazemPasta(base) {
+  const f = k => path.join(base, ...k.split('/'));
+  const ler = k => { try { return fs.readFileSync(f(k), 'utf8'); } catch (err) { return null; } };
+  const escrever = (k, t) => { const d = f(k); fs.mkdirSync(path.dirname(d), { recursive: true }); fs.writeFileSync(d + '.tmp', t); fs.renameSync(d + '.tmp', d); };
+  return {
+    async ler(k) { return ler(k); },
+    async escrever(k, t) { escrever(k, t); },
+    async atualizar(k, fn) { escrever(k, fn(ler(k))); },
+    async listar(prefixo) { let l = []; try { l = fs.readdirSync(f(prefixo.replace(/\/$/, ''))); } catch (err) { /* ainda não há */ } return l.filter(n => n.endsWith('.json')).map(n => ({ chave: prefixo + n })); },
+  };
+}
+// a sessão vai num cookie só deste servidor (o nome leva a porta: o browser partilha os cookies entre portas do mesmo endereço)
+const nomeCookie = req => 'co_sessao_' + req.socket.localPort;
+const lerCookie = req => { for (const p of String(req.headers.cookie || '').split(/;\s*/)) { const i = p.indexOf('='); if (i > 0 && p.slice(0, i) === nomeCookie(req)) return p.slice(i + 1); } return ''; };
+// sem «lembrar-me», o cookie é de sessão: acaba quando se fecha o browser (ou a aplicação); com ele, dura o que dura o testemunho
+const cookie = (req, valor, segundos) => ({ 'Set-Cookie': `${nomeCookie(req)}=${valor}; HttpOnly; SameSite=Strict; Path=/${segundos == null ? '' : '; Max-Age=' + segundos}` });
+// os pedidos de leitura com dados reservados (histórico, contas) só da própria página: o browser diz de onde vem o pedido
+const mesmaOrigem = req => !req.headers['sec-fetch-site'] || ['same-origin', 'none'].includes(req.headers['sec-fetch-site']);
 class CorpoGrande extends Error { constructor() { super('Pedido demasiado grande (máximo 40 MB)'); this.codigo = 413; } }
 function lerCorpo(req) {
   return new Promise((resolve, reject) => {
@@ -72,9 +105,16 @@ function dadosDoFicheiro(t) { // o objeto depois de «window.X =» (um título c
   return JSON.parse(t.slice(a, b + 1));
 }
 
-export function criarServidor({ raiz, gravavel = raiz, app = false, versao = '', registo = console.log } = {}) {
+export function criarServidor({ raiz, gravavel = raiz, app = false, versao = '', registo = console.log, contasIniciais = CONTAS_INICIAIS } = {}) {
   raiz = path.resolve(raiz); gravavel = path.resolve(gravavel);
   const sobreposta = gravavel !== raiz;
+  const HORAS_SESSAO = 12, HORAS_LEMBRAR = 30 * 24, origemConta = app ? 'aplicacao' : 'browser';
+  const contas = criarContas({ armazem: armazemPasta(path.join(gravavel, '.contas')), iniciais: contasIniciais, horas: HORAS_SESSAO, horasLembrar: HORAS_LEMBRAR });
+  const duracao = lembrar => lembrar ? HORAS_LEMBRAR * 3600 : null;
+  const sessaoDe = async req => { const t = lerCookie(req); return t ? contas.verificar(t) : null; };
+  // null se pode gravar nesta freguesia; senão a resposta de recusa
+  const recusa = (s, F) => !s ? [401, { erro: 'Inicia sessão para gravar (a sessão pode ter terminado)', sessao: null }]
+    : F && !podeEditar(s, F.id) ? [403, { erro: `A conta ${s.utilizador} não pode editar ${F.id}`, sessao: s }] : null;
   const dentro = (base, f) => f === base || f.startsWith(base + path.sep);
   const existe = f => { try { return fs.statSync(f).isFile(); } catch (err) { return false; } };
   // o caminho a ler: a versão gravada pelo utilizador, se existir, senão a original
@@ -136,23 +176,26 @@ export function criarServidor({ raiz, gravavel = raiz, app = false, versao = '',
   }
   function copiaAnterior(F) { const atual = paraLer(F.rel + 'conteudos.js'); if (existe(atual)) fs.copyFileSync(atual, paraEscrever(F.rel + 'conteudos.anterior.js')); }
 
-  async function guardar(req, res, F) {
+  async function guardar(req, res, F, s) {
     const corpo = await lerCorpo(req);
     let dados;
     try { dados = JSON.parse(corpo.toString('utf8')); } catch (err) { return json(res, 400, { erro: 'JSON inválido' }); }
-    if (dados && dados.sonda) return json(res, 200, { ok: true, sonda: true }); // o modo de edição pergunta se este servidor grava
+    if (dados && dados.sonda) return json(res, 200, { ok: true, sonda: true, sessao: s }); // o modo de edição pergunta se este servidor grava
+    const nao = recusa(s, F); if (nao) return json(res, ...nao);
     if (!dados || typeof dados !== 'object' || !Array.isArray(dados.elementos)) return json(res, 400, { erro: 'Esperava um objeto com a lista «elementos»' });
     if (dados.freguesia && dados.freguesia !== F.id) return json(res, 409, { erro: 'Este preset é da freguesia «' + dados.freguesia + '», não de «' + F.id + '»' }); // os presets de cada freguesia não se misturam
     dados.freguesia = F.id;
     dados.preset = String(dados.preset || F.id);
     if (!idValido(dados.preset)) return json(res, 400, { erro: 'Id de preset inválido: ' + dados.preset });
+    let antes = null; try { antes = lerPreset(F, dados.preset); } catch (err) { /* preset novo (ou escrito como código) */ }
     fs.writeFileSync(paraEscrever(presetRel(F, dados.preset)), ficheiroPreset(dados));
     const apagados = lerApagados(F); if (apagados.includes(dados.preset)) gravarApagados(F, apagados.filter(id => id !== dados.preset));
     copiaAnterior(F);
     const texto = ficheiroConteudos(F, dados);
     fs.writeFileSync(paraEscrever(F.rel + 'conteudos.js'), texto);
     const presets = regenerarIndice(F, [{ id: dados.preset, nome: dados.titulo || dados.preset, subtitulo: dados.subtitulo || '', elementos: dados.elementos.length }]);
-    registo(`[${F.id}] guardado preset «${dados.preset}» (${dados.elementos.length} elementos) e ${F.rel}conteudos.js (${(texto.length / 1024).toFixed(0)} kB)`);
+    registo(`[${F.id}] ${s.utilizador} guardou o preset «${dados.preset}» (${dados.elementos.length} elementos) e ${F.rel}conteudos.js (${(texto.length / 1024).toFixed(0)} kB)`);
+    await contas.registar({ conta: s, acao: 'guardou', freguesia: F.id, preset: dados.preset, resumo: resumoAlteracoes(antes, dados), origem: origemConta });
     json(res, 200, { ok: true, bytes: texto.length, elementos: dados.elementos.length, presets });
   }
   function ativarPreset(res, F, id) { // torna um preset o ativo: copia-o para <pasta>/conteudos.js
@@ -199,27 +242,74 @@ export function criarServidor({ raiz, gravavel = raiz, app = false, versao = '',
     fs.writeFileSync(paraEscrever('assets/fotos/' + seguro), corpo);
     registo(`foto guardada em assets/fotos/${seguro} (${(corpo.length / 1024).toFixed(0)} kB)`);
     json(res, 200, { ok: true, caminho: 'assets/fotos/' + seguro });
+    return seguro;
   }
+  async function corpoJSON(req) { try { return JSON.parse((await lerCorpo(req)).toString('utf8')) || {}; } catch (err) { if (err.codigo) throw err; return {}; } }
+  // sessões e contas (ver o início do ficheiro)
+  async function tratarContas(req, res, rel, s) {
+    if (req.method === 'GET') {
+      if (!mesmaOrigem(req)) return json(res, 403, { erro: 'Só a partir da própria apresentação' });
+      if (rel === '/sessao') return json(res, 200, { sessao: s });
+      if (!s || s.papel !== 'admin') return json(res, s ? 403 : 401, { erro: 'Só a administração' });
+      const q = Object.fromEntries(new URL(req.url, 'http://x').searchParams);
+      if (rel === '/historico') return json(res, 200, { historico: await contas.historico(q) });
+      return json(res, 200, { contas: await contas.listar() });
+    }
+    const b = await corpoJSON(req);
+    if (rel === '/sessao') {
+      const r = await contas.entrar(b.utilizador, b.chave, { origem: origemConta, lembrar: b.lembrar === true });
+      if (r.erro) { registo(`entrada recusada: ${String(b.utilizador || '').slice(0, 40)} (${r.codigo})`); return json(res, r.codigo, { erro: r.erro, ate: r.ate }); }
+      registo(`sessão iniciada: ${r.conta.utilizador}${r.lembrar ? ' (lembrada neste dispositivo)' : ''}`);
+      return json(res, 200, { sessao: r.conta }, cookie(req, r.testemunho, duracao(r.lembrar)));
+    }
+    if (rel === '/sessao/terminar') { if (s) await contas.registar({ conta: s, acao: 'saiu', origem: origemConta }); return json(res, 200, { ok: true }, cookie(req, '', 0)); }
+    if (!s) return json(res, 401, { erro: 'Inicia sessão primeiro', sessao: null });
+    if (rel === '/sessao/palavra-passe') {
+      const r = await contas.mudarPalavraPasse(s, b.atual, b.nova, { origem: origemConta });
+      return r.erro ? json(res, r.codigo, { erro: r.erro }) : json(res, 200, { sessao: r.conta }, cookie(req, r.testemunho, duracao(r.lembrar)));
+    }
+    const m = /^\/contas\/([^/]+)\/palavra-passe$/.exec(rel);
+    if (m) { const r = await contas.reporPalavraPasse(s, m[1], b.nova, { origem: origemConta }); return r.erro ? json(res, r.codigo, { erro: r.erro }) : json(res, 200, { ok: true, conta: r.conta }); }
+    return json(res, 404, { erro: 'Não encontrado' });
+  }
+  const ROTAS_CONTAS = /^\/(sessao(\/terminar|\/palavra-passe)?|historico|contas(\/[^/]+\/palavra-passe)?)$/;
 
   return http.createServer(async (req, res) => {
     let rel;
     try { rel = decodeURIComponent(new URL(req.url, 'http://x').pathname); } catch (err) { rel = '/'; }
     if (rel.includes('\0')) { res.writeHead(400).end('Pedido inválido'); return; } // um carácter nulo fazia o fs.stat lançar e parar o servidor
-    if (rel.split(/[\\/]/).some(p => p.startsWith('.') && p !== '.' && p !== '..')) { res.writeHead(403).end('Proibido'); return; } // .git, .claude e outros ficheiros escondidos
+    // .git, .contas, .claude e outros ficheiros escondidos; «~» também, porque no Windows «CONTAS~1» é outro nome de «.contas»
+    if (rel.split(/[\\/]/).some(p => (p.startsWith('.') && p !== '.' && p !== '..') || p.includes('~'))) { res.writeHead(403).end('Proibido'); return; }
     try {
+      if (ROTAS_CONTAS.test(rel) && (req.method === 'GET' || req.method === 'POST')) {
+        if (!local(req)) return json(res, 403, { erro: 'Só a partir desta máquina' });
+        if (req.method === 'POST' && !origemPropria(req)) return json(res, 403, { erro: 'Só a partir da própria apresentação (origem ' + (req.headers.origin || 'desconhecida') + ')' });
+        return await tratarContas(req, res, rel, await sessaoDe(req));
+      }
       if (req.method === 'POST') {
         if (!local(req)) return json(res, 403, { erro: 'Só a partir desta máquina' });
         if (!origemPropria(req)) return json(res, 403, { erro: 'Só a partir da própria apresentação (origem ' + (req.headers.origin || 'desconhecida') + ')' });
-        if (rel.startsWith('/guardar-foto/')) return await guardarFoto(req, res, rel.slice('/guardar-foto/'.length));
-        if (rel === '/copia-central') return await guardarCopia(req, res, req.url);
+        if (rel === '/copia-central') return await guardarCopia(req, res, req.url); // a cópia do servidor central corre sozinha, sem sessão
+        const s = await sessaoDe(req);
+        if (rel.startsWith('/guardar-foto/')) {
+          const nao = recusa(s, null); if (nao) return json(res, ...nao);
+          const nome = await guardarFoto(req, res, rel.slice('/guardar-foto/'.length));
+          if (nome) await contas.registar({ conta: s, acao: 'guardou uma foto', preset: nome.slice(0, 60), origem: origemConta });
+          return;
+        }
         const F = freguesiaDe(req.url); if (!F) return json(res, 400, { erro: 'Freguesia desconhecida' });
-        if (rel === '/guardar') return await guardar(req, res, F);
-        if (rel.startsWith('/ativar-preset/')) return ativarPreset(res, F, rel.slice('/ativar-preset/'.length));
-        if (rel.startsWith('/apagar-preset/')) return apagarPreset(res, F, rel.slice('/apagar-preset/'.length));
-        return json(res, 404, { erro: 'Não encontrado' });
+        if (rel === '/guardar') return await guardar(req, res, F, s);
+        const id = rel.startsWith('/ativar-preset/') ? rel.slice('/ativar-preset/'.length) : rel.startsWith('/apagar-preset/') ? rel.slice('/apagar-preset/'.length) : null;
+        if (id === null) return json(res, 404, { erro: 'Não encontrado' });
+        const nao = recusa(s, F); if (nao) return json(res, ...nao);
+        if (rel.startsWith('/ativar-preset/')) ativarPreset(res, F, id); else apagarPreset(res, F, id);
+        if (res.statusCode === 200) await contas.registar({ conta: s, acao: rel.startsWith('/ativar-preset/') ? 'ativou o preset' : 'apagou o preset', freguesia: F.id, preset: id, origem: origemConta });
+        return;
       }
-      if (rel === '/ambiente.json') return json(res, 200, { app, versao, dados: sobreposta ? gravavel : null, copia: path.join(gravavel, 'copia-central') });
-    } catch (err) { registo(err.message); return json(res, err.codigo || 500, { erro: err.message }); }
+      if (rel === '/ambiente.json') return json(res, 200, { app, versao, dados: sobreposta ? gravavel : null, copia: path.join(gravavel, 'copia-central'), contas: true });
+      // a cópia do servidor central tem o histórico e as contas: só para este computador (com HOST=0.0.0.0 a rede vê o resto)
+      if (/^[\\/]copia-central([\\/]|$)/i.test(rel) && !local(req)) { res.writeHead(403).end('Proibido'); return; }
+    } catch (err) { registo(err.message); if (!res.headersSent) return json(res, err.codigo || 500, { erro: err.message }); return; }
     if (rel.endsWith('/')) rel += 'index.html';
     const relLimpo = path.normalize(rel).replace(/^[\\/]+/, '');
     const file = paraLer(relLimpo);

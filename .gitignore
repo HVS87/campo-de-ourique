@@ -13,3 +13,4 @@ servidor-central/cloudflare/.wrangler/
 servidor-central/cloudflare/.dev.vars
 copia-central/
 dados-central/
+.contas/

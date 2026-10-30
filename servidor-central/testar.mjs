@@ -10,8 +10,16 @@ import path from 'node:path';
 import net from 'node:net';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
+import { derivarChave, verificadorDe } from './contas.mjs';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url)), RAIZ = path.join(AQUI, '..');
+// contas de teste (as verdadeiras não estão aqui): carregadas pela reposição de objetos da administração
+const PALAVRAS = { Belem: 'teste-belem', 'Cidade.Teste': 'teste-cidade', 'Admin.Teste': 'teste-admin' };
+const CONTAS = { contas: await Promise.all([
+  { utilizador: 'Belem', nome: 'Belém', papel: 'freguesia', freguesias: ['belem'] },
+  { utilizador: 'Cidade.Teste', nome: 'Cidade', papel: 'cidade', freguesias: ['*'] },
+  { utilizador: 'Admin.Teste', nome: 'Administração', papel: 'admin', freguesias: ['*'] },
+].map(async c => ({ ...c, verificador: await verificadorDe(await derivarChave(c.utilizador, PALAVRAS[c.utilizador])), versao: 1, ativa: true, falhas: 0, bloqueadaAte: 0 }))) };
 const portaLivre = () => new Promise(ok => { const s = net.createServer().listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => ok(p)); }); });
 const ADMIN = 'chave-de-administracao-so-para-testes-0123456789';
 const quais = process.argv[2] ? [process.argv[2]] : ['node', 'worker'];
@@ -42,6 +50,8 @@ async function bateria(tipo) {
       { id: 'z1', tipo: 'zona', nome: 'Largo', texto: '', fotos: [], poligono: [[38.70, -9.18], [38.71, -9.18], [38.71, -9.17]], filhos: [{ id: 'p2', tipo: 'ponto', nome: 'Banco partido', prioridade: 'pouco', texto: '', fotos: [], pos: [38.706, -9.177] }] },
       { id: 'd1', tipo: 'desmaterializado', nome: 'Ideia geral', prioridade: 'sugestao', competencia: 'junta', texto: 'x', fotos: [] }].slice(0, n) });
   let contribuidor, leitor, idLeitor;
+  const sessoes = {};
+  const entrar = async (utilizador, palavra, lembrar) => pedir(null, '/sessao', { method: 'POST', body: JSON.stringify({ utilizador, chave: await derivarChave(utilizador, palavra), lembrar }) });
   const testes = {
     'estado sem chave': async () => { const j = await (await pedir(null, '/estado')).json(); assert.equal(j.ok, true); assert.equal(j.chave, null); },
     'chave de administração de arranque': async () => assert.equal((await (await pedir(ADMIN, '/estado')).json()).chave.papel, 'admin'),
@@ -82,25 +92,85 @@ async function bateria(tipo) {
       const b = new Uint8Array(await (await pedir(leitor, '/exportar.csv?freguesia=alcantara')).arrayBuffer()); assert.deepEqual([...b.slice(0, 3)], [0xef, 0xbb, 0xbf], 'sem BOM'); assert.equal(new TextDecoder().decode(b).trim().split('\r\n').length, 5);
       const g = await (await pedir(leitor, '/exportar.geojson?freguesia=alcantara')).json(); assert.equal(g.features.length, 4); assert.equal(g.features.find(f => f.properties.id === 'z1').geometry.type, 'Polygon'); assert.equal(g.features.find(f => f.properties.id === 'd1').geometry, null);
     },
-    'registo dos envios': async () => { const { registo } = await (await pedir(leitor, '/registo')).json(); assert.equal(registo.length, 7); assert.equal(registo[0].preset, 'teste'); },
-    'cópia: lista e objetos (chaves só para a administração)': async () => {
-      const { objetos } = await (await pedir(leitor, '/copia')).json(); assert.ok(objetos.some(o => o.chave === 'presets/alcantara/teste/1.json')); assert.ok(!objetos.some(o => o.chave === 'chaves.json'));
-      assert.ok((await (await pedir(ADMIN, '/copia')).json()).objetos.some(o => o.chave === 'chaves.json'));
-      assert.equal((await pedir(leitor, '/objeto?chave=chaves.json')).status, 403);
-      assert.equal((await (await pedir(leitor, '/objeto?chave=' + encodeURIComponent('presets/alcantara/teste/1.json'))).json()).revisao, 1);
-      assert.equal((await pedir(leitor, '/objeto?chave=' + encodeURIComponent('../segredo'))).status, 400);
+    'quem fez o quê só para a administração': async () => {
+      const { presets } = await (await pedir(leitor, '/presets?freguesia=alcantara')).json(); assert.ok(!('autor' in presets[0]) && !('contribuidor' in presets[0]), 'o leitor vê o autor');
+      assert.ok(!(await (await pedir(leitor, '/elementos?freguesia=alcantara')).json()).elementos.some(e => 'autor' in e));
+      assert.ok(!('autor' in (await (await pedir(leitor, '/presets/alcantara/teste')).json())));
+      assert.ok(!(await (await pedir(leitor, '/exportar.csv?freguesia=alcantara')).text()).split('\r\n')[0].includes('autor'));
+      assert.equal((await (await pedir(ADMIN, '/presets?freguesia=alcantara')).json()).presets[0].autor, 'Hugo');
+      assert.ok((await (await pedir(ADMIN, '/exportar.csv?freguesia=alcantara')).text()).split('\r\n')[0].includes('autor'));
+      assert.equal((await pedir(leitor, '/historico')).status, 403); assert.equal((await pedir(contribuidor, '/historico')).status, 403); assert.equal((await pedir(null, '/historico')).status, 401);
+      const { historico } = await (await pedir(ADMIN, '/historico')).json(); assert.equal(historico.filter(e => e.acao === 'guardou').length, 7); assert.ok(historico.every(e => e.utilizador === 'chave:Contribuidor'));
+      const h = historico.find(e => e.preset === 'teste' && e.revisao === 2); assert.deepEqual(h.resumo.tirados, ['Ideia geral']); assert.deepEqual(h.resumo.outros, ['título']);
+    },
+    'cópia: só para a administração': async () => {
+      assert.equal((await pedir(leitor, '/copia')).status, 403); assert.equal((await pedir(contribuidor, '/copia')).status, 403);
+      assert.equal((await pedir(leitor, '/objeto?chave=' + encodeURIComponent('presets/alcantara/teste/1.json'))).status, 403);
+      const { objetos } = await (await pedir(ADMIN, '/copia')).json(); assert.ok(objetos.some(o => o.chave === 'presets/alcantara/teste/1.json')); assert.ok(objetos.some(o => o.chave === 'chaves.json')); assert.ok(objetos.some(o => o.chave.startsWith('historico/')));
+      assert.equal((await (await pedir(ADMIN, '/objeto?chave=' + encodeURIComponent('presets/alcantara/teste/1.json'))).json()).revisao, 1);
+      assert.equal((await pedir(ADMIN, '/objeto?chave=' + encodeURIComponent('../segredo'))).status, 400);
+      assert.equal((await pedir(ADMIN, '/objeto?chave=' + encodeURIComponent('contas/segredo.json'))).status, 400);
     },
     'repor objetos (só administração)': async () => {
-      const t = await (await pedir(leitor, '/objeto?chave=' + encodeURIComponent('presets/alcantara/teste/1.json'))).text();
+      const t = await (await pedir(ADMIN, '/objeto?chave=' + encodeURIComponent('presets/alcantara/teste/1.json'))).text();
       assert.equal((await pedir(contribuidor, '/objeto?chave=' + encodeURIComponent('presets/ajuda/reposto/1.json'), { method: 'POST', body: t })).status, 403);
       assert.equal((await pedir(ADMIN, '/objeto?chave=' + encodeURIComponent('presets/ajuda/reposto/1.json'), { method: 'POST', body: t })).status, 200);
-      assert.equal((await (await pedir(leitor, '/objeto?chave=' + encodeURIComponent('presets/ajuda/reposto/1.json'))).json()).revisao, 1);
+      assert.equal((await (await pedir(ADMIN, '/objeto?chave=' + encodeURIComponent('presets/ajuda/reposto/1.json'))).json()).revisao, 1);
     },
     'retirar uma chave': async () => { assert.equal((await pedir(ADMIN, `/chaves/${idLeitor}/retirar`, { method: 'POST' })).status, 200); assert.equal((await pedir(leitor, '/presets')).status, 401); },
     'CORS para a origem autorizada': async () => {
       const r = await fetch(API + '/presets', { method: 'OPTIONS', headers: { Origin: 'http://127.0.0.1:8081', 'Access-Control-Request-Method': 'POST' } }); assert.equal(r.status, 204); assert.equal(r.headers.get('access-control-allow-origin'), 'http://127.0.0.1:8081');
       assert.equal((await fetch(API + '/estado', { headers: { Origin: 'http://127.0.0.1:8081' } })).headers.get('access-control-allow-origin'), 'http://127.0.0.1:8081');
       assert.equal((await fetch(API + '/estado', { headers: { Origin: 'https://outro.pt' } })).headers.get('access-control-allow-origin'), null);
+    },
+    'contas: entrar e enviar só para a sua freguesia': async () => {
+      assert.equal((await pedir(ADMIN, '/objeto?chave=' + encodeURIComponent('contas/contas.json'), { method: 'POST', body: JSON.stringify(CONTAS) })).status, 200);
+      const errada = await entrar('Belem', 'errada'); assert.equal(errada.status, 401);
+      const ninguem = await entrar('Ninguem', 'x'); assert.equal(ninguem.status, 401); assert.equal((await ninguem.json()).erro, (await (await entrar('Belem', 'errada')).json()).erro, 'diz se a conta existe');
+      const r = await entrar('belém', PALAVRAS.Belem); assert.equal(r.status, 200); const j = await r.json(); sessoes.Belem = j.testemunho;
+      assert.ok(j.testemunho.startsWith('s1.')); assert.ok(j.expira > Date.now() + 23 * 3600e3 && j.expira < Date.now() + 25 * 3600e3, 'sem «lembrar-me» a sessão devia durar um dia'); assert.equal(j.lembrar, false);
+      const l = await (await entrar('Belem', PALAVRAS.Belem, true)).json(); assert.ok(l.expira > Date.now() + 29 * 24 * 3600e3, 'com «lembrar-me» a sessão devia durar 30 dias'); assert.equal(l.sessao.lembrar, true); assert.deepEqual(j.sessao.freguesias, ['belem']);
+      const e = await (await pedir(sessoes.Belem, '/estado')).json(); assert.equal(e.chave.utilizador, 'Belem'); assert.equal(e.chave.papel, 'contribuidor');
+      assert.equal((await enviar(sessoes.Belem, 'belem', 'da-junta', { ...preset('Junta', 1), freguesia: 'belem' })).status, 201);
+      const outra = await enviar(sessoes.Belem, 'alcantara', 'da-junta', preset('Junta', 1)); assert.equal(outra.status, 403); assert.match((await outra.json()).erro, /não pode editar alcantara/);
+      assert.equal((await pedir(sessoes.Belem, '/historico')).status, 403); assert.equal((await pedir(sessoes.Belem, '/contas')).status, 403); assert.equal((await pedir(sessoes.Belem, '/copia')).status, 403);
+      assert.equal((await pedir(sessoes.Belem, '/presets?freguesia=alcantara')).status, 200, 'uma conta de freguesia consulta as outras');
+      assert.equal((await pedir(sessoes.Belem.slice(0, -4) + 'AAAA', '/presets')).status, 401, 'testemunho adulterado');
+    },
+    'contas: cidade envia para todas; administração vê o histórico com as contas': async () => {
+      sessoes.Cidade = (await (await entrar('Cidade.Teste', PALAVRAS['Cidade.Teste'])).json()).testemunho;
+      assert.equal((await enviar(sessoes.Cidade, 'alcantara', 'da-cidade', preset('Cidade', 2))).status, 201);
+      assert.equal((await pedir(sessoes.Cidade, '/historico')).status, 403);
+      sessoes.Admin = (await (await entrar('Admin.Teste', PALAVRAS['Admin.Teste'])).json()).testemunho;
+      const { historico } = await (await pedir(sessoes.Admin, '/historico')).json();
+      assert.ok(historico.some(x => x.utilizador === 'Belem' && x.acao === 'guardou' && x.freguesia === 'belem' && x.preset === 'da-junta'));
+      assert.ok(historico.some(x => x.utilizador === 'Cidade.Teste' && x.acao === 'guardou' && x.freguesia === 'alcantara'));
+      assert.ok(historico.some(x => x.utilizador === 'Belem' && x.acao === 'entrada recusada'));
+      assert.equal((await (await pedir(sessoes.Admin, '/historico?freguesia=belem&utilizador=belem')).json()).historico.every(x => x.freguesia === 'belem'), true);
+      assert.equal((await (await pedir(sessoes.Admin, '/presets?freguesia=belem')).json()).presets.find(p => p.preset === 'da-junta').autor, 'Belém');
+      assert.equal((await (await pedir(sessoes.Admin, '/presets/belem/da-junta')).json()).utilizador, 'Belem');
+      const { contas } = await (await pedir(sessoes.Admin, '/contas')).json(); assert.equal(contas.length, 3); assert.ok(!JSON.stringify(contas).includes('verificador'));
+      assert.ok((await (await pedir(sessoes.Admin, '/copia')).json()).objetos.some(o => o.chave === 'contas/contas.json'));
+    },
+    'contas: mudar a palavra-passe, bloqueio e reposição': async () => {
+      const antiga = sessoes.Belem;
+      const m = await pedir(antiga, '/sessao/palavra-passe', { method: 'POST', body: JSON.stringify({ atual: await derivarChave('Belem', PALAVRAS.Belem), nova: await derivarChave('Belem', 'outra-palavra') }) });
+      assert.equal(m.status, 200); sessoes.Belem = (await m.json()).testemunho;
+      assert.equal((await pedir(antiga, '/presets')).status, 401, 'a sessão antiga continua a valer');
+      assert.equal((await pedir(sessoes.Belem, '/presets')).status, 200);
+      const codigos = []; for (let i = 0; i < 6; i++) codigos.push((await entrar('Belem', 'errada-' + i)).status);
+      assert.deepEqual(codigos.slice(-2), [429, 429]); assert.equal((await entrar('Belem', 'outra-palavra')).status, 429, 'a certa também espera');
+      assert.equal((await pedir(sessoes.Cidade, '/contas/Belem/palavra-passe', { method: 'POST', body: JSON.stringify({ nova: await derivarChave('Belem', 'reposta-1') }) })).status, 403);
+      assert.equal((await pedir(sessoes.Admin, '/contas/Belem/palavra-passe', { method: 'POST', body: JSON.stringify({ nova: await derivarChave('Belem', 'reposta-1') }) })).status, 200);
+      assert.equal((await entrar('Belem', 'reposta-1')).status, 200);
+      assert.equal((await pedir(ADMIN, '/contas/Belem/palavra-passe', { method: 'POST', body: JSON.stringify({ nova: await derivarChave('Belem', 'reposta-2') }) })).status, 200, 'a chave de administração também repõe');
+      assert.equal((await pedir(sessoes.Belem, '/presets')).status, 401);
+    },
+    'chave de contribuidor limitada a uma freguesia': async () => {
+      const c = await (await pedir(ADMIN, '/chaves', { method: 'POST', body: JSON.stringify({ nome: 'Só Ajuda', papel: 'contribuidor', freguesias: ['ajuda'] }) })).json();
+      assert.deepEqual(c.freguesias, ['ajuda']);
+      assert.equal((await enviar(c.chave, 'ajuda', 'k', { ...preset('K', 1), freguesia: 'ajuda' })).status, 201);
+      assert.equal((await enviar(c.chave, 'belem', 'k', { ...preset('K', 1), freguesia: 'belem' })).status, 403);
     },
     'página de consulta': async () => { const r = await fetch(s.base + '/'); assert.equal(r.status, 200); assert.ok((await r.text()).includes('Consulta dos dados')); },
   };

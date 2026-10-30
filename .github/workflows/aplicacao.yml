@@ -36,7 +36,7 @@ jobs:
           WRANGLER_SEND_METRICS: 'false'
 
   central:
-    # republica o servidor central no Cloudflare, se o repositório tiver o segredo CLOUDFLARE_API_TOKEN
+    # republica o servidor central no Cloudflare, se o repositório tiver os segredos CLOUDFLARE_API_TOKEN e CLOUDFLARE_ACCOUNT_ID (servidor-central/GUIA-CLOUDFLARE.md)
     needs: testes
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
@@ -48,6 +48,7 @@ jobs:
       - name: Publicar o Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
           WRANGLER_SEND_METRICS: 'false'
         run: |

@@ -92,12 +92,21 @@ async function abrirJanela() {
   // ligações para fora (fontes, OpenStreetMap, servidor central…) abrem no browser do sistema
   janela.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:/.test(url) && !url.startsWith(origem)) shell.openExternal(url); return { action: 'deny' }; });
   janela.webContents.on('will-navigate', (e, url) => { if (!url.startsWith(origem)) { e.preventDefault(); if (/^https?:/.test(url)) shell.openExternal(url); } });
+  // fechar (ou recarregar) com alterações por guardar: a página já as pôs em rascunho; o Electron não mostra o aviso do
+  // browser, por isso pergunta-se aqui
+  janela.webContents.on('will-prevent-unload', e => {
+    if (TESTE) { e.preventDefault(); return; }
+    const r = dialog.showMessageBoxSync(janela, { type: 'warning', title: 'Alterações por guardar', message: 'Há alterações por guardar no modo de edição.',
+      detail: 'Se fechares agora, ficam em rascunho neste computador e voltam quando a mesma conta entrar outra vez no modo de edição.',
+      buttons: ['Fechar e manter em rascunho', 'Continuar a editar'], defaultId: 1, cancelId: 1, noLink: true });
+    if (r === 0) e.preventDefault(); // preventDefault aqui deixa fechar
+  });
   janela.webContents.session.setPermissionRequestHandler((wc, permissao, decidir) => decidir(['geolocation', 'fullscreen', 'clipboard-sanitized-write'].includes(permissao)));
   if (TESTE) ligarTeste();
   await janela.loadURL(origem + '/');
 }
 
-function ligarTeste() { // verificação (desktop/testar-app.mjs): arranque, gravação na pasta do utilizador, outra freguesia e sem internet
+function ligarTeste() { // verificação (desktop/testar-app.mjs): arranque, sessão e gravação na pasta do utilizador, outra freguesia e sem internet
   const erros = [];
   janela.webContents.on('console-message', (e, nivel, mensagem) => { const lv = e.level !== undefined ? e.level : nivel, msg = e.message !== undefined ? e.message : mensagem; if (lv === 'error' || lv === 3) erros.push(msg); });
   const espera = ms => new Promise(r => setTimeout(r, ms));
@@ -109,7 +118,7 @@ function ligarTeste() { // verificação (desktop/testar-app.mjs): arranque, gra
     if (process.env.CO_CAPTURA) { const img = await janela.webContents.capturePage(); fs.writeFileSync(process.env.CO_CAPTURA, img.toPNG()); } // imagem da janela, para ver o aspeto
     r.arranque = await js(`(async () => { const M = window.__mapa; if (!M) return { ok: false }; const amb = await fetch('ambiente.json').then(r => r.json()); return { ok: true, freguesia: M.FREG.id, elementos: M.ELEMENTOS.length, presets: M.PRESETS.length, app: amb.app, versao: amb.versao }; })()`);
     // gravar: fica na pasta de dados do utilizador; o programa não muda
-    r.gravar = await js(`(async () => { const M = window.__mapa; M.entrarEdicao(true); M.novoDesmaterializado(); const g = await M.guardar(); const t = await fetch('dados/presets/' + M.C.preset + '.js').then(r => r.text()); return { ok: g === 'servidor' && t.includes('Novo ponto desmaterializado'), guardar: g, preset: M.C.preset }; })()`);
+    r.gravar = await js(`(async () => { const M = window.__mapa; await M.entrarConta(${JSON.stringify(process.env.CO_TESTE_UTILIZADOR || '')}, ${JSON.stringify(process.env.CO_TESTE_PALAVRA || '')}); if (!(await M.pedirEdicao())) return { ok: false, erro: 'sem sessão' }; M.novoDesmaterializado(); const g = await M.guardar(); const t = await fetch('dados/presets/' + M.C.preset + '.js').then(r => r.text()); return { ok: g === 'servidor' && t.includes('Novo ponto desmaterializado'), guardar: g, preset: M.C.preset }; })()`);
     const gravado = path.join(pastaDados(), 'dados', 'presets', (r.gravar.preset || 'x') + '.js'), original = path.join(RAIZ, 'dados', 'presets', (r.gravar.preset || 'x') + '.js');
     r.gravar.naPastaDoUtilizador = fs.existsSync(gravado);
     r.gravar.programaIntacto = !fs.readFileSync(original, 'utf8').includes('Novo ponto desmaterializado');

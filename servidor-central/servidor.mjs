@@ -7,7 +7,8 @@
 //   node servidor-central/servidor.mjs --chaves                         → lista as chaves (sem as mostrar)
 //
 // Variáveis: PORTA (8090), HOST (127.0.0.1), DADOS (./dados-central), ORIGENS (separadas por vírgulas; * = todas),
-// LEITURA_PUBLICA (1 = consultar sem chave), NOME, CHAVE_ADMIN (chave de administração de arranque).
+// LEITURA_PUBLICA (1 = consultar sem chave), NOME, CHAVE_ADMIN (chave de administração de arranque), SEGREDO_SESSOES
+// (opcional: assina as sessões das contas; sem ele é gerado na primeira vez e fica em <DADOS>/contas/segredo.json).
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -26,6 +27,8 @@ const armazem = {
   async ler(chave) { try { return fs.readFileSync(caminho(chave), 'utf8'); } catch (err) { return null; } },
   async escrever(chave, texto) { const f = caminho(chave); fs.mkdirSync(path.dirname(f), { recursive: true }); const tmp = f + '.tmp'; fs.writeFileSync(tmp, texto); fs.renameSync(tmp, f); }, // escrita atómica
   async apagar(chave) { try { fs.unlinkSync(caminho(chave)); } catch (err) { /* já não existe */ } },
+  // ler-mudar-gravar sem esperas pelo meio: dois pedidos ao mesmo tempo não se pisam (o Node corre um de cada vez)
+  async atualizar(chave, f) { let t = null; try { t = fs.readFileSync(caminho(chave), 'utf8'); } catch (err) { t = null; } await armazem.escrever(chave, f(t)); },
   async listar(prefixo) {
     const out = [], base = prefixo ? caminho(prefixo.replace(/\/$/, '')) : DADOS;
     (function andar(dir) { let l = []; try { l = fs.readdirSync(dir, { withFileTypes: true }); } catch (err) { return; }
@@ -46,7 +49,7 @@ if (process.argv.includes('--nova-chave')) {
 }
 if (process.argv.includes('--chaves')) { for (const c of JSON.parse((await armazem.ler('chaves.json')) || '[]')) console.log(`${c.id}  ${c.papel.padEnd(12)} ${c.nome}  (criada ${c.criada.slice(0, 10)})`); process.exit(0); }
 
-const api = criarAPI({ armazem, nome: NOME, origens: (process.env.ORIGENS || '*').split(',').map(s => s.trim()).filter(Boolean), leituraPublica: process.env.LEITURA_PUBLICA === '1', chaveAdmin: process.env.CHAVE_ADMIN || '', pagina: fs.readFileSync(path.join(AQUI, 'consulta.html'), 'utf8') });
+const api = criarAPI({ armazem, nome: NOME, origens: (process.env.ORIGENS || '*').split(',').map(s => s.trim()).filter(Boolean), leituraPublica: process.env.LEITURA_PUBLICA === '1', chaveAdmin: process.env.CHAVE_ADMIN || '', segredoSessoes: process.env.SEGREDO_SESSOES || '', pagina: fs.readFileSync(path.join(AQUI, 'consulta.html'), 'utf8') });
 
 // adaptador: pedido do Node → Request da web → Response → resposta do Node
 http.createServer(async (req, res) => {

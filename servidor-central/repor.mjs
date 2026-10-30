@@ -1,6 +1,6 @@
 // Repõe um servidor central (por exemplo um Worker novo no Cloudflare) a partir de uma cópia local.
 //   node servidor-central/repor.mjs --pasta "<cópia>" --url https://…/api/v1 --admin <chave de administração>
-//   (--com-chaves repõe também as chaves de acesso; --ver só mostra o que faria)
+//   (--com-chaves repõe também as chaves de acesso e as contas; --ver só mostra o que faria)
 // A cópia local é a pasta «copia-central» da aplicação de computador («Ficheiro → Abrir a cópia do servidor central»)
 // ou da versão browser (na pasta do projeto). Também serve a pasta de dados do servidor Node.
 import fs from 'node:fs';
@@ -11,9 +11,10 @@ const pasta = arg('pasta'), url = (arg('url') || '').replace(/\/+$/, ''), admin 
 const comChaves = process.argv.includes('--com-chaves'), ver = process.argv.includes('--ver');
 if (!pasta || !url || !admin) { console.error('uso: node servidor-central/repor.mjs --pasta <cópia> --url <endereço da API> --admin <chave>  [--com-chaves] [--ver]'); process.exit(1); }
 const ID = '[a-z0-9][a-z0-9-]{0,60}';
-const VALIDA = new RegExp(`^(presets/${ID}/${ID}/(\\d+|atual|revisoes)\\.json|(indice|elementos)/${ID}\\.json|registo/\\d{4}-\\d{2}\\.json|chaves\\.json)$`);
+const VALIDA = new RegExp(`^(presets/${ID}/${ID}/(\\d+|atual|revisoes)\\.json|(indice|elementos)/${ID}\\.json|historico/\\d{4}-\\d{2}\\.json|chaves\\.json|contas/contas\\.json)$`);
+const ACESSOS = ['chaves.json', 'contas/contas.json']; // as chaves e as contas (com as palavras-passe de então) só com --com-chaves
 const objetos = [];
-(function andar(dir) { for (const e of fs.readdirSync(dir, { withFileTypes: true })) { const f = path.join(dir, e.name); if (e.isDirectory()) andar(f); else { const k = path.relative(pasta, f).split(path.sep).join('/'); if (VALIDA.test(k) && (comChaves || k !== 'chaves.json')) objetos.push(k); } } })(path.resolve(pasta));
+(function andar(dir) { for (const e of fs.readdirSync(dir, { withFileTypes: true })) { const f = path.join(dir, e.name); if (e.isDirectory()) andar(f); else { const k = path.relative(pasta, f).split(path.sep).join('/'); if (VALIDA.test(k) && (comChaves || !ACESSOS.includes(k))) objetos.push(k); } } })(path.resolve(pasta));
 console.log(`${objetos.length} objetos para repor em ${url}${ver ? ' (só a ver)' : ''}`);
 const estado = await fetch(url + '/estado', { headers: { Authorization: 'Bearer ' + admin } }).then(r => r.json()).catch(err => ({ erro: err.message }));
 if (!estado.chave || estado.chave.papel !== 'admin') { console.error('A chave não é de administração neste servidor (' + (estado.erro || JSON.stringify(estado.chave)) + ').'); process.exit(1); }
