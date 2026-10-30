@@ -15,8 +15,8 @@ jobs:
   testes:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - name: A versão do package.json é a da tag
@@ -41,8 +41,8 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - name: Publicar o Worker
@@ -60,7 +60,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Criar a release, se ainda não existir
         env:
           GH_TOKEN: ${{ github.token }}
@@ -81,8 +81,8 @@ jobs:
             alvo: --mac
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -105,7 +105,7 @@ jobs:
           gh release upload "$GITHUB_REF_NAME" "${ficheiros[@]}" --clobber
       - name: Guardar como artefacto (corrida à mão)
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: aplicacao-${{ matrix.os }}
           path: |
