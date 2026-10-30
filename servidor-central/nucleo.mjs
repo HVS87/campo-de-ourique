@@ -20,7 +20,7 @@ const LIMITE = 40 * 1024 * 1024;
 const idValido = id => typeof id === 'string' && /^[a-z0-9][a-z0-9-]{0,60}$/.test(id);
 // objetos que se podem copiar e repor (cópia local, reposição); o segredo das sessões fica sempre no servidor
 const ID = '[a-z0-9][a-z0-9-]{0,60}';
-const CHAVE_OBJETO = new RegExp(`^(presets/${ID}/${ID}/(\\d+|atual|revisoes)\\.json|(indice|elementos)/${ID}\\.json|historico/\\d{4}-\\d{2}\\.json|chaves\\.json|contas/contas\\.json)$`);
+const CHAVE_OBJETO = new RegExp(`^(presets/${ID}/${ID}/(\\d+|atual|revisoes)\\.json|(indice|elementos)/${ID}\\.json|historico/\\d{4}-\\d{2}\\.json|chaves\\.json|contas/contas\\.json|evento/atual\\.json)$`);
 export const PAPEIS = { leitor: ['ler'], contribuidor: ['ler', 'enviar'], admin: ['ler', 'enviar', 'admin'] };
 const AUTORIA = ['autor', 'contribuidor', 'utilizador'];
 const semAutoria = o => { if (!o || typeof o !== 'object') return o; const x = { ...o }; for (const k of AUTORIA) delete x[k]; return x; };
@@ -50,7 +50,10 @@ function achatar(reg) { // calculado uma vez, ao receber (a consulta só junta l
   const out = [], cats = reg.dados.categorias || [];
   (function rec(lista, pai) { for (const e of lista || []) {
     const g = geometria(e), [lat, lon] = centro(g);
+    // um conjunto de um evento (levantamento) leva também quantos pontos tem de cada categoria
+    const contagens = e.evento && Array.isArray(e.detalhes) ? e.detalhes.reduce((m, d) => { const c = d && d.c ? String(d.c) : 'sem'; m[c] = (m[c] || 0) + 1; return m; }, {}) : null;
     out.push({ freguesia: reg.freguesia, preset: reg.preset, presetTitulo: reg.dados.titulo || reg.preset, id: e.id, tipo: e.tipo, nome: e.nome, prioridade: e.prioridade || '', competencia: e.competencia || '',
+      ...(e.evento ? { evento: String(e.evento), pontos: Array.isArray(e.pontos) ? e.pontos.length : 0, contagens } : {}),
       categorias: cats.filter(c => (c.membros || []).includes(e.id)).map(c => c.nome), dentroDe: pai ? pai.nome : '', texto: textoSimples(e.texto),
       fotos: (e.fotos || []).map(f => f.src || f).filter(s => !String(s).startsWith('data:')), lat, lon, autor: reg.autor || '', utilizador: reg.utilizador || '', recebido: reg.recebido, revisao: reg.revisao, geometria: g });
     rec(e.filhos, e); } })(reg.dados.elementos, null);
@@ -159,6 +162,20 @@ export function criarAPI({ armazem, nome = 'Servidor central das freguesias', or
     }
     return json(404, { erro: 'Não encontrado' });
   }
+  // resumo de um evento: por freguesia, quantos pontos de cada categoria (do preset recebido mais recentemente que o tenha)
+  async function resumoEvento(id) {
+    const porF = {}; let total = 0;
+    for (const o of await armazem.listar('elementos/')) {
+      const f = /^elementos\/(.+)\.json$/.exec(o.chave); if (!f || !idValido(f[1])) continue;
+      const presets = (await lerJSON(o.chave)) || {};
+      let melhor = null;
+      for (const linhas of Object.values(presets)) for (const l of linhas) if (l.evento === id && (!melhor || l.recebido > melhor.recebido)) melhor = l;
+      if (!melhor) continue;
+      porF[f[1]] = { total: melhor.pontos || 0, contagens: melhor.contagens || {}, preset: melhor.preset, recebido: melhor.recebido };
+      total += melhor.pontos || 0;
+    }
+    return { evento: id, total, freguesias: porF };
+  }
   async function elementos(q) {
     if (q.freguesia && !idValido(q.freguesia)) return [];
     return filtrar((await porFreguesia('elementos', q.freguesia)).flat(), q);
@@ -214,6 +231,14 @@ export function criarAPI({ armazem, nome = 'Servidor central das freguesias', or
       if (partes[0] !== 'api' || partes[1] !== 'v' + VERSAO_API) return json(404, { erro: 'Não encontrado' });
       const [, , rec, f, p, extra] = partes, c = await quem(req);
       if (rec === 'estado' && req.method === 'GET') return json(200, { ok: true, nome, api: VERSAO_API, leituraPublica, chave: c ? { nome: c.nome, papel: c.papel, utilizador: c.utilizador || null, conta: c.conta ? c.conta.papel : null, freguesias: c.freguesias } : null });
+      if (rec === 'evento' && req.method === 'GET' && !f) return json(200, { evento: await contas.lerEvento() });
+      if (rec === 'evento' && req.method === 'GET' && f === 'resumo') { if (!pode(c, 'ler')) return recusa(c); const atual = await contas.lerEvento(); const id = q.id || (atual && atual.id); return json(200, id ? await resumoEvento(id) : { evento: null, total: 0, freguesias: {} }); }
+      if (rec === 'evento' && req.method === 'POST' && !f) {
+        if (!pode(c, 'admin')) return recusa(c);
+        let b; try { b = JSON.parse(await corpoTexto(req)) || {}; } catch (err) { return json(err.codigo || 400, { erro: err.codigo ? err.message : 'JSON inválido' }); }
+        const r = await contas.definirEvento({ ...comoConta(c), papel: 'admin' }, b, { origem: 'servidor central' });
+        return r.erro ? json(r.codigo, { erro: r.erro }) : json(200, r);
+      }
       if (rec === 'sessao' || rec === 'contas' || rec === 'historico') return await tratarContas(req, c, rec, f, p);
       if (rec === 'chaves') return await chaves(req, c, f, p);
       if (rec === 'copia' || rec === 'objeto') return await copia(req, c, rec === 'copia' ? {} : q);

@@ -95,6 +95,11 @@
     <div class="tabela"><table><thead><tr><th>Freguesia</th><th>Nome</th><th>Prioridade</th><th>Competência</th><th>Categorias</th><th data-autor>Autor</th><th>Recebido</th></tr></thead><tbody id="linhas"></tbody></table></div>
   </div>
   <section id="admin" hidden>
+    <h2>Evento</h2>
+    <p class="nota">Um levantamento no terreno. Com o evento ativo, a apresentação pergunta, ao entrar na edição e no «+», se o registo é do levantamento ou uma ocorrência normal; o levantamento guarda cada candeeiro com a localização e a morada num conjunto por freguesia. A visita guiada não arranca sozinha enquanto o evento durar.</p>
+    <div class="filtros"><span id="ev-estado"></span><button id="ev-ligar" class="on"></button></div>
+    <div class="tabela" id="ev-resumo-caixa" style="max-height:340px" hidden><table><thead id="ev-cab"></thead><tbody id="ev-resumo"></tbody></table></div>
+
     <h2>Histórico de alterações</h2>
     <p class="nota">Quem fez o quê, do mais recente para o mais antigo. Só a administração vê esta lista.</p>
     <div class="filtros">
@@ -151,7 +156,8 @@ const gravar = (k, v, lembrar = true) => { try { sessionStorage.removeItem(k); l
 // A palavra-passe não sai do browser: deriva-se dela a chave de entrada (o mesmo cálculo de servidor-central/contas.mjs).
 const normalizar = u => String(u || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[\s'’-]+/g, '').slice(0, 80);
 async function chaveDeEntrada(utilizador, palavraPasse) {
-  const enc = new TextEncoder(), base = await crypto.subtle.importKey('raw', enc.encode(String(palavraPasse)), 'PBKDF2', false, ['deriveBits']);
+  const semAcentos = String(palavraPasse).normalize('NFD').replace(/[̀-ͯ]/g, ''); // acentos e cedilhas não contam (as maiúsculas sim)
+  const enc = new TextEncoder(), base = await crypto.subtle.importKey('raw', enc.encode(semAcentos), 'PBKDF2', false, ['deriveBits']);
   const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: enc.encode('campo-de-ourique/' + normalizar(utilizador)), iterations: 100000 }, base, 256);
   return [...new Uint8Array(bits)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
@@ -242,6 +248,27 @@ $('#h-csv').addEventListener('click', () => {
   transferir(new Blob(['﻿quando;utilizador;nome;papel;acao;freguesia;preset;revisao;conta;alteracoes;origem\r\n' + linhas.join('\r\n') + '\r\n'], { type: 'text/csv' }), 'historico.csv');
 });
 const edita = c => (c.freguesias || []).includes('*') ? 'todas' : (c.freguesias || []).map(nomeFreg).join(', ');
+// evento: ligar e desligar, e o resumo da cidade por freguesia
+const EVENTO_DEF = { id: 'iluminacao', nome: 'Levantamento Iluminação Pública', icone: '💡', categorias: [{ id: 'fundido', nome: 'Candeeiro apagado/fundido' }, { id: 'falta', nome: 'Candeeiro em falta/zona escura' }] };
+let eventoAtual = null;
+async function carregarEvento() {
+  try { eventoAtual = (await pedir('/evento')).evento; } catch (err) { eventoAtual = null; }
+  const ativo = !!(eventoAtual && eventoAtual.ativo && eventoAtual.id === EVENTO_DEF.id);
+  $('#ev-estado').innerHTML = `<b>${esc(EVENTO_DEF.icone)} ${esc(EVENTO_DEF.nome)}</b> · ${ativo ? '<b>ativo</b> desde ' + esc(data(eventoAtual.desde)) + (eventoAtual.por ? ', por ' + esc(eventoAtual.por) : '') : 'inativo'}`;
+  $('#ev-ligar').textContent = ativo ? 'Desativar o evento' : 'Ativar o evento'; $('#ev-ligar').classList.toggle('on', !ativo);
+  $('#ev-resumo-caixa').hidden = !ativo; if (!ativo) return;
+  try {
+    const r = await pedir('/evento/resumo?id=' + EVENTO_DEF.id), fregs = Object.keys(r.freguesias).sort((a, b) => nomeFreg(a).localeCompare(nomeFreg(b), 'pt'));
+    $('#ev-cab').innerHTML = '<tr><th>Freguesia</th>' + EVENTO_DEF.categorias.map(c => `<th>${esc(c.nome)}</th>`).join('') + '<th>Total</th><th>Último envio</th></tr>';
+    const tot = {}; for (const f of fregs) for (const c of EVENTO_DEF.categorias) tot[c.id] = (tot[c.id] || 0) + (r.freguesias[f].contagens[c.id] || 0);
+    $('#ev-resumo').innerHTML = fregs.map(f => `<tr><td>${esc(nomeFreg(f))}</td>${EVENTO_DEF.categorias.map(c => `<td>${r.freguesias[f].contagens[c.id] || 0}</td>`).join('')}<td><b>${r.freguesias[f].total}</b></td><td>${esc(data(r.freguesias[f].recebido))}</td></tr>`).join('') + (fregs.length ? `<tr><td><b>Lisboa</b></td>${EVENTO_DEF.categorias.map(c => `<td><b>${tot[c.id] || 0}</b></td>`).join('')}<td><b>${r.total}</b></td><td></td></tr>` : '<tr><td colspan="5" class="nota">Ainda não há registos.</td></tr>');
+  } catch (err) { $('#ev-resumo').innerHTML = `<tr><td colspan="5" class="erro">${esc(err.message)}</td></tr>`; }
+}
+$('#ev-ligar').addEventListener('click', async () => {
+  const ativo = !!(eventoAtual && eventoAtual.ativo && eventoAtual.id === EVENTO_DEF.id);
+  if (!confirm(ativo ? 'Desativar o evento? A apresentação volta ao normal em todos os computadores ligados a este servidor.' : 'Ativar o evento em todos os computadores ligados a este servidor?')) return;
+  try { await pedirJSON('/evento', { id: EVENTO_DEF.id, nome: EVENTO_DEF.nome, ativo: !ativo }); carregarEvento(); } catch (err) { avisar(err.message); }
+});
 async function carregarContas() {
   try {
     const { contas } = await pedir('/contas');
@@ -279,7 +306,7 @@ async function mostrar() {
   $('#quem').innerHTML = quem ? `👤 <b>${esc(quem.utilizador || quem.nome)}</b> <small>${esc(PAPEL[quem.conta || quem.papel] || '')}</small>` : '';
   document.body.classList.toggle('so-admin', admin());
   $('#admin').hidden = !admin();
-  if (admin()) { carregarHistorico(); carregarContas(); carregarChaves(); }
+  if (admin()) { carregarEvento(); carregarHistorico(); carregarContas(); carregarChaves(); }
   carregarPresets(); atualizar();
 }
 $('#usar-chave').addEventListener('click', () => { const ver = $('#chave').hidden; $('#chave').hidden = !ver; $('#u').hidden = ver; $('#p').hidden = ver; $('#usar-chave').textContent = ver ? 'entrar com uma conta' : 'usar uma chave de acesso'; });

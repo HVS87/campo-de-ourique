@@ -18,6 +18,8 @@
 //   POST /sessao/terminar       → fecha a sessão
 //   POST /sessao/palavra-passe  → { atual, nova } muda a palavra-passe da própria conta
 //   GET  /historico?freguesia=&utilizador=&limite=&meses=  → quem fez o quê (só a administração)
+//   GET  /evento                → { evento: { id, nome, ativo, desde, por } | null } (o levantamento em curso)
+//   POST /evento                → { id, nome, ativo } liga ou desliga o evento (só a administração)
 //   GET  /contas                → as contas, sem os verificadores (só a administração)
 //   POST /contas/<utilizador>/palavra-passe → { nova } repõe a palavra-passe de outra conta (só a administração)
 //
@@ -55,7 +57,7 @@ const LIMITE_CORPO = 40 * 1024 * 1024; // 40 MB
 const idValido = id => /^[a-z0-9][a-z0-9-]{0,60}$/.test(id);
 // objetos do servidor central que a cópia local aceita (os mesmos de servidor-central/nucleo.mjs)
 const ID = '[a-z0-9][a-z0-9-]{0,60}';
-const CHAVE_COPIA = new RegExp(`^(presets/${ID}/${ID}/(\\d+|atual|revisoes)\\.json|(indice|elementos)/${ID}\\.json|historico/\\d{4}-\\d{2}\\.json|chaves\\.json|contas/contas\\.json)$`);
+const CHAVE_COPIA = new RegExp(`^(presets/${ID}/${ID}/(\\d+|atual|revisoes)\\.json|(indice|elementos)/${ID}\\.json|historico/\\d{4}-\\d{2}\\.json|chaves\\.json|contas/contas\\.json|evento/atual\\.json)$`);
 const agora = () => new Date().toISOString().slice(0, 16).replace('T', ' ');
 const local = req => ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress);
 const json = (res, codigo, obj, extra = {}) => { res.writeHead(codigo, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...extra }); res.end(JSON.stringify(obj)); };
@@ -250,6 +252,7 @@ export function criarServidor({ raiz, gravavel = raiz, app = false, versao = '',
     if (req.method === 'GET') {
       if (!mesmaOrigem(req)) return json(res, 403, { erro: 'Só a partir da própria apresentação' });
       if (rel === '/sessao') return json(res, 200, { sessao: s });
+      if (rel === '/evento') return json(res, 200, { evento: await contas.lerEvento() });
       if (!s || s.papel !== 'admin') return json(res, s ? 403 : 401, { erro: 'Só a administração' });
       const q = Object.fromEntries(new URL(req.url, 'http://x').searchParams);
       if (rel === '/historico') return json(res, 200, { historico: await contas.historico(q) });
@@ -264,6 +267,7 @@ export function criarServidor({ raiz, gravavel = raiz, app = false, versao = '',
     }
     if (rel === '/sessao/terminar') { if (s) await contas.registar({ conta: s, acao: 'saiu', origem: origemConta }); return json(res, 200, { ok: true }, cookie(req, '', 0)); }
     if (!s) return json(res, 401, { erro: 'Inicia sessão primeiro', sessao: null });
+    if (rel === '/evento') { const r = await contas.definirEvento(s, b, { origem: origemConta }); if (!r.erro) registo(`evento «${r.evento.nome}» ${r.evento.ativo ? 'ativado' : 'desativado'} por ${s.utilizador}`); return r.erro ? json(res, r.codigo, { erro: r.erro }) : json(res, 200, r); }
     if (rel === '/sessao/palavra-passe') {
       const r = await contas.mudarPalavraPasse(s, b.atual, b.nova, { origem: origemConta });
       return r.erro ? json(res, r.codigo, { erro: r.erro }) : json(res, 200, { sessao: r.conta }, cookie(req, r.testemunho, duracao(r.lembrar)));
@@ -272,7 +276,7 @@ export function criarServidor({ raiz, gravavel = raiz, app = false, versao = '',
     if (m) { const r = await contas.reporPalavraPasse(s, m[1], b.nova, { origem: origemConta }); return r.erro ? json(res, r.codigo, { erro: r.erro }) : json(res, 200, { ok: true, conta: r.conta }); }
     return json(res, 404, { erro: 'Não encontrado' });
   }
-  const ROTAS_CONTAS = /^\/(sessao(\/terminar|\/palavra-passe)?|historico|contas(\/[^/]+\/palavra-passe)?)$/;
+  const ROTAS_CONTAS = /^\/(sessao(\/terminar|\/palavra-passe)?|historico|evento|contas(\/[^/]+\/palavra-passe)?)$/;
 
   return http.createServer(async (req, res) => {
     let rel;

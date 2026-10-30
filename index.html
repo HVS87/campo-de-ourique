@@ -286,6 +286,67 @@
   #guiao .sair { width: 30px; height: 30px; border-radius: 50%; border: 0; background: transparent; color: var(--ink-dim); cursor: pointer; font-size: 14px; }
   #guiao .sair:hover { background: rgba(255,255,255,.1); color: var(--ink); }
 
+  /* ---- Visita Guiada (como usar a apresentação): escurece tudo menos o alvo e explica-o num cartão ---- */
+  #visita { position: absolute; inset: 0; z-index: 1380; overflow: hidden; }
+  #visita[hidden] { display: none; }
+  #visita.interativo { pointer-events: none; } /* nos passos em que se convida a experimentar, o mapa recebe os cliques */
+  #visita .pano { position: absolute; inset: 0; background: rgba(4,6,10,.62); display: none; }
+  #visita.sem-alvo .pano { display: block; }
+  #visita .foco { position: absolute; border-radius: 14px; box-shadow: 0 0 0 9999px rgba(4,6,10,.62), 0 0 0 2px rgba(243,195,91,.95), 0 0 24px rgba(243,195,91,.35); pointer-events: none; transition: left .3s, top .3s, width .3s, height .3s; }
+  #visita.sem-alvo .foco { display: none; }
+  #visita .cartao { position: absolute; width: min(400px, calc(100vw - 24px)); background: #161b22; border-radius: 16px; padding: 14px 18px 12px; pointer-events: auto; transition: left .3s, top .3s; animation: surgir .18s ease-out; }
+  #visita .topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  #visita .passo { color: var(--accent); font-size: 11.5px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; }
+  #visita .sair { width: 32px; height: 32px; border-radius: 50%; border: 0; background: transparent; color: var(--ink-dim); cursor: pointer; font-size: 15px; margin-right: -8px; }
+  #visita .sair:hover { background: rgba(255,255,255,.1); color: var(--ink); }
+  #visita h2 { margin: 4px 0 8px; font-size: 18px; }
+  #visita .texto { margin: 0 0 8px; font-size: 14px; line-height: 1.5; color: #d8dde5; }
+  #visita .texto b { color: var(--ink); }
+  #visita .dica { margin: 0 0 12px; font-size: 12.5px; line-height: 1.45; color: var(--ink-dim); }
+  #visita .dica:empty { display: none; }
+  #visita .dica::before { content: '💡 '; }
+  #visita .amostra { display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 1px rgba(255,255,255,.45); margin-right: 6px; vertical-align: -1px; }
+  #visita .botoes { display: flex; align-items: center; gap: 8px; }
+  #visita .botoes .esp { flex: 1; }
+  #visita .btn.ligacao { background: none; border-color: transparent; color: var(--ink-dim); padding-left: 2px; }
+  #visita .btn.ligacao:hover { color: var(--ink); }
+  #visita .barra { height: 3px; border-radius: 2px; background: rgba(255,255,255,.1); margin-top: 12px; overflow: hidden; }
+  #visita .barra i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .3s; }
+  @media (max-width: 700px) { #visita .cartao { left: 12px !important; width: calc(100vw - 24px); padding: 10px 14px 10px; } #visita h2 { font-size: 17px; margin-bottom: 6px; } #visita .texto { font-size: 13.5px; } #visita .dica { margin-bottom: 10px; } }
+
+  /* ---- eventos (levantamentos no terreno): escolha, registo com morada e resumo ---- */
+  #dialogo .caixa.opcoes .botoes { flex-direction: column; align-items: stretch; }
+  #dialogo .caixa.opcoes .btn { padding: 12px 14px; font-size: 15px; text-align: left; }
+  #dialogo .caixa.opcoes .btn:last-child { text-align: center; background: none; border-color: transparent; color: var(--ink-dim); }
+  #levantamento { position: absolute; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 1250; display: none; width: min(460px, calc(100vw - 16px)); border-radius: 16px; padding: 12px 14px; }
+  #levantamento.aberto { display: block; }
+  #levantamento h3 { margin: 0 0 4px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  #levantamento h3 .cat { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px 2px 6px; border-radius: 999px; background: rgba(255,255,255,.08); font-size: 12.5px; font-weight: 600; }
+  #levantamento h3 .cat i { width: 12px; height: 12px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 1px rgba(255,255,255,.5); }
+  #levantamento .nota { color: var(--ink-dim); font-size: 12px; margin: 0 0 8px; }
+  #levantamento .morada { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 8px; }
+  #levantamento label { display: block; font-size: 11.5px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: .5px; }
+  #levantamento input { display: block; width: 100%; margin-top: 3px; font: inherit; font-size: 15px; background: rgba(255,255,255,.06); border: 1px solid var(--panel-border); color: var(--ink); border-radius: 8px; padding: 8px 10px; }
+  #levantamento input:focus { outline: none; border-color: rgba(243,195,91,.6); }
+  #levantamento .botoes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+  #levantamento .botoes .esp { flex: 1; }
+  .mk-levant { background: none !important; border: 0 !important; }
+  .mk-levant .levant-ico { width: 36px; height: 36px; border-radius: 50%; background: var(--c); display: grid; place-items: center; font-size: 19px; box-shadow: 0 0 0 3px #fff, 0 6px 18px rgba(0,0,0,.6); cursor: grab; animation: levant-pulsar 1.6s ease-out infinite; }
+  .mk-levant .levant-ico::after { content: ''; position: absolute; left: 50%; bottom: -14px; width: 2px; height: 14px; background: #fff; transform: translateX(-50%); }
+  @keyframes levant-pulsar { 0% { box-shadow: 0 0 0 3px #fff, 0 0 0 0 rgba(243,195,91,.6); } 100% { box-shadow: 0 0 0 3px #fff, 0 0 0 22px rgba(243,195,91,0); } }
+  .evento-resumo table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 6px 0 10px; }
+  .evento-resumo th, .evento-resumo td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--panel-border); }
+  .evento-resumo th { color: var(--ink-dim); font-weight: 600; font-size: 12px; }
+  .evento-resumo td:last-child, .evento-resumo th:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+  .evento-resumo tr.total td { font-weight: 700; border-bottom: 0; }
+  .evento-resumo .pinta { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 1px rgba(255,255,255,.45); margin-right: 6px; }
+  .evento-lista { list-style: none; margin: 0; padding: 0; max-height: 220px; overflow: auto; }
+  .evento-lista button { display: block; width: 100%; text-align: left; background: none; border: 0; color: var(--ink); font: inherit; font-size: 13px; padding: 5px 6px; border-radius: 8px; cursor: pointer; }
+  .evento-lista button:hover { background: rgba(255,255,255,.07); }
+  .evento-lista small { display: block; color: var(--ink-dim); font-size: 11.5px; }
+  #dialogo .tabela-dialogo td.num, #dialogo .tabela-dialogo th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  #btn-evento-cidade[hidden] { display: none; }
+
   /* ---- avisos ---- */
   #aviso { position: absolute; left: 50%; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 1250; color: var(--ink); padding: 8px 14px; border-radius: 999px; font-size: 12.5px; display: none; max-width: 90vw; text-align: center; }
   #aviso.aberto { display: block; }
@@ -527,7 +588,8 @@
     <div id="lista-freguesias" class="lista-freguesias" hidden role="listbox" aria-label="Freguesias de Lisboa"></div>
   </header>
   <div class="acoes">
-    <button class="btn" id="btn-guiao">▶ Visita guiada</button>
+    <button class="btn" id="btn-visita" title="Como usar a apresentação, passo a passo">🎓 Visita guiada</button>
+    <button class="btn" id="btn-guiao" title="Percorre os destaques desta freguesia, um a um">▶ Vista de Apresentação</button>
     <button class="btn" id="btn-repor">Vista geral</button>
     <button class="btn" id="btn-lisboa" title="Mapa de Lisboa com as 24 freguesias">🗺 Lisboa</button>
   </div>
@@ -538,11 +600,21 @@
 
 <div id="modal"><div class="cartao vidro"><button class="fechar" id="btn-fechar" aria-label="Fechar">✕</button><div id="modal-conteudo"></div></div></div>
 
-<div id="guiao" class="vidro"><button class="seta" id="g-prev" aria-label="Anterior">‹</button><span class="texto" id="g-texto"></span><button class="seta" id="g-next" aria-label="Seguinte">›</button><select id="g-sel" class="seletor" aria-label="Visita"></select><button class="sair" id="g-sair" aria-label="Sair da visita">✕</button></div>
+<div id="guiao" class="vidro"><button class="seta" id="g-prev" aria-label="Anterior">‹</button><span class="texto" id="g-texto"></span><button class="seta" id="g-next" aria-label="Seguinte">›</button><select id="g-sel" class="seletor" aria-label="Visita"></select><button class="sair" id="g-sair" aria-label="Sair da apresentação">✕</button></div>
 
+<div id="visita" hidden><div class="pano"></div><div class="foco"></div>
+  <div class="cartao vidro" role="dialog" aria-labelledby="visita-titulo"><div class="topo"><span class="passo" id="visita-passo"></span><button type="button" class="sair" id="visita-sair" aria-label="Sair da visita guiada" title="Sair (Esc); retomas depois em ☰ → Visita guiada">✕</button></div>
+    <h2 id="visita-titulo"></h2><p class="texto" id="visita-texto"></p><p class="dica" id="visita-dica"></p>
+    <div class="botoes"><button type="button" class="btn ligacao" id="visita-inicio" hidden>↺ Do início</button><span class="esp"></span><button type="button" class="btn" id="visita-prev">‹ Anterior</button><button type="button" class="btn on" id="visita-next">Seguinte ›</button></div>
+    <div class="barra" aria-hidden="true"><i id="visita-barra"></i></div></div></div>
 <div id="aviso" class="vidro"></div>
 <div id="dialogo" role="dialog" aria-modal="true" aria-labelledby="dialogo-titulo"><div class="caixa vidro"></div></div>
-<div id="cidade-barra" class="vidro"><span id="cidade-txt"></span><button class="btn on" id="btn-cidade-voltar" type="button"></button></div>
+<div id="cidade-barra" class="vidro"><span id="cidade-txt"></span><button class="btn" id="btn-evento-cidade" type="button" hidden title="Quantos registos há em cada freguesia"></button><button class="btn on" id="btn-cidade-voltar" type="button"></button></div>
+<div id="levantamento" class="vidro" role="dialog" aria-labelledby="lev-titulo"><h3 id="lev-titulo"></h3><p class="nota" id="lev-nota"></p>
+  <div class="morada"><label>Rua<input id="lev-rua" list="lista-ruas" autocomplete="off" spellcheck="false" placeholder="Nome da rua"></label><label>N.º porta<input id="lev-numero" autocomplete="off" inputmode="numeric" placeholder="ex.: 12"></label></div>
+  <p class="nota" id="lev-fonte"></p>
+  <div class="botoes"><button type="button" class="btn" id="lev-cancelar">Cancelar</button><button type="button" class="btn" id="lev-tipo" title="Mudar entre apagado/fundido e em falta/zona escura">Mudar o tipo</button><button type="button" class="btn" id="lev-gps" title="Voltar à minha localização">📍</button><span class="esp"></span><button type="button" class="btn on" id="lev-ok">Confirmar registo</button></div></div>
+<datalist id="lista-ruas"></datalist>
 <div id="desmat" aria-label="Pontos desmaterializados"><button id="desmat-pilha" type="button"></button><div id="desmat-lista" role="list"></div></div>
 <div id="lightbox"><figure><img alt=""><figcaption></figcaption></figure></div>
 
@@ -735,8 +807,10 @@ function icone(el, filho) {
 const estiloRua = el => { const p = priDe(el); return { linha: { color: p.cor, weight: 4, opacity: .9 }, halo: { color: p.id === 'urgente' ? '#ffffff' : p.cor, weight: 16, opacity: p.id === 'urgente' ? .28 : .2 } }; };
 const estiloRuaAtiva = el => { const e = estiloRua(el); return { linha: { ...e.linha, weight: 7, opacity: 1 }, halo: { ...e.halo, weight: 26, opacity: .5 } }; };
 function marcador(el, pos, filho, idx) {
-  const m = L.marker(pos, { icon: icone(el, filho), riseOnHover: true, keyboard: false, bubblingMouseEvents: false, draggable: edicao });
-  m.bindTooltip(el.nome, { direction: 'top', offset: [0, -12], className: 'rotulo', opacity: 1 });
+  const d = detalheDe(el, idx), cat = d && categoriaEvento(el, d);
+  const ico = cat ? L.divIcon({ className: 'mk pri-' + priDe(el).id, html: `<div class="mk-circ" style="--c:${cat.cor}"></div>`, iconSize: [18, 18], iconAnchor: [9, 9] }) : icone(el, filho);
+  const m = L.marker(pos, { icon: ico, riseOnHover: true, keyboard: false, bubblingMouseEvents: false, draggable: edicao });
+  m.bindTooltip(cat ? cat.icone + ' ' + moradaTexto(d) : el.nome, { direction: 'top', offset: [0, -12], className: 'rotulo', opacity: 1 });
   m.on('click', () => selecionar(el, false));
   if (edicao) ligarArrasto(m, el, idx || 0);
   return m;
@@ -878,6 +952,7 @@ function htmlInfo(el) {
   const cats = categoriasDe(el);
   if (cats.length) h += `<div class="cats">${cats.map(c => `<button class="chip mini" data-so-cat="${c.id}" style="--c:${c.cor}" title="Ver a categoria">${c.icone ? esc(c.icone) + ' ' : ''}${esc(c.nome)}</button>`).join('')}</div>`;
   h += htmlFotos(el.fotos) + `<div class="texto">${htmlTexto(el.texto)}</div>`;
+  if (el.tipo === 'grupo' && el.evento) h += htmlResumoEvento(el);
   if (el.filhos.length) h += `<div class="filhos"><h3>Nesta zona</h3>${el.filhos.map(f => `<button data-ir="${f.id}"><span>${esc(f.icone || '📍')}</span>${esc(f.nome)}</button>`).join('')}</div>`;
   return h + '</div>';
 }
@@ -895,6 +970,7 @@ function cartaoAberto() { return modal.classList.contains('aberto'); }
 modalConteudo.addEventListener('click', e => {
   if (edicao) return;
   const ir = e.target.closest('[data-ir]'); if (ir) { selecionar(POR_ID[ir.dataset.ir], true); return; }
+  const pt = e.target.closest('[data-ponto]'); if (pt && selecionado && selecionado.pontos) { map.flyTo(selecionado.pontos[+pt.dataset.ponto], Math.max(map.getZoom(), 19), { duration: .8 }); return; }
   const vis = e.target.closest('[data-visitar]'); if (vis) { ligarGuiao(true, vis.dataset.visitar); return; }
   const so = e.target.closest('[data-so-cat]'); if (so) { const c = catPorId(so.dataset.soCat); if (!c) return;
     if (so.classList.contains('mini')) { mostrarCategoria(c); return; } // chip no cartão de um elemento: só abre o cartão da categoria
@@ -1013,12 +1089,12 @@ function construirIndice() {
   const box = $('#indice'); box.innerHTML = '';
   // categorias: interruptores que filtram o mapa e o índice; ▶ visita a categoria; em edição, ✎ edita e «+ Nova»
   if (C.categorias.length || edicao) {
-    box.insertAdjacentHTML('beforeend', `<h3>Categorias</h3><div class="chips">${C.categorias.map(c => `<span class="chip-wrap"><button class="chip${corEscura(c.cor) ? ' clara' : ''}" data-cat="${c.id}" style="--c:${c.cor}" aria-pressed="false" title="Filtrar por esta categoria (acumula com outras)">${c.icone ? esc(c.icone) + ' ' : ''}${esc(c.nome)}<small>${c.membros.length}</small></button><button class="chip-acao" data-visitar="${c.id}" title="Visitar esta categoria">▶</button>${edicao ? `<button class="chip-acao" data-edit-cat="${c.id}" title="Editar categoria">✎</button>` : ''}</span>`).join('')}<button class="chip limpar oculto" id="chip-todas">Mostrar tudo</button>${edicao ? '<button class="chip nova" data-nova-cat>+ Nova categoria</button>' : ''}</div>`);
+    box.insertAdjacentHTML('beforeend', `<h3>Categorias</h3><div class="chips">${C.categorias.map(c => `<span class="chip-wrap"><button class="chip${corEscura(c.cor) ? ' clara' : ''}" data-cat="${c.id}" style="--c:${c.cor}" aria-pressed="false" title="Filtrar por esta categoria (acumula com outras)">${c.icone ? esc(c.icone) + ' ' : ''}${esc(c.nome)}<small>${c.membros.length}</small></button><button class="chip-acao" data-visitar="${c.id}" title="Apresentar esta categoria">▶</button>${edicao ? `<button class="chip-acao" data-edit-cat="${c.id}" title="Editar categoria">✎</button>` : ''}</span>`).join('')}<button class="chip limpar oculto" id="chip-todas">Mostrar tudo</button>${edicao ? '<button class="chip nova" data-nova-cat>+ Nova categoria</button>' : ''}</div>`);
   }
-  // visita guiada editável (só em edição): ordem dos destaques, tirar, acrescentar
+  // Vista de Apresentação editável (só em edição): ordem dos destaques, tirar, acrescentar
   if (edicao) {
     const ids = visitaIds(), fora = todosElementos().filter(e => !ids.includes(e.id));
-    box.insertAdjacentHTML('beforeend', `<h3>Visita guiada <small>ordem dos destaques</small></h3><ol class="visita-ed">${ids.map((id, i) => `<li data-id="${id}"><span>${esc(POR_ID[id].nome)}</span><button data-vis="cima" title="Subir">↑</button><button data-vis="baixo" title="Descer">↓</button><button data-vis="tirar" title="Tirar da visita">✕</button></li>`).join('') || '<li class="nota">Sem destaques.</li>'}</ol><div class="linha-ed"><select data-vis-add class="seletor"><option value="">+ Acrescentar destaque…</option>${fora.map(e => `<option value="${e.id}">${esc(e.nome)}</option>`).join('')}</select>${Array.isArray(C.visita) ? '<button class="btn" data-vis="repor" title="Voltar à ordem natural: todos os elementos de topo">Repor</button>' : ''}</div>`);
+    box.insertAdjacentHTML('beforeend', `<h3>Vista de Apresentação <small>ordem dos destaques</small></h3><ol class="visita-ed">${ids.map((id, i) => `<li data-id="${id}"><span>${esc(POR_ID[id].nome)}</span><button data-vis="cima" title="Subir">↑</button><button data-vis="baixo" title="Descer">↓</button><button data-vis="tirar" title="Tirar da visita">✕</button></li>`).join('') || '<li class="nota">Sem destaques.</li>'}</ol><div class="linha-ed"><select data-vis-add class="seletor"><option value="">+ Acrescentar destaque…</option>${fora.map(e => `<option value="${e.id}">${esc(e.nome)}</option>`).join('')}</select>${Array.isArray(C.visita) ? '<button class="btn" data-vis="repor" title="Voltar à ordem natural: todos os elementos de topo">Repor</button>' : ''}</div>`);
   }
   if (!ELEMENTOS.length) { box.insertAdjacentHTML('beforeend', '<div class="vazio">Ainda não há pontos de interesse. Liga o modo de edição (lápis) para os criar.</div>'); return; }
   const grupos = [['ponto', 'Pontos'], ['grupo', 'Conjuntos'], ['desmaterializado', 'Desmaterializados'], ['rua', 'Ruas'], ['zona', 'Zonas']];
@@ -1111,6 +1187,7 @@ async function abrirCidade(ligar) {
   const qs = new URLSearchParams(location.search); if (cidade) qs.set('cidade', ''); else { qs.delete('cidade'); qs.set('freguesia', FREG.id); } // ao recarregar, fica onde está
   history.replaceState(null, '', location.pathname + qsTexto(qs) + location.hash);
 }
+$('#btn-evento-cidade').addEventListener('click', () => resumoCidadeEvento());
 $('#btn-cidade-voltar').addEventListener('click', () => { if (camadaCidade && camadaCidade.escolhida) irParaFreguesia(camadaCidade.escolhida); else abrirCidade(false); });
 // afastar para lá da vista geral abre o mapa de Lisboa: roda do rato no zoom mínimo, ou «−» quando já não afasta mais
 let rodaAcum = 0, rodaTimer = null;
@@ -1339,9 +1416,10 @@ const CtrlCriar = L.Control.extend({ onAdd() {
   menu.addEventListener('click', e => { const it = e.target.closest('[data-criar]'); if (!it) return; abrirCriar(false); criarDoMenu(it.dataset.criar); });
   return box;
 } });
-function abrirCriar(abrir) {
+function abrirCriar(abrir, direto) { // com um evento ativo, abrir o «+» pergunta primeiro o que se quer registar (direto: o menu mesmo)
   const menu = $('#menu-criar'), b = $('#btn-criar'); if (!menu) return;
   if (abrir === undefined) abrir = !menu.classList.contains('aberto');
+  if (abrir && !direto && edicao && eventoAtivo()) { escolherRegisto(); return; }
   if (abrir) { // a localização só aparece em telemóveis e tablets
     const movel = matchMedia('(pointer: coarse)').matches || estreito();
     menu.innerHTML = '<h4>Criar</h4>' + CRIAR.filter(c => !c.movel).map(htmlCriar).join('') + (movel ? '<h4>Na minha localização</h4>' + CRIAR.filter(c => c.movel).map(htmlCriar).join('') : '');
@@ -1457,7 +1535,7 @@ sug.addEventListener('mousedown', e => { const b = e.target.closest('button[data
 $('#pesquisa-limpar').addEventListener('click', () => { inp.value = ''; atualizarPesquisa(); inp.focus(); });
 inp.addEventListener('blur', () => setTimeout(() => sug.classList.remove('aberto'), 150));
 
-// ---------- categorias (agrupam pontos, ruas e zonas) e visita guiada ----------
+// ---------- categorias (agrupam pontos, ruas e zonas) e Vista de Apresentação ----------
 // Guardados em conteudos.js: categorias: [{ id, nome, icone, cor, membros: [ids] }], visita: [ids] (ordem dos destaques; ausente = todos os elementos de topo).
 const PALETA = ['#f3c35b', '#7ad3ff', '#ff8a5b', '#9be38a', '#e58cff', '#ff6b8b', '#5be3d4', '#ffd166'];
 function normalizarExtras() {
@@ -1523,7 +1601,7 @@ function htmlCategoria(cat) {
   const membros = cat.membros.map(id => POR_ID[id]).filter(Boolean);
   return `<div class="info"><h2><span class="pinta categoria" style="--c:${cat.cor}"></span><span>${cat.icone ? esc(cat.icone) + ' ' : ''}${esc(cat.nome)}</span></h2>
     <div class="tipo">Categoria · ${membros.length} elemento${membros.length === 1 ? '' : 's'}</div>
-    <div class="linha"><button type="button" class="btn on" data-visitar="${cat.id}">▶ Visitar esta categoria</button><button type="button" class="btn" data-so-cat="${cat.id}">${categoriasAtivas.has(cat.id) && categoriasAtivas.size === 1 ? 'Mostrar tudo' : 'Mostrar só esta no mapa'}</button></div>
+    <div class="linha"><button type="button" class="btn on" data-visitar="${cat.id}">▶ Apresentar esta categoria</button><button type="button" class="btn" data-so-cat="${cat.id}">${categoriasAtivas.has(cat.id) && categoriasAtivas.size === 1 ? 'Mostrar tudo' : 'Mostrar só esta no mapa'}</button></div>
     <div class="filhos"><h3>Nesta categoria</h3>${membros.map(e => `<button data-ir="${e.id}"><span class="pinta ${e.pai ? 'ponto' : e.tipo}" style="--c:${corDe(e)}"></span><span>${e.icone ? esc(e.icone) + ' ' : ''}${esc(e.nome)}</span></button>`).join('') || '<div class="nota">Ainda sem elementos.</div>'}</div></div>`;
 }
 function htmlFormCategoria(cat) {
@@ -1545,7 +1623,7 @@ function mostrarCategoria(cat) {
   modalConteudo.innerHTML = edicao ? htmlFormCategoria(cat) : htmlCategoria(cat);
   modal.querySelector('.cartao').scrollTop = 0; modal.classList.add('aberto'); document.body.classList.add('cartao-aberto');
 }
-// ---- visita guiada: lista de destaques (personalizável) ou membros de uma categoria ----
+// ---- Vista de Apresentação: percorre os destaques (lista personalizável) ou os membros de uma categoria ----
 let passos = [], visitaAtual = null; // null = visita completa; senão, id da categoria
 function visitaIds() { return Array.isArray(C.visita) ? C.visita.filter(id => POR_ID[id]) : ELEMENTOS.map(e => e.id); }
 function listaVisita(catId) {
@@ -1568,24 +1646,24 @@ let passo = -1;
 function guiaoAberto() { return guiao.classList.contains('aberto'); }
 function irPasso(i) {
   passos = listaVisita(visitaAtual);
-  if (!passos.length) { aviso(visitaAtual ? 'Esta categoria ainda não tem elementos.' : 'A visita não tem destaques.', 3000); return; }
+  if (!passos.length) { aviso(visitaAtual ? 'Esta categoria ainda não tem elementos.' : 'A apresentação não tem destaques.', 3000); return; }
   passo = (i + passos.length) % passos.length;
   const el = passos[passo];
   if ((el.pai || el).oculto) { categoriasAtivas.clear(); aplicarFiltro(); }
   selecionar(el, true);
   const cat = visitaAtual && catPorId(visitaAtual);
-  $('#g-texto').innerHTML = `${esc(el.nome)}<small>${passo + 1} de ${passos.length} · ${cat ? (cat.icone ? cat.icone + ' ' : '') + esc(cat.nome) : 'Visita completa'}</small>`;
+  $('#g-texto').innerHTML = `${esc(el.nome)}<small>${passo + 1} de ${passos.length} · ${cat ? (cat.icone ? cat.icone + ' ' : '') + esc(cat.nome) : 'Apresentação completa'}</small>`;
 }
 function preencherSeletor() {
-  gSel.innerHTML = '<option value="">Visita completa</option>' + C.categorias.map(c => `<option value="${c.id}">${esc(c.nome)}</option>`).join('');
+  gSel.innerHTML = '<option value="">Apresentação completa</option>' + C.categorias.map(c => `<option value="${c.id}">${esc(c.nome)}</option>`).join('');
   gSel.value = visitaAtual || ''; gSel.style.display = C.categorias.length ? '' : 'none';
 }
 function ligarGuiao(ligar, catId) {
-  if (ligar && edicao) { aviso('Sai do modo de edição para fazer a visita.', 2500); return; }
-  if (ligar && !listaVisita(catId || null).length) { aviso(catId ? 'Esta categoria ainda não tem elementos.' : 'A visita não tem destaques.', 3000); return; }
+  if (ligar && edicao) { aviso('Sai do modo de edição para ver a apresentação.', 2500); return; }
+  if (ligar && !listaVisita(catId || null).length) { aviso(catId ? 'Esta categoria ainda não tem elementos.' : 'A apresentação não tem destaques.', 3000); return; }
   guiao.classList.toggle('aberto', ligar); document.body.classList.toggle('visita-aberta', ligar);
   btnGuiao.classList.toggle('on', ligar);
-  btnGuiao.textContent = ligar ? '■ Sair da visita' : '▶ Visita guiada';
+  btnGuiao.textContent = ligar ? '■ Sair da apresentação' : '▶ Vista de Apresentação';
   if (ligar) {
     visitaAtual = catId || null; preencherSeletor(); abrirPainel(false);
     const lista = listaVisita(visitaAtual), i = selecionado ? lista.indexOf(selecionado) : -1;
@@ -1602,6 +1680,7 @@ document.addEventListener('keydown', e => {
   if ((e.key === ' ' || e.key === 'Enter') && e.target && e.target.matches && e.target.matches('button, a')) return; // o botão trata da sua própria ativação
   if (e.key === 'Escape') {
     if (lightbox.classList.contains('aberto')) { lightbox.classList.remove('aberto'); return; }
+    if (levant) { cancelarLevantamento(); return; }
     if ($('#menu-criar').classList.contains('aberto')) { abrirCriar(false); return; }
     if (desmat.classList.contains('expandido')) { recolherDesmat(); return; }
     if (cidade) { abrirCidade(false); return; }
@@ -1620,6 +1699,141 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Home') irPasso(0);
   if (e.key === 'End') irPasso(passos.length - 1);
 });
+// ---------- Visita Guiada: explica a interface passo a passo, com o alvo realçado ----------
+// Arranca sozinha na primeira visita (e a parte da edição na primeira vez que se entra no modo de edição); sai-se a
+// qualquer momento (✕, «Sair» ou Esc) e retoma-se em ☰ → «🎓 Visita guiada». O ponto onde se ia fica neste browser e
+// sobrevive à mudança de freguesia (que recarrega a página). Cada passo tem um alvo (seletor), pode preparar o ecrã
+// («antes») e arrumá-lo («depois»), e só entra se «quando» for verdadeiro no momento.
+const CHAVE_VISITA = 'co-visita-guiada';
+const visitaEl = $('#visita');
+const lerEstadoVisita = () => { try { return JSON.parse(localStorage.getItem(CHAVE_VISITA) || '{}') || {}; } catch (err) { return {}; } };
+const gravarEstadoVisita = m => { try { localStorage.setItem(CHAVE_VISITA, JSON.stringify({ ...lerEstadoVisita(), ...m })); } catch (err) { /* sem armazenamento local */ } };
+const legendaVisita = () => PRIORIDADES.concat([SEM_PRIORIDADE]).map(p => `<i class="amostra" style="--c:${p.cor}"></i>${esc(p.nome)}`).join('<br>');
+function passosVisita() {
+  const daEdicao = { so: 'edicao' };
+  return [
+    { id: 'boas-vindas', so: 'ver', titulo: 'Bem-vindo!', texto: 'Esta é a apresentação interativa das freguesias de Lisboa: os pontos de interesse, os problemas e as ideias de cada uma, num mapa de satélite. Em dois minutos mostro-te o que podes fazer aqui.', dica: 'Podes sair quando quiseres (✕ ou Esc) e retomar mais tarde em ☰ → 🎓 Visita guiada. Avança com «Seguinte» ou com a seta →.' },
+    { id: 'cidade', so: 'cidade', alvo: '#cidade-barra', interativo: true, titulo: 'O mapa de Lisboa', texto: 'Cada forma é uma freguesia. Passa o cursor por cima para a ver pulsar e <b>clica para a abrir</b>; no ecrã tátil, toca duas vezes. Voltas sempre a este mapa ao afastar a freguesia.', dica: 'Experimenta já: clica numa freguesia, e a visita continua lá. Ou carrega em «Abrir» para seguir com ' + esc(FREG.nome) + '.', seguinte: () => abrirCidade(false), textoSeguinte: 'Abrir ' + FREG.nome + ' ›' },
+    { id: 'mapa', so: 'freguesia', alvo: '.leaflet-control-zoom', interativo: true, titulo: 'Mover-te no mapa', texto: 'Arrasta para te deslocares; aproxima e afasta com a roda do rato, com os botões + e − ou com dois dedos. Fora do limite da freguesia, o satélite fica escurecido.', dica: 'Afasta para lá da vista geral (ou carrega em − quando já não afasta mais) e voltas ao mapa de Lisboa.' },
+    { id: 'pontos', so: 'freguesia', se: () => listaVisita(null).length > 0, alvo: '#modal .cartao', interativo: true, antes: () => { const l = listaVisita(null); if (l[0]) selecionar(l[0], true); }, depois: () => desselecionar(), titulo: 'Pontos, ruas e zonas', texto: 'Cada marcador é um ponto de interesse; as linhas são ruas e as áreas são zonas (que podem ter pontos lá dentro). Clica num para abrir o cartão: texto, fotos, prioridade e a quem compete resolver.', dica: 'Este é o primeiro destaque de ' + esc(FREG.nome) + '. Ao passar o cursor, os marcadores pulsam; Esc fecha o cartão.' },
+    { id: 'legenda', so: 'freguesia', alvo: '#legenda', antes: () => abrirLegenda(true), depois: () => abrirLegenda(false), titulo: 'As cores são prioridades', texto: legendaVisita(), dica: 'A legenda diz quantos elementos há de cada prioridade nesta freguesia.' },
+    { id: 'pesquisa', so: 'ver', alvo: '#pesquisa-box', titulo: 'Pesquisar', texto: 'Escreve o nome de um ponto, de uma rua ou de uma freguesia: as sugestões aparecem enquanto escreves, e Enter abre a primeira. Também encontra categorias.', dica: 'Tecla rápida: «/» põe o cursor na pesquisa.' },
+    { id: 'indice', so: 'freguesia', alvo: '#btn-painel', antes: () => abrirPainel(false), titulo: 'O índice', texto: 'O botão ☰ abre o índice: tudo o que há nesta freguesia, as categorias e os comandos principais. Vamos abri-lo.' },
+    { id: 'comandos', so: 'freguesia', alvo: '#painel .acoes', antes: () => abrirPainel(true), titulo: 'Os comandos do índice', texto: '<b>🎓 Visita guiada</b> é esta visita, que podes repetir. <b>▶ Vista de Apresentação</b> percorre os destaques da freguesia um a um, como uma apresentação. <b>Vista geral</b> volta a enquadrar a freguesia. <b>🗺 Lisboa</b> abre o mapa da cidade.', dica: 'Na Vista de Apresentação, as setas ← → e a barra de espaço mudam de destaque.' },
+    { id: 'categorias', so: 'freguesia', se: () => C.categorias.length > 0, alvo: '#indice .chips', titulo: 'Categorias', texto: 'As categorias agrupam pontos, ruas e zonas. Carrega numa para filtrar o mapa e o índice (podes juntar várias); ▶ apresenta só essa categoria.', dica: '«Mostrar tudo» tira os filtros.' },
+    { id: 'lista', so: 'freguesia', se: () => todosElementos().length > 0, alvo: '#indice', titulo: 'A lista', texto: 'Tudo o que há na freguesia, por tipo: pontos, conjuntos, ruas e zonas. Clica num nome para o encontrar no mapa e abrir o cartão.' },
+    { id: 'freguesia', so: 'freguesia', alvo: '#btn-freguesia', depois: () => abrirPainel(false), titulo: 'Mudar de freguesia', texto: '«⇄ Freguesia» abre a lista das 24 freguesias de Lisboa. Cada uma tem os seus pontos, as suas categorias e as suas versões dos conteúdos (os presets).' },
+    { id: 'camadas', so: 'freguesia', alvo: '#camadas', antes: () => abrirCamadas(true), depois: () => abrirCamadas(false), titulo: 'Camadas', texto: 'Liga e desliga informação extra: os pontos dentro das zonas, os nomes das ruas, os números de polícia, os lotes do cadastro, as áreas verdes e o mapa da cidade em vez do satélite.', dica: 'As escolhas ficam lembradas neste browser.' },
+    { id: 'lisboa', so: 'freguesia', alvo: '#btn-cidade', titulo: 'Voltar a Lisboa', texto: 'Este botão afasta o mapa até à cidade inteira, para escolheres outra freguesia.', dica: 'Também chegas lá a afastar o mapa, ou com «🗺 Lisboa» no índice.' },
+    { id: 'desmat', so: 'freguesia', se: () => ELEMENTOS.some(e => e.tipo === 'desmaterializado'), alvo: '#desmat', titulo: 'Ideias sem lugar no mapa', texto: 'Os pontos desmaterializados são ideias ou problemas gerais, sem um sítio exato. Ficam empilhados aqui: clica (ou deixa o cursor 3 segundos em cima) para os abrir.' },
+    { id: 'criar', so: 'freguesia', alvo: '#btn-criar', titulo: 'Acrescentar coisas', texto: 'O «+» é o atalho para criar um ponto, uma rua ou uma zona. Entra no modo de edição e abre a lista do que se pode criar; se ainda não tiveres sessão, pede primeiro a conta da tua freguesia.' },
+    { id: 'editar', so: 'freguesia', alvo: '#btn-editar', titulo: 'O modo de edição', texto: 'O lápis liga o modo de edição, com uma conta. Cada freguesia edita só a sua; a Concelhia e a administração editam todas. O que fazes fica em rascunho neste dispositivo até guardares.', dica: 'Na primeira vez que entrares na edição, a visita continua com as ferramentas de edição.' },
+    { ...daEdicao, id: 'ed-ferramentas', alvo: '#barra-edicao', antes: () => { if (barra.classList.contains('mais')) $('#btn-mais').click(); }, titulo: 'As ferramentas de edição', texto: '<b>Mover</b> seleciona e arrasta. <b>Ponto</b>, <b>Conjunto</b> (vários pontos num só cartão), <b>Zona</b> (vértice a vértice), <b>Zona livre</b> (pintada à mão), <b>Rua</b> (clica numa rua do mapa) e <b>Lote</b> (clica num lote do cadastro).', dica: 'Esc volta sempre a «Mover». Larga um ponto sobre uma zona para o meter lá dentro.' },
+    { ...daEdicao, id: 'ed-cartao', se: () => todosElementos().length > 0, alvo: '#modal .cartao', antes: () => { const l = listaVisita(null); if (l[0]) selecionar(l[0], true); }, depois: () => desselecionar(), titulo: 'Editar um elemento', texto: 'Clica num elemento e o cartão abre em modo de formulário: nome, ícone, prioridade, competência, texto, fotos (arrasta-as para cá) e categorias. As alterações entram logo no mapa.' },
+    { ...daEdicao, id: 'ed-criar', alvo: '#btn-criar', titulo: 'O «+»', texto: 'Em edição, o «+» abre a lista do que se pode criar, incluindo pontos desmaterializados (ideias sem lugar no mapa). Em telemóveis e tablets cria também na tua localização.' },
+    { ...daEdicao, id: 'ed-guardar', alvo: '#btn-guardar', titulo: 'Guardar e rascunhos', texto: '«Guardar» grava o preset no ficheiro da freguesia (e envia-o para o servidor central, se houver). Até lá, cada alteração fica em <b>rascunho</b> neste dispositivo, mesmo que feches a aplicação: volta quando a tua conta entrar outra vez na edição.', dica: 'O estado à direita da barra diz se há alterações por guardar.' },
+    { ...daEdicao, id: 'ed-mais', alvo: '#barra-edicao', antes: () => { if (!barra.classList.contains('mais')) $('#btn-mais').click(); }, depois: () => { if (barra.classList.contains('mais')) $('#btn-mais').click(); }, titulo: 'Título, presets e servidor central', texto: '«⋯ Mais» mostra o título e o subtítulo da freguesia, os <b>presets</b> (versões alternativas dos conteúdos: criar, trocar, importar, exportar, repor) e o <b>☁ servidor central</b>, que junta os dados de todas as freguesias.' },
+    { ...daEdicao, id: 'ed-conta', alvo: '#btn-sessao', titulo: 'A tua conta', texto: 'As iniciais da tua conta. Aqui mudas a palavra-passe e terminas a sessão (com alterações por guardar, pergunta o que lhes fazer). A administração vê também o histórico de quem fez o quê e gere as contas.' },
+    { ...daEdicao, id: 'ed-sair', alvo: '#btn-sair-edicao', titulo: 'Sair da edição', texto: '«Sair» (ou o lápis) volta ao modo de visualização. Com alterações por guardar, pergunta se guardas, se descartas ou se continuas a editar.' },
+    { id: 'fim', titulo: 'É tudo!', texto: 'Já sabes o essencial. Podes repetir esta visita quando quiseres em ☰ → 🎓 Visita guiada.', dica: 'Teclas úteis: «/» pesquisa · Esc fecha · ← → na Vista de Apresentação.', textoSeguinte: 'Terminar ✓' },
+  ];
+}
+let visitaPassos = [], visitaI = -1, visitaTimer = null;
+// «so»: em que modo o passo se aplica (ver = fora da edição; cidade; freguesia; edicao; nada = sempre); «se»: condição de conteúdo
+const passoAplica = p => (!p.so || (p.so === 'ver' && !edicao) || (p.so === 'cidade' && cidade && !edicao) || (p.so === 'freguesia' && !cidade && !edicao) || (p.so === 'edicao' && edicao)) && (!p.se || p.se());
+// o contador conta os passos do capítulo em curso (visualização ou edição) que têm conteúdo; o da cidade só se estamos lá
+const passoConta = p => (edicao ? (p.so === 'edicao' || !p.so) : p.so !== 'edicao') && (p.so !== 'cidade' || cidade) && (!p.se || p.se());
+const visitaAberta = () => !visitaEl.hidden;
+const alvoVisivel = p => { if (!p.alvo) return false; const el = document.querySelector(p.alvo); if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 2 && r.height > 2; };
+function posicionarVisita() {
+  const p = visitaPassos[visitaI]; if (!p) return;
+  const cartao = visitaEl.querySelector('.cartao'), foco = visitaEl.querySelector('.foco');
+  const alvo = p.alvo && document.querySelector(p.alvo), r = alvo && alvo.getBoundingClientRect(), visivel = !!(r && r.width > 2 && r.height > 2);
+  visitaEl.classList.toggle('sem-alvo', !visivel);
+  const W = innerWidth, H = innerHeight, M = 12, cw = cartao.offsetWidth, ch = cartao.offsetHeight;
+  let x, y;
+  if (!visivel) { x = (W - cw) / 2; y = (H - ch) / 2; }
+  else {
+    const pad = 8; foco.style.left = (r.left - pad) + 'px'; foco.style.top = (r.top - pad) + 'px'; foco.style.width = (r.width + 2 * pad) + 'px'; foco.style.height = (r.height + 2 * pad) + 'px';
+    // em baixo, em cima, à direita ou à esquerda do alvo: a primeira posição que, já dentro do ecrã, não tapa o alvo
+    const meioX = r.left + r.width / 2 - cw / 2, meioY = r.top + r.height / 2 - ch / 2;
+    const ops = W <= 700 ? [[M, r.bottom + 16], [M, r.top - ch - 16]] : [[meioX, r.bottom + 16], [meioX, r.top - ch - 16], [r.right + 16, meioY], [r.left - cw - 16, meioY]];
+    const dentro = o => [Math.max(M, Math.min(W - cw - M, o[0])), Math.max(M, Math.min(H - ch - M, o[1]))];
+    const tapa = o => !(o[0] + cw < r.left - 6 || o[0] > r.right + 6 || o[1] + ch < r.top - 6 || o[1] > r.bottom + 6);
+    const livres = ops.map(dentro).filter(o => !tapa(o));
+    [x, y] = livres[0] || dentro(r.top + r.height / 2 < H / 2 ? [meioX, H - ch - M] : [meioX, M]); // sem sítio livre: o mais longe possível do alvo
+  }
+  cartao.style.left = Math.max(M, Math.min(W - cw - M, x)) + 'px'; cartao.style.top = Math.max(M, Math.min(H - ch - M, y)) + 'px';
+}
+function mostrarPassoVisita() {
+  const p = visitaPassos[visitaI], capitulo = visitaPassos.filter(passoConta), n = capitulo.length, pos = Math.max(1, capitulo.indexOf(p) + 1);
+  visitaEl.classList.toggle('interativo', !!p.interativo);
+  $('#visita-passo').textContent = `${pos} de ${n}`; $('#visita-titulo').textContent = p.titulo; $('#visita-texto').innerHTML = p.texto; $('#visita-dica').innerHTML = p.dica || '';
+  const primeiro = capitulo.indexOf(p) <= 0;
+  $('#visita-prev').hidden = primeiro; $('#visita-next').textContent = p.textoSeguinte || (pos === n ? 'Terminar ✓' : 'Seguinte ›');
+  $('#visita-inicio').hidden = primeiro; $('#visita-barra').style.width = (pos / n * 100) + '%';
+  gravarEstadoVisita({ passo: p.id, aberta: true });
+  clearTimeout(visitaTimer); const t0 = performance.now(); // o alvo pode estar a abrir-se (painel, cartão): acompanha-o durante uns instantes
+  (function acompanhar() { posicionarVisita(); if (performance.now() - t0 < 800) visitaTimer = setTimeout(acompanhar, 60); })();
+  $('#visita-next').focus({ preventScroll: true });
+}
+function irPassoVisita(i, sentido = 1) { // salta os passos que não se aplicam agora
+  const anterior = visitaPassos[visitaI]; if (anterior && anterior.depois) try { anterior.depois(); } catch (err) { /* o ecrã já mudou */ }
+  visitaPassos = passosVisita(); // «quando» é avaliado no momento
+  while (i >= 0 && i < visitaPassos.length && !passoAplica(visitaPassos[i])) i += sentido;
+  if (i < 0) i = 0;
+  if (i >= visitaPassos.length) { terminarVisita(); return; }
+  visitaI = i; const p = visitaPassos[i]; if (p.antes) try { p.antes(); } catch (err) { /* segue sem a preparação */ }
+  mostrarPassoVisita();
+}
+function iniciarVisita(idPasso) {
+  if (cartaoAberto() && !idPasso) fecharCartao();
+  visitaEl.hidden = false; visitaI = -1;
+  const lista = passosVisita(), i = idPasso ? lista.findIndex(p => p.id === idPasso) : 0;
+  irPassoVisita(i >= 0 ? i : 0);
+}
+function seguinteVisita() { const p = visitaPassos[visitaI]; if (p && p.seguinte) try { p.seguinte(); } catch (err) { /* segue */ } irPassoVisita(visitaI + 1, 1); }
+function fecharVisita() { const p = visitaPassos[visitaI]; if (p && p.depois) try { p.depois(); } catch (err) { /* o ecrã já mudou */ } clearTimeout(visitaTimer); visitaEl.hidden = true; visitaI = -1; atualizarBotaoVisita(); }
+function sairVisita() { // sai a meio: fica o ponto onde se ia, para retomar
+  const p = visitaPassos[visitaI]; gravarEstadoVisita({ aberta: false, saida: true, ...(p && p.so === 'edicao' ? { edicaoSaida: true } : {}) });
+  fecharVisita(); aviso('Visita guiada interrompida. Retoma-a em ☰ → 🎓 Visita guiada.', 4000);
+}
+function terminarVisita() {
+  const emEdicao = edicao;
+  gravarEstadoVisita({ aberta: false, passo: null, ...(emEdicao ? { edicaoFeita: true } : { feita: true }) });
+  fecharVisita();
+}
+function atualizarBotaoVisita() { const e = lerEstadoVisita(); $('#btn-visita').textContent = e.passo && !e.feita ? '🎓 Retomar a visita guiada' : '🎓 Visita guiada'; }
+// o botão do índice retoma onde se ia (ou recomeça); em edição mostra a parte da edição
+$('#btn-visita').addEventListener('click', () => { const e = lerEstadoVisita(); abrirPainel(false); setTimeout(() => iniciarVisita(edicao ? (e.passo && e.passo.startsWith('ed-') ? e.passo : 'ed-ferramentas') : (e.passo && !e.feita && !e.passo.startsWith('ed-') ? e.passo : null)), 280); });
+$('#visita-sair').addEventListener('click', sairVisita);
+$('#visita-prev').addEventListener('click', () => irPassoVisita(visitaI - 1, -1));
+$('#visita-next').addEventListener('click', seguinteVisita);
+$('#visita-inicio').addEventListener('click', () => irPassoVisita(edicao ? visitaPassos.findIndex(p => p.so === 'edicao') : 0));
+window.addEventListener('resize', () => { if (visitaAberta()) posicionarVisita(); });
+document.addEventListener('keydown', e => { // antes de tudo o resto (captura): Esc sai, as setas mudam de passo
+  if (!visitaAberta() || dialogoEl.classList.contains('aberto')) return;
+  if (e.target && e.target.matches && e.target.matches('input, textarea, select')) return;
+  const botao = e.target && e.target.matches && e.target.matches('button');
+  if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); sairVisita(); }
+  else if (e.key === 'ArrowRight' || e.key === 'PageDown' || (e.key === ' ' && !botao)) { e.preventDefault(); e.stopImmediatePropagation(); seguinteVisita(); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); e.stopImmediatePropagation(); if (visitaI > 0) irPassoVisita(visitaI - 1, -1); }
+}, true);
+// ao entrar e sair da edição: a visita passa para a parte da edição (na primeira vez, sozinha) ou fecha-se
+function visitaAoMudarEdicao() {
+  const e = lerEstadoVisita();
+  if (edicao) { if (visitaAberta()) irPassoVisita(passosVisita().findIndex(p => p.so === 'edicao')); else if (!e.edicaoFeita && !e.edicaoSaida && !EDITOR && !eventoAtivo()) setTimeout(() => { if (edicao && !visitaAberta() && !dialogoEl.classList.contains('aberto')) iniciarVisita('ed-ferramentas'); }, 700); }
+  else if (visitaAberta() && visitaPassos[visitaI] && visitaPassos[visitaI].so === 'edicao') fecharVisita();
+}
+// a primeira visita arranca sozinha; uma visita interrompida por uma mudança de freguesia continua onde ia
+function arrancarVisitaGuiada() {
+  const e = lerEstadoVisita();
+  if (edicao || EDITOR || dialogoEl.classList.contains('aberto')) return;
+  if (e.aberta && e.passo && !e.passo.startsWith('ed-')) iniciarVisita(e.passo); // interrompida por uma mudança de freguesia: continua
+  else if (!e.feita && !e.saida && !eventoAtivo()) iniciarVisita(); // a primeira visita arranca sozinha, exceto durante um evento
+}
+atualizarBotaoVisita();
+
 // cliques no índice: chips de categorias, visita editável
 $('#indice').addEventListener('click', e => {
   const t = e.target;
@@ -1645,10 +1859,10 @@ const dialogoEl = $('#dialogo');
 // Com «campos» ([{ nome, rotulo, valor, tipo?, opcoes?, autocomplete? }]) tem vários campos (opcoes: [{ valor, texto }] faz uma lista;
 // tipo 'checkbox' faz uma caixa de verificação, com valor true/false) e devolve { r, valores }.
 // «corpo» é HTML que vem depois do texto (uma tabela, por exemplo), «largo» alarga a caixa e «foco» é o nome do campo que fica com o cursor.
-function dialogo({ titulo, texto, alerta, botoes, campo, campos, corpo, largo, foco, emLinha }) {
+function dialogo({ titulo, texto, alerta, botoes, campo, campos, corpo, largo, foco, emLinha, classe }) {
   const htmlCampo = c => c.tipo === 'checkbox' ? `<label class="campo-dialogo marca"><input type="checkbox" name="${esc(c.nome || '')}"${c.valor ? ' checked' : ''}>${esc(c.rotulo || '')}</label>` : `<label class="campo-dialogo">${esc(c.rotulo || '')}${c.opcoes ? `<select class="seletor" name="${esc(c.nome || '')}">${c.opcoes.map(o => `<option value="${esc(o.valor)}"${String(o.valor) === String(c.valor) ? ' selected' : ''}>${esc(o.texto)}</option>`).join('')}</select>` : `<input type="${c.tipo || 'text'}" name="${esc(c.nome || '')}" value="${esc(c.valor || '')}" spellcheck="false" autocomplete="${c.autocomplete || 'off'}" autocapitalize="off">`}</label>`;
   return new Promise(resolve => {
-    const caixa = dialogoEl.querySelector('.caixa'); caixa.classList.toggle('larga', !!largo);
+    const caixa = dialogoEl.querySelector('.caixa'); caixa.className = 'caixa vidro' + (largo ? ' larga' : '') + (classe ? ' ' + classe : '');
     caixa.innerHTML = `<h2 id="dialogo-titulo">${esc(titulo)}</h2>${texto ? `<p>${texto}</p>` : ''}${corpo || ''}${campo ? htmlCampo(campo) : ''}${emLinha ? '<div class="filtros-dialogo">' : ''}${(campos || []).map(htmlCampo).join('')}${emLinha ? '</div>' : ''}${alerta ? `<p class="alerta">⚠ ${alerta}</p>` : ''}<div class="botoes">${botoes.map(b => `<button type="button" class="btn ${b.classe || ''}" data-r="${b.id}">${esc(b.texto)}</button>`).join('')}</div>`;
     const anterior = document.activeElement;
     const entrada = (foco && dialogoEl.querySelector(`.campo-dialogo [name="${foco}"]`)) || dialogoEl.querySelector('.campo-dialogo input, .campo-dialogo select');
@@ -1709,6 +1923,7 @@ const DICAS = {
   lote: 'Clica num lote do cadastro para o acrescentar como zona (a camada «Lotes do cadastro» ficou ligada).',
   grupo: 'Clica no mapa para pôr cada ponto do conjunto (todos partilham um só cartão) · Esc termina',
   colocar: 'Clica no mapa onde fica o ponto · Esc cancela',
+  levantamento: 'Toca no mapa no sítio exato do candeeiro · Esc cancela',
 };
 function aplicarTitulo() {
   const t = C.titulo || FREG.nome, s = C.subtitulo || '';
@@ -1731,9 +1946,14 @@ function entrarEdicao(ligar) {
   if (edicao) { $('#ed-titulo').value = C.titulo || ''; $('#ed-subtitulo').value = C.subtitulo || ''; verificarServidor(); }
   if (s && POR_ID[s.id]) selecionar(POR_ID[s.id], false); // depois de descartar, o elemento é outro objeto com o mesmo id
   posicionarDesmat();
+  visitaAoMudarEdicao();
+  if (!edicao) cancelarLevantamento();
+  else if (eventoAtivo() && !entrandoPorCriar) setTimeout(() => { if (edicao && !dialogoEl.classList.contains('aberto') && !levant) escolherRegisto(); }, 350); // ao entrar na edição: levantamento ou ocorrência?
 }
+let entrandoPorCriar = false;
 function porFerramenta(nome, alvo) {
   cancelarDesenho();
+  if (ferramenta === 'levantamento' && nome !== 'levantamento' && levantClique) { const fim = levantClique; levantClique = null; fim(null); } // deixou de esperar o toque
   ferramenta = nome || 'mover';
   grupoEmCurso = ferramenta === 'grupo' ? alvo || null : null; // sem alvo: o primeiro clique cria um conjunto novo
   alvoFerramenta = ferramenta === 'colocar' ? alvo || null : null;
@@ -1974,7 +2194,7 @@ function limpo(el, completo) { // completo: as ruas levam também o traçado (pa
   c.texto = el.texto || '';
   c.fotos = (el.fotos || []).map(f => typeof f === 'string' ? { src: f, legenda: '' } : { src: f.src, legenda: f.legenda || '' });
   if (el.tipo === 'ponto') c.pos = el.pos.slice();
-  if (el.tipo === 'grupo') c.pontos = el.pontos.map(p => p.slice());
+  if (el.tipo === 'grupo') { c.pontos = el.pontos.map(p => p.slice()); if (el.evento) c.evento = el.evento; if (Array.isArray(el.detalhes)) c.detalhes = el.pontos.map((_, i) => ({ ...(el.detalhes[i] || {}) })); }
   if (el.tipo === 'rua') { if (el.rua) c.rua = el.rua; if (!el.rua || completo) c.linhas = el.linhas.map(l => l.map(p => p.slice())); }
   if (el.tipo === 'zona') { c.poligono = el.poligono.map(p => p.slice()); if (el.lote) c.lote = el.lote; c.filhos = el.filhos.map(f => limpo(f, completo)); }
   return c;
@@ -2171,7 +2391,8 @@ const dataHora = q => q ? new Date(q).toLocaleString('pt-PT', { dateStyle: 'shor
 const normalizarUtilizador = u => String(u || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[\s'’-]+/g, '').slice(0, 80);
 async function chaveDeEntrada(utilizador, palavraPasse) {
   if (!window.crypto || !crypto.subtle) throw new Error('este browser não deixa verificar a palavra-passe nesta página (abre-a por http://127.0.0.1 ou https://)');
-  const enc = new TextEncoder(), base = await crypto.subtle.importKey('raw', enc.encode(String(palavraPasse)), 'PBKDF2', false, ['deriveBits']);
+  const semAcentos = String(palavraPasse).normalize('NFD').replace(/[̀-ͯ]/g, ''); // acentos e cedilhas não contam (as maiúsculas sim)
+  const enc = new TextEncoder(), base = await crypto.subtle.importKey('raw', enc.encode(semAcentos), 'PBKDF2', false, ['deriveBits']);
   const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: enc.encode('campo-de-ourique/' + normalizarUtilizador(utilizador)), iterations: 100000 }, base, 256);
   return [...new Uint8Array(bits)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
@@ -2288,7 +2509,7 @@ async function pedirEdicao({ criar } = {}) {
     return false;
   }
   if (!alterado) { acrescentarPresetsLocais(); preencherPresets(); await restaurarAutosave(); }
-  entrarEdicao(true);
+  entrandoPorCriar = !!criar; entrarEdicao(true); entrandoPorCriar = false;
   if (criar) { abrirCriar(true); if (PARAMS.has('criar')) { const qs = new URLSearchParams(location.search); qs.delete('criar'); history.replaceState(null, '', location.pathname + qsTexto(qs) + location.hash); } }
   return true;
 }
@@ -2320,10 +2541,11 @@ async function menuConta() {
   const admin = SESSAO.papel === 'admin', sc = lerSessaoCentral();
   const r = await dialogo({ titulo: 'Conta ' + SESSAO.utilizador,
     texto: `${esc(SESSAO.nome)} · ${esc(PAPEL_CONTA[SESSAO.papel] || SESSAO.papel)} · edita ${esc(nomesFreguesias(SESSAO))}.${urlCentral() ? '<br>Servidor central: ' + (sc ? 'sessão aberta até ' + esc(dataHora(sc.expira)) : 'sem sessão (os envios esperam na fila)') + '.' : ''}`,
-    botoes: [{ id: 'cancelar', texto: 'Fechar' }, ...(admin ? [{ id: 'historico', texto: 'Histórico de alterações' }, { id: 'contas', texto: 'Contas' }] : []), { id: 'palavra', texto: 'Mudar a palavra-passe' },
+    botoes: [{ id: 'cancelar', texto: 'Fechar' }, ...(admin ? [{ id: 'historico', texto: 'Histórico de alterações' }, { id: 'contas', texto: 'Contas' }, { id: 'evento', texto: (eventoAtivo() ? '🟢 ' : '') + 'Evento' }] : []), { id: 'palavra', texto: 'Mudar a palavra-passe' },
       ...(urlCentral() && !sc ? [{ id: 'central', texto: 'Entrar no servidor central' }] : []), { id: 'sair', texto: 'Terminar a sessão', classe: 'perigo' }] });
   if (r === 'historico') verHistorico();
   else if (r === 'contas') gerirContas();
+  else if (r === 'evento') gerirEvento();
   else if (r === 'palavra') mudarPalavraPasse();
   else if (r === 'central') { if (await dialogoEntrar({ soCentral: true })) enviarFilaCentral(); }
   else if (r === 'sair') terminarSessao();
@@ -2430,6 +2652,195 @@ async function gerirContas() {
   }
 }
 
+// ---------- eventos: levantamentos no terreno ----------
+// A administração liga um evento (menu da conta → Evento; fica no servidor central ou, sem ele, no servidor local). Com
+// ele ativo, ao entrar na edição e no «+» pergunta-se o que se quer registar: o levantamento (um ponto com a localização
+// e a morada confirmadas, num conjunto por freguesia) ou uma ocorrência normal. A visita guiada não arranca sozinha.
+const EVENTOS = {
+  iluminacao: { id: 'iluminacao', nome: 'Levantamento Iluminação Pública', icone: '💡',
+    conjunto: { id: 'levantamento-iluminacao-publica', nome: 'Levantamento Iluminação Pública', icone: '💡', prioridade: 'importante', competencia: 'camara', texto: 'Candeeiros apagados ou fundidos e zonas sem iluminação, registados pelas equipas no terreno com a localização e a morada de cada um.' },
+    categorias: [{ id: 'fundido', nome: 'Candeeiro apagado/fundido', icone: '💡', cor: '#fdd835' }, { id: 'falta', nome: 'Candeeiro em falta/zona escura', icone: '🌑', cor: '#5c6bc0' }] },
+};
+const CHAVE_EVENTO = 'co-evento';
+let EVENTO = null; // o que o servidor diz: { id, nome, ativo, desde, por } (em cache neste browser, para abrir sem rede)
+const eventoAtivo = () => EVENTO && EVENTO.ativo && EVENTOS[EVENTO.id] ? EVENTOS[EVENTO.id] : null;
+const detalheDe = (el, i) => el.tipo === 'grupo' && el.evento && Array.isArray(el.detalhes) ? el.detalhes[i || 0] || null : null;
+const categoriaEvento = (el, d) => (EVENTOS[el.evento] ? EVENTOS[el.evento].categorias : []).find(c => c.id === d.c) || null;
+const moradaTexto = d => d && d.rua ? d.rua + (d.numero ? ', ' + d.numero : '') : 'sem morada';
+const contagensDe = el => (el.detalhes || []).reduce((m, d) => { const c = d && d.c ? d.c : 'sem'; m[c] = (m[c] || 0) + 1; return m; }, {});
+async function lerEventoServidor() { // o servidor central, senão o local; a última resposta fica em cache
+  try { EVENTO = JSON.parse(localStorage.getItem(CHAVE_EVENTO) || 'null'); } catch (err) { EVENTO = null; }
+  aplicarEvento();
+  await ambientePronto;
+  let j = null;
+  if (urlCentral()) { try { j = await pedirCentral('/evento', { semSessao: true }); } catch (err) { j = null; } }
+  if (!j && (contasLocais() || !urlCentral())) { try { j = await pedirLocal('/evento'); } catch (err) { j = null; } }
+  if (j) { EVENTO = j.evento || null; try { localStorage.setItem(CHAVE_EVENTO, JSON.stringify(EVENTO)); } catch (err) { /* sem armazenamento local */ } aplicarEvento(); }
+  return EVENTO;
+}
+function aplicarEvento() {
+  const ev = eventoAtivo();
+  document.body.classList.toggle('com-evento', !!ev);
+  // com um evento ativo a visita guiada não arranca sozinha, mas continua no índice (☰ → 🎓 Visita guiada)
+  const bc = $('#btn-evento-cidade'); bc.hidden = !ev; if (ev) bc.textContent = ev.icone + ' Resumo da cidade';
+  $('#btn-criar').title = ev ? ev.nome + ' ou registar uma ocorrência' : edicao ? 'Criar ponto, rua ou zona' : 'Criar ponto, rua ou zona (entra no modo de edição)';
+}
+// administração: ligar e desligar (no servidor central e no local, onde houver sessão de administração)
+async function gerirEvento() {
+  const fontes = fontesAdmin(); if (!fontes.length) { aviso('Só a administração liga e desliga eventos.', 4000); return; }
+  await lerEventoServidor();
+  const ev = EVENTOS.iluminacao, atual = EVENTO, ativo = !!(atual && atual.ativo && atual.id === ev.id);
+  const r = await dialogo({ titulo: 'Evento',
+    texto: `<b>${esc(ev.icone)} ${esc(ev.nome)}</b> · ${ativo ? `<b>ativo</b> desde ${esc(dataHora(atual.desde))}${atual.por ? ', por ' + esc(atual.por) : ''}` : 'inativo'}.<br><br>Com o evento ativo, ao entrar no modo de edição e ao carregar no «+» pergunta-se se é um registo do levantamento ou uma ocorrência normal. O levantamento regista candeeiros apagados ou em falta com a localização e a morada confirmadas, num conjunto por freguesia; o mapa de Lisboa mostra o resumo da cidade. A visita guiada deixa de aparecer sozinha na primeira abertura, mas continua no índice.`,
+    alerta: fontes.length > 1 ? '' : 'A mudança fica só ' + fontes[0].em + '.',
+    botoes: [{ id: 'cancelar', texto: 'Fechar' }, ...(ativo ? [{ id: 'desativar', texto: 'Desativar o evento', classe: 'perigo' }] : [{ id: 'ativar', texto: 'Ativar o evento', classe: 'on' }])] });
+  if (r !== 'ativar' && r !== 'desativar') return;
+  const corpo = { id: ev.id, nome: ev.nome, ativo: r === 'ativar' }, feito = [], falhas = [];
+  for (const fo of fontes) { try { await pedirAdmin(fo.valor, '/evento', corpo); feito.push(fo.em); } catch (err) { falhas.push(fo.em + ': ' + err.message); } }
+  await lerEventoServidor();
+  aviso((feito.length ? `Evento ${r === 'ativar' ? 'ativado' : 'desativado'} ${feito.join(' e ')}.` : '') + (falhas.length ? ' Não mudou ' + falhas.join('; ') + '.' : ''), 6000);
+}
+// ao entrar na edição ou no «+»: o que registar?
+async function escolherRegisto() {
+  const ev = eventoAtivo(); if (!ev) { abrirCriar(true, true); return; }
+  const r = await dialogo({ titulo: 'O que queres registar?', texto: `Está a decorrer o <b>${esc(ev.nome)}</b>.`, classe: 'opcoes',
+    botoes: [{ id: 'evento', texto: ev.icone + ' ' + ev.nome, classe: 'on' }, { id: 'ocorrencia', texto: '📍 Registar Ocorrência' }, { id: 'cancelar', texto: 'Cancelar' }] });
+  if (r === 'evento') levantamento(ev); else if (r === 'ocorrencia') abrirCriar(true, true);
+}
+// ---- o levantamento: tipo → localização → confirmar a morada → acrescentar ao conjunto ----
+let levant = null, levantClique = null; // o registo em curso { ev, cat, m (marcador), loc, morada }; quem espera um toque no mapa
+async function levantamento(ev, catId) {
+  porFerramenta('mover'); fecharCartao(); abrirCriar(false, true);
+  let cat = catId || null; try { if (!cat) cat = localStorage.getItem('co-evento-cat:' + ev.id); } catch (err) { /* sem armazenamento local */ }
+  const r = await dialogo({ titulo: ev.icone + ' ' + ev.nome, texto: 'O que encontraste? A seguir procuro a tua localização e sugiro a morada, que confirmas antes de registar.', classe: 'opcoes',
+    botoes: [...ev.categorias.map(c => ({ id: c.id, texto: c.icone + ' ' + c.nome, classe: c.id === cat ? 'on' : '' })), { id: 'cancelar', texto: 'Cancelar' }] });
+  const categoria = ev.categorias.find(c => c.id === r); if (!categoria) return;
+  try { localStorage.setItem('co-evento-cat:' + ev.id, r); } catch (err) { /* sem armazenamento local */ }
+  if (levant && levant.m) { levant.cat = categoria; mostrarLevantamento(); return; } // só mudou o tipo
+  let loc = null;
+  try { loc = await localizarPrecisa(); } catch (err) { aviso('Sem localização (' + err.message + '). Toca no mapa no sítio exato do candeeiro.', 7000); }
+  if (!loc) { loc = await esperarCliqueNoMapa(); if (!loc) return; }
+  abrirLevantamento(ev, categoria, loc);
+}
+// acompanha a posição até ser boa (≤ «boa» m) ou até maxMs: o GPS melhora nos primeiros segundos
+function localizarPrecisa(maxMs = 9000, boa = 12) {
+  return new Promise((ok, falha) => {
+    if (!window.isSecureContext) { falha(new Error('o browser só dá a localização em https ou no próprio aparelho')); return; }
+    if (!navigator.geolocation) { falha(new Error('este browser não dá a localização')); return; }
+    let melhor = null, id = null, t = null;
+    const parar = () => { if (id !== null) navigator.geolocation.clearWatch(id); clearTimeout(t); $('#aviso').classList.remove('aberto'); };
+    const fim = () => { parar(); if (melhor) ok(melhor); else falha(new Error('demorou demasiado')); };
+    aviso('A obter a localização…');
+    id = navigator.geolocation.watchPosition(p => {
+      const c = p.coords; if (!melhor || c.accuracy < melhor.precisao) melhor = { ll: L.latLng(c.latitude, c.longitude), precisao: c.accuracy };
+      aviso(`A afinar a localização… ±${Math.round(melhor.precisao)} m`); if (melhor.precisao <= boa) fim();
+    }, e => { if (!melhor) { parar(); falha(new Error(e.code === 1 ? 'a autorização foi recusada' : e.code === 3 ? 'demorou demasiado' : 'localização indisponível')); } },
+    { enableHighAccuracy: true, timeout: maxMs, maximumAge: 0 });
+    t = setTimeout(fim, maxMs);
+  });
+}
+function esperarCliqueNoMapa() { return new Promise(ok => { levantClique = ok; porFerramenta('levantamento'); }); }
+// a morada mais provável: o número de polícia mais próximo (CML) e, sem nenhum perto, a rua mais próxima
+function moradaSugerida(ll) {
+  const P = L.latLng(ll); let melhor = null, md = Infinity;
+  for (const n of ED.numeros) { const d = P.distanceTo([n[0], n[1]]); if (d < md) { md = d; melhor = n; } }
+  if (melhor && md <= 45) return { rua: melhor[3], numero: melhor[2], distancia: Math.round(md), fonte: 'número de polícia a ' + Math.round(md) + ' m' };
+  const r = ruaMaisProxima(P);
+  if (r && r.d <= 80) return { rua: r.r.rua.nome, numero: melhor && md <= 90 && normalizar(melhor[3]) === normalizar(r.r.rua.nome) ? melhor[2] : '', distancia: Math.round(r.d), fonte: 'rua a ' + Math.round(r.d) + ' m; sem número de polícia perto' };
+  return { rua: melhor && md <= 120 ? melhor[3] : '', numero: '', distancia: melhor ? Math.round(md) : null, fonte: 'nada perto: escreve a morada' };
+}
+function abrirLevantamento(ev, cat, loc) {
+  cancelarLevantamento(true);
+  const m = L.marker(loc.ll, { draggable: true, zIndexOffset: 1000, keyboard: false, icon: L.divIcon({ className: 'mk-levant', html: '<div class="levant-ico"></div>', iconSize: [36, 36], iconAnchor: [18, 32] }) }).addTo(map);
+  levant = { ev, cat, m, loc, morada: moradaSugerida(loc.ll), manual: false };
+  m.on('dragend', () => { levant.loc = { ll: m.getLatLng(), precisao: null }; levant.morada = moradaSugerida(m.getLatLng()); levant.manual = false; mostrarLevantamento(); });
+  if (!$('#lista-ruas').children.length) $('#lista-ruas').innerHTML = [...new Set([...RUAS.map(r => r.nome), ...ED.numeros.map(n => n[3])])].filter(Boolean).sort((a, b) => a.localeCompare(b, 'pt')).map(n => `<option value="${esc(n)}">`).join('');
+  map.flyTo(loc.ll, Math.max(map.getZoom(), 19), { duration: .8 });
+  mostrarLevantamento();
+  if (!LIMITES.some(a => dentro(loc.ll, a))) aviso(`A localização fica fora de ${FREG.nome}: confirma que estás na freguesia certa.`, 6000);
+}
+function mostrarLevantamento() {
+  const { cat, loc, morada, manual } = levant, el = $('#levantamento');
+  const ico = levant.m.getElement() && levant.m.getElement().querySelector('.levant-ico'); if (ico) { ico.style.setProperty('--c', cat.cor); ico.textContent = cat.icone; }
+  $('#lev-titulo').innerHTML = `${esc(levant.ev.icone)} Registar <span class="cat" style="--c:${cat.cor}"><i></i>${esc(cat.nome)}</span>`;
+  $('#lev-nota').textContent = (loc.precisao != null ? `Localização com ±${Math.round(loc.precisao)} m. ` : '') + 'Arrasta o marcador para o sítio exato: a morada sugerida acompanha-o. Podes também corrigi-la à mão.';
+  if (!manual) { $('#lev-rua').value = morada.rua || ''; $('#lev-numero').value = morada.numero || ''; }
+  $('#lev-fonte').textContent = manual ? 'Morada escrita à mão.' : 'Sugestão: ' + morada.fonte + '.';
+  el.classList.add('aberto');
+}
+function cancelarLevantamento(silencioso) {
+  if (levantClique) { const fim = levantClique; levantClique = null; fim(null); }
+  if (!levant) return;
+  if (levant.m) map.removeLayer(levant.m);
+  levant = null; $('#levantamento').classList.remove('aberto');
+  if (!silencioso) aviso('Registo cancelado.', 2000);
+}
+async function confirmarLevantamento() {
+  if (!levant) return;
+  const rua = $('#lev-rua').value.trim(), numero = $('#lev-numero').value.trim();
+  if (!rua) { aviso('Falta a rua.', 3000); $('#lev-rua').focus(); return; }
+  if (!numero && !(await confirmar('Sem número de porta', 'Não há número de porta. Registar na mesma, só com a rua?', 'Registar'))) { $('#lev-numero').focus(); return; }
+  const { ev, cat, m, loc } = levant;
+  const d = { c: cat.id, rua, numero, quando: new Date().toISOString(), autor: SESSAO ? SESSAO.utilizador : '' }; if (loc.precisao != null) d.precisao = Math.round(loc.precisao);
+  const g = registarNoConjunto(ev, arredLL(m.getLatLng()), d);
+  cancelarLevantamento(true);
+  const total = g.pontos.length, r = await guardar();
+  aviso(`${cat.icone} Registado: ${moradaTexto(d)} · ${total} registo${total === 1 ? '' : 's'} em ${FREG.nome}${r === 'servidor' ? ' (guardado)' : r === 'recusado' ? ' (por guardar)' : ''}.`, 6000);
+}
+function registarNoConjunto(ev, pos, d) { // o conjunto do evento nesta freguesia (criado no primeiro registo)
+  let g = ELEMENTOS.find(e => e.tipo === 'grupo' && e.evento === ev.id);
+  if (g) { g.pontos.push(pos); if (!Array.isArray(g.detalhes)) g.detalhes = g.pontos.slice(0, -1).map(() => ({})); g.detalhes.push(d); }
+  else {
+    const c = ev.conjunto, id = POR_ID[c.id] ? c.id + '-' + Date.now().toString(36) : c.id;
+    g = preparar({ id, tipo: 'grupo', nome: c.nome, icone: c.icone, prioridade: c.prioridade, competencia: c.competencia, texto: c.texto, fotos: [], evento: ev.id, pontos: [pos], detalhes: [d] }, null);
+    ELEMENTOS.push(g);
+  }
+  construir(); construirIndice(); construirPesquisa(); marcarAlterado(); selecionar(g, false);
+  return g;
+}
+function htmlResumoEvento(el) { // no cartão do conjunto: a tabela por categoria e a lista dos registos
+  const ev = EVENTOS[el.evento]; if (!ev) return '';
+  const cont = contagensDe(el), n = el.pontos.length;
+  return `<div class="evento-resumo"><table><thead><tr><th>${esc(ev.nome)} · ${esc(FREG.nome)}</th><th>Registos</th></tr></thead><tbody>
+    ${ev.categorias.map(c => `<tr><td><span class="pinta" style="--c:${c.cor}"></span>${esc(c.icone)} ${esc(c.nome)}</td><td>${cont[c.id] || 0}</td></tr>`).join('')}
+    <tr class="total"><td>Total de falhas registadas</td><td>${n}</td></tr></tbody></table>
+    <h3>Registos</h3><ol class="evento-lista">${el.pontos.map((p, i) => { const d = detalheDe(el, i) || {}, c = categoriaEvento(el, d); return `<li><button type="button" data-ponto="${i}" title="Ver no mapa">${c ? esc(c.icone) : '•'} ${esc(moradaTexto(d))}<small>${d.quando ? esc(dataHora(d.quando)) : ''}${d.autor && SESSAO && SESSAO.papel === 'admin' ? ' · ' + esc(d.autor) : ''}</small></button></li>`; }).join('')}</ol></div>`;
+}
+// o resumo da cidade: do servidor central (que junta as 24 freguesias) ou, sem ele, dos ficheiros de cada freguesia
+async function resumoLocalEvento(ev) {
+  const out = { total: 0, freguesias: {} };
+  await Promise.all(FREGUESIAS.map(async f => {
+    try {
+      let d; if (f.id === FREG.id) d = serializar(); else { const base = f.id === 'campo-de-ourique' ? 'dados/' : 'dados/freguesias/' + f.id + '/'; d = JSON.parse(jsonDoFicheiro(await (await fetch(base + 'conteudos.js', { cache: 'no-store' })).text())); }
+      const g = (d.elementos || []).find(e => e.tipo === 'grupo' && e.evento === ev.id); if (!g) return;
+      out.freguesias[f.id] = { total: (g.pontos || []).length, contagens: contagensDe(g) }; out.total += (g.pontos || []).length;
+    } catch (err) { /* freguesia sem dados */ }
+  }));
+  return out;
+}
+async function resumoCidadeEvento() {
+  const ev = eventoAtivo(); if (!ev) return;
+  aviso('A juntar os registos das 24 freguesias…');
+  let dados = null, fonte = '';
+  if (urlCentral()) { try { dados = await pedirCentral('/evento/resumo?id=' + ev.id); fonte = 'servidor central'; } catch (err) { dados = null; } }
+  if (!dados) { dados = await resumoLocalEvento(ev); fonte = AMBIENTE.app ? 'dados desta aplicação' : 'ficheiros desta apresentação'; }
+  $('#aviso').classList.remove('aberto');
+  const linhas = FREGUESIAS.map(f => ({ f, r: dados.freguesias[f.id] })).filter(x => x.r && x.r.total);
+  const tot = {}; for (const x of linhas) for (const c of ev.categorias) tot[c.id] = (tot[c.id] || 0) + (x.r.contagens[c.id] || 0);
+  const cab = ev.categorias.map(c => `<th class="num" title="${esc(c.nome)}">${esc(c.icone)} ${esc(c.nome)}</th>`).join('');
+  const corpo = linhas.map(x => `<tr><td>${esc(x.f.nome)}</td>${ev.categorias.map(c => `<td class="num">${x.r.contagens[c.id] || 0}</td>`).join('')}<td class="num"><b>${x.r.total}</b></td></tr>`).join('');
+  await dialogo({ titulo: ev.icone + ' ' + ev.nome + ' · Lisboa', largo: true,
+    texto: `<b>${dados.total}</b> falha${dados.total === 1 ? '' : 's'} na iluminação pública registada${dados.total === 1 ? '' : 's'} em ${linhas.length} freguesia${linhas.length === 1 ? '' : 's'} (fonte: ${esc(fonte)}).`,
+    corpo: `<div class="tabela-dialogo"><table><thead><tr><th>Freguesia</th>${cab}<th class="num">Total</th></tr></thead><tbody>${corpo || '<tr><td colspan="4" class="nota">Ainda não há registos.</td></tr>'}</tbody>${linhas.length ? `<tfoot><tr class="total"><th>Lisboa</th>${ev.categorias.map(c => `<th class="num">${tot[c.id] || 0}</th>`).join('')}<th class="num">${dados.total}</th></tr></tfoot>` : ''}</table></div>`,
+    botoes: [{ id: 'ok', texto: 'Fechar', classe: 'on' }] });
+}
+$('#lev-ok').addEventListener('click', confirmarLevantamento);
+$('#lev-cancelar').addEventListener('click', () => cancelarLevantamento());
+$('#lev-tipo').addEventListener('click', () => { if (levant) levantamento(levant.ev); });
+$('#lev-gps').addEventListener('click', async () => { if (!levant) return; try { const loc = await localizarPrecisa(); levant.m.setLatLng(loc.ll); levant.loc = loc; levant.morada = moradaSugerida(loc.ll); levant.manual = false; map.flyTo(loc.ll, Math.max(map.getZoom(), 19), { duration: .6 }); mostrarLevantamento(); } catch (err) { aviso('Sem localização: ' + err.message + '.', 5000); } });
+for (const id of ['lev-rua', 'lev-numero']) $('#' + id).addEventListener('input', () => { if (levant) { levant.manual = true; $('#lev-fonte').textContent = 'Morada escrita à mão.'; } });
+$('#lev-numero').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); confirmarLevantamento(); } });
+
 function transferir(dados) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([ficheiroConteudos(dados || serializar())], { type: 'text/javascript' }));
@@ -2492,7 +2903,7 @@ function novoDesmaterializado() {
 }
 function desmaterializar(el) {
   if (el.pai) { el.pai.filhos.splice(el.pai.filhos.indexOf(el), 1); el.pai = null; ELEMENTOS.push(el); }
-  el.tipo = 'desmaterializado'; delete el.pos; delete el.area; delete el.pontos;
+  el.tipo = 'desmaterializado'; delete el.pos; delete el.area; delete el.pontos; delete el.detalhes; delete el.evento;
   construir(); construirIndice(); construirPesquisa(); marcarAlterado(); selecionar(el, false);
   aviso(`«${el.nome}» saiu do mapa: está nos pontos desmaterializados, no canto superior direito.`, 4000);
 }
@@ -2632,7 +3043,7 @@ function htmlForm(el) {
     ${htmlFormLugar(el)}
     <div class="fotos-ed"><h3>Categorias e visita</h3>
       <div class="checks">${C.categorias.map(c => `<label class="check"><input type="checkbox" name="cat" value="${c.id}" ${c.membros.includes(el.id) ? 'checked' : ''}><span class="pinta categoria" style="--c:${c.cor}"></span>${c.icone ? esc(c.icone) + ' ' : ''}${esc(c.nome)}</label>`).join('') || '<span class="nota">Ainda não há categorias: cria-as no índice (☰), em «+ Nova categoria».</span>'}</div>
-      <label class="check destaque"><input type="checkbox" name="visita" ${visitaIds().includes(el.id) ? 'checked' : ''}>Destaque na visita guiada</label>
+      <label class="check destaque"><input type="checkbox" name="visita" ${visitaIds().includes(el.id) ? 'checked' : ''}>Destaque na Vista de Apresentação</label>
     </div>
     <div class="acoes-ed"><button type="button" class="btn" data-ac="subir" title="Mover para cima na ordem">↑</button><button type="button" class="btn" data-ac="descer" title="Mover para baixo na ordem">↓</button><span class="esp"></span><button type="button" class="btn perigo" data-ac="apagar">Apagar</button><button type="button" class="btn on" data-ac="concluir">Concluído</button></div>
   </form>`;
@@ -2641,7 +3052,7 @@ function htmlFormLugar(el) { // pontos do conjunto; tirar do mapa ou pôr no map
   if (el.tipo === 'grupo') {
     const p = priDe(el), aAcrescentar = ferramenta === 'grupo' && grupoEmCurso === el;
     return `<div class="fotos-ed"><h3>Pontos do conjunto (${el.pontos.length})</h3>
-      ${el.pontos.map((q, i) => `<div class="membro"><span class="pinta" style="--c:${p.cor}"></span><span>Ponto ${i + 1} <small class="nota">${q[0].toFixed(5)}, ${q[1].toFixed(5)}</small></span><button type="button" class="fechar" data-ac="grupo-tirar" data-i="${i}" aria-label="Tirar o ponto ${i + 1}">✕</button></div>`).join('')}
+      ${el.pontos.map((q, i) => { const d = detalheDe(el, i), cat = d && categoriaEvento(el, d); return `<div class="membro"><span class="pinta" style="--c:${cat ? cat.cor : p.cor}"></span><span>${cat ? esc(cat.icone) + ' ' + esc(moradaTexto(d)) : 'Ponto ' + (i + 1)} <small class="nota">${cat && d.quando ? esc(dataHora(d.quando)) : q[0].toFixed(5) + ', ' + q[1].toFixed(5)}</small></span><button type="button" class="fechar" data-ac="grupo-tirar" data-i="${i}" aria-label="Tirar o ponto ${i + 1}">✕</button></div>`; }).join('')}
       <div class="linha"><button type="button" class="btn${aAcrescentar ? ' on' : ''}" data-ac="grupo-mais">＋ Acrescentar pontos no mapa</button></div>
       <div class="nota">Arrasta os pontos no mapa para os mudar de sítio.</div></div>`;
   }
@@ -2722,7 +3133,7 @@ modalConteudo.addEventListener('change', e => {
 });
 modalConteudo.addEventListener('click', async e => {
   if (!edicao) return;
-  const vis = e.target.closest('[data-visitar]'); if (vis) { aviso('Sai do modo de edição para fazer a visita.', 2500); return; }
+  const vis = e.target.closest('[data-visitar]'); if (vis) { aviso('Sai do modo de edição para ver a apresentação.', 2500); return; }
   const b = e.target.closest('[data-ac]'); if (!b) return;
   if (categoriaAtual && !selecionado) { // ações do formulário de categoria
     const c = categoriaAtual, ac = b.dataset.ac;
@@ -2741,7 +3152,7 @@ modalConteudo.addEventListener('click', async e => {
   else if (ac === 'foto-url') { const u = await perguntarTexto('Foto por endereço', 'Endereço ou caminho da imagem (por exemplo assets/fotos/nome.jpg)', '', 'Acrescentar'); if (u && u.trim()) { el.fotos.push({ src: u.trim(), legenda: '' }); marcarAlterado(); mostrarInfo(el, modal.classList.contains('lado') ? 'lado' : 'baixo'); } }
   else if (ac === 'grupo-tirar') {
     if (el.pontos.length <= 1) { aviso('Um conjunto precisa de pelo menos um ponto; para o eliminar, apaga o conjunto.', 4000); return; }
-    el.pontos.splice(+b.dataset.i, 1); construir(); marcarAlterado(); selecionar(el, false);
+    el.pontos.splice(+b.dataset.i, 1); if (Array.isArray(el.detalhes)) el.detalhes.splice(+b.dataset.i, 1); construir(); marcarAlterado(); selecionar(el, false);
   }
   else if (ac === 'grupo-mais') { porFerramenta('grupo', el); selecionar(el, false); aviso(`Clica no mapa para acrescentar pontos a «${el.nome}». Esc termina.`, 4000); }
   else if (ac === 'em-conjunto') emConjunto(el);
@@ -2760,6 +3171,7 @@ map.on('click', e => {
   else if (ferramenta === 'ponto') novoPonto(e.latlng);
   else if (ferramenta === 'grupo') pontoDeGrupo(e.latlng);
   else if (ferramenta === 'colocar') colocarNoMapa(alvoFerramenta, e.latlng);
+  else if (ferramenta === 'levantamento') { const fim = levantClique; levantClique = null; porFerramenta('mover'); if (fim) fim({ ll: e.latlng, precisao: null }); }
   else if (ferramenta === 'mover') { limparSelecao(); limparRuaDestaque(); fecharCartao(); }
 });
 map.on('dblclick', e => { if (edicao && ferramenta === 'poligono') { L.DomEvent.stop(e); terminarZona(desenho.slice(0, -1)); } });
@@ -2814,7 +3226,8 @@ arrancarPresets().then(() => { const el = POR_ID[idInicial]; if (el && !cidade) 
 const PARAMS = new URLSearchParams(location.search);
 if ((PARAMS.has('cidade') || (!PARAMS.has('freguesia') && !idInicial)) && !EDITOR) map.whenReady(() => abrirCidade(true));
 if (EDITOR) pedirEdicao({ criar: PARAMS.has('criar') }); // ?editor abre logo em modo de edição (depois de iniciar sessão); ?criar abre também o «+»
-window.__mapa = { map, C, FREG, ELEMENTOS, POR_ID, RUAS_VISTA, pedirEdicao, entrarConta, lerSessao, terminarSessao, menuConta, verHistorico, gerirContas, mudarPalavraPasse, dialogoEntrar, get SESSAO() { return SESSAO; }, lerSessaoCentral, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, ligarVerdes, ligarMapa, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva, entrarEdicao, porFerramenta, serializar, guardar, carregar, lerPreset, novoPreset, apagarPreset, mudarPreset, PRESETS, importarPreset, reporDoFicheiro, largarPonto, novoPonto, criarRua, criarDeLote, painelCentral, abrirDoCentral, enviarFilaCentral, copiarCentral, estadoCopia, filaCentral, lerCentral, gravarCentral, get AMBIENTE() { return AMBIENTE; }, confirmar, perguntarTexto, abrirCidade, irParaFreguesia, sairEdicao, descartarAlteracoes, dialogo, construirDesmat, expandirDesmat, pontoDeGrupo, emConjunto, novoDesmaterializado, desmaterializar, colocarNoMapa, criarAqui, ruaMaisProxima, abrirCriar, acrescentarPresetImportado, PRESETS_LOCAIS, get cidade() { return cidade; }, get alterado() { return alterado; }, novaCategoria, definirMembro, alternarCategoria, editarVisita, mostrarCategoria, categoriasAtivas, get edicao() { return edicao; }, get ferramenta() { return ferramenta; }, get passos() { return passos; } };
+sessaoPronta.then(lerEventoServidor).finally(() => map.whenReady(() => setTimeout(arrancarVisitaGuiada, 1400))); // depois de o mapa se acomodar (o voo até Lisboa dura 1,1 s)
+window.__mapa = { map, C, FREG, ELEMENTOS, POR_ID, RUAS_VISTA, EVENTOS, get EVENTO() { return EVENTO; }, get levant() { return levant; }, lerEventoServidor, aplicarEvento, gerirEvento, escolherRegisto, levantamento, abrirLevantamento, mostrarLevantamento, confirmarLevantamento, cancelarLevantamento, moradaSugerida, registarNoConjunto, resumoCidadeEvento, localizarPrecisa, iniciarVisita, sairVisita, terminarVisita, irPassoVisita, seguinteVisita, visitaAberta, lerEstadoVisita, get visitaPasso() { return visitaPassos[visitaI] && visitaPassos[visitaI].id; }, get visitaPassos() { return visitaPassos; }, pedirEdicao, entrarConta, lerSessao, terminarSessao, menuConta, verHistorico, gerirContas, mudarPalavraPasse, dialogoEntrar, get SESSAO() { return SESSAO; }, lerSessaoCentral, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, ligarVerdes, ligarMapa, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva, entrarEdicao, porFerramenta, serializar, guardar, carregar, lerPreset, novoPreset, apagarPreset, mudarPreset, PRESETS, importarPreset, reporDoFicheiro, largarPonto, novoPonto, criarRua, criarDeLote, painelCentral, abrirDoCentral, enviarFilaCentral, copiarCentral, estadoCopia, filaCentral, lerCentral, gravarCentral, get AMBIENTE() { return AMBIENTE; }, confirmar, perguntarTexto, abrirCidade, irParaFreguesia, sairEdicao, descartarAlteracoes, dialogo, construirDesmat, expandirDesmat, pontoDeGrupo, emConjunto, novoDesmaterializado, desmaterializar, colocarNoMapa, criarAqui, ruaMaisProxima, abrirCriar, acrescentarPresetImportado, PRESETS_LOCAIS, get cidade() { return cidade; }, get alterado() { return alterado; }, novaCategoria, definirMembro, alternarCategoria, editarVisita, mostrarCategoria, categoriasAtivas, get edicao() { return edicao; }, get ferramenta() { return ferramenta; }, get passos() { return passos; } };
 });
 </script>
 </body>

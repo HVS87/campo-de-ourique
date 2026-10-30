@@ -11,7 +11,7 @@ const pasta = arg('pasta'), url = (arg('url') || '').replace(/\/+$/, ''), admin 
 const comChaves = process.argv.includes('--com-chaves'), ver = process.argv.includes('--ver');
 if (!pasta || !url || !admin) { console.error('uso: node servidor-central/repor.mjs --pasta <cópia> --url <endereço da API> --admin <chave>  [--com-chaves] [--ver]'); process.exit(1); }
 const ID = '[a-z0-9][a-z0-9-]{0,60}';
-const VALIDA = new RegExp(`^(presets/${ID}/${ID}/(\\d+|atual|revisoes)\\.json|(indice|elementos)/${ID}\\.json|historico/\\d{4}-\\d{2}\\.json|chaves\\.json|contas/contas\\.json)$`);
+const VALIDA = new RegExp(`^(presets/${ID}/${ID}/(\\d+|atual|revisoes)\\.json|(indice|elementos)/${ID}\\.json|historico/\\d{4}-\\d{2}\\.json|chaves\\.json|contas/contas\\.json|evento/atual\\.json)$`);
 const ACESSOS = ['chaves.json', 'contas/contas.json']; // as chaves e as contas (com as palavras-passe de então) só com --com-chaves
 const objetos = [];
 (function andar(dir) { for (const e of fs.readdirSync(dir, { withFileTypes: true })) { const f = path.join(dir, e.name); if (e.isDirectory()) andar(f); else { const k = path.relative(pasta, f).split(path.sep).join('/'); if (VALIDA.test(k) && (comChaves || !ACESSOS.includes(k))) objetos.push(k); } } })(path.resolve(pasta));

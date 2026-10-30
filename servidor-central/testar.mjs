@@ -172,6 +172,22 @@ async function bateria(tipo) {
       assert.equal((await enviar(c.chave, 'ajuda', 'k', { ...preset('K', 1), freguesia: 'ajuda' })).status, 201);
       assert.equal((await enviar(c.chave, 'belem', 'k', { ...preset('K', 1), freguesia: 'belem' })).status, 403);
     },
+    'evento: estado, ativação e resumo por freguesia': async () => {
+      assert.equal((await (await pedir(null, '/evento')).json()).evento, null);
+      assert.equal((await pedir(contribuidor, '/evento', { method: 'POST', body: JSON.stringify({ id: 'iluminacao', ativo: true }) })).status, 403);
+      assert.equal((await pedir(sessoes.Admin, '/evento', { method: 'POST', body: JSON.stringify({ id: 'iluminacao', nome: 'Levantamento Iluminação Pública', ativo: true }) })).status, 200);
+      assert.equal((await (await pedir(null, '/evento')).json()).evento.ativo, true);
+      const grupo = (f, det) => ({ preset: 'lev', freguesia: f, titulo: 'Lev', elementos: [{ id: 'levantamento-iluminacao-publica', tipo: 'grupo', nome: 'Levantamento Iluminação Pública', evento: 'iluminacao', texto: '', fotos: [], pontos: det.map((d, i) => [38.7 + i / 1000, -9.18]), detalhes: det.map(c => ({ c, rua: 'Rua X', numero: '10' })) }] });
+      assert.equal((await enviar(contribuidor, 'belem', 'lev', grupo('belem', ['fundido', 'fundido', 'falta']))).status, 201);
+      assert.equal((await enviar(contribuidor, 'alcantara', 'lev', grupo('alcantara', ['falta']))).status, 201);
+      const r = await (await pedir(contribuidor, '/evento/resumo')).json();
+      assert.equal(r.evento, 'iluminacao'); assert.equal(r.total, 4); assert.deepEqual(r.freguesias.belem.contagens, { fundido: 2, falta: 1 }); assert.equal(r.freguesias.belem.total, 3); assert.equal(r.freguesias.alcantara.total, 1);
+      assert.equal((await pedir(null, '/evento/resumo')).status, 401);
+      const el = (await (await pedir(contribuidor, '/elementos?freguesia=belem')).json()).elementos.find(e => e.evento === 'iluminacao'); assert.equal(el.pontos, 3); assert.equal(el.contagens.fundido, 2);
+      assert.equal((await pedir(sessoes.Admin, '/evento', { method: 'POST', body: JSON.stringify({ id: 'iluminacao', ativo: false }) })).status, 200);
+      assert.equal((await (await pedir(null, '/evento')).json()).evento.ativo, false);
+      assert.ok((await (await pedir(sessoes.Admin, '/copia')).json()).objetos.some(o => o.chave === 'evento/atual.json'));
+    },
     'página de consulta': async () => { const r = await fetch(s.base + '/'); assert.equal(r.status, 200); assert.ok((await r.text()).includes('Consulta dos dados')); },
   };
   console.log(`\n${tipo === 'node' ? 'Servidor Node' : 'Worker do Cloudflare (local)'}:`);

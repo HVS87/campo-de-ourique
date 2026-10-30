@@ -2,7 +2,7 @@
 // (tools/servidor.mjs: aplicação de computador e npm start) e no servidor central (nucleo.mjs: Node e Cloudflare Workers).
 // Só usa a Web Crypto (crypto.subtle), que existe nos dois e no browser.
 //
-// Palavras-passe: nunca saem do browser. A página deriva de cada uma uma «chave de entrada» (PBKDF2-SHA256, 100 000
+// Palavras-passe: nunca saem do browser (e os acentos e cedilhas não contam nelas: ver normalizarPalavraPasse). A página deriva de cada uma uma «chave de entrada» (PBKDF2-SHA256, 100 000
 // iterações, sal = «campo-de-ourique/» + utilizador normalizado) e só essa chave viaja; os servidores guardam um SHA-256
 // dela (o «verificador»). O trabalho caro fica no browser (o plano grátis do Workers dá 10 ms de processador por pedido)
 // e quem levar o ficheiro das contas continua a ter de fazer as 100 000 iterações por cada palavra-passe que tentar.
@@ -14,6 +14,7 @@
 // Armazém (o mesmo do núcleo): ler(chave) · escrever(chave, texto) · listar(prefixo) · atualizar?(chave, f)
 //   contas/contas.json (as contas, com os verificadores) · contas/segredo.json (assina as sessões; nunca sai do servidor)
 //   historico/<AAAA-MM>.json (quem fez o quê, só para a administração)
+//   evento/atual.json (o evento em curso: { id, nome, ativo, desde, por }; a administração ativa-o e desativa-o)
 export const ITERACOES = 100000;
 export const PAPEIS_CONTA = { freguesia: 'Freguesia', cidade: 'Cidade', admin: 'Administração' };
 const ESPERA_BASE = 60e3, ESPERA_MAX = 15 * 60e3, ERROS_ATE_BLOQUEAR = 5;
@@ -28,8 +29,11 @@ const horaLisboa = ms => new Date(ms).toLocaleTimeString('pt-PT', { timeZone: 'E
 // «Campo de Ourique», «campodeourique» e «CampoDeOurique» são o mesmo utilizador (sem acentos, espaços nem maiúsculas)
 export const normalizarUtilizador = u => String(u || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[\s'’-]+/g, '').slice(0, 80);
 // a chave de entrada (o browser faz o mesmo cálculo: index.html e consulta.html)
+// na palavra-passe, os acentos e as cedilhas não contam («Março» e «Marco» são a mesma; «ç» e «c» também), para
+// evitar equívocos; as maiúsculas contam
+export const normalizarPalavraPasse = p => String(p == null ? '' : p).normalize('NFD').replace(/[̀-ͯ]/g, '');
 export async function derivarChave(utilizador, palavraPasse) {
-  const base = await crypto.subtle.importKey('raw', enc.encode(String(palavraPasse)), 'PBKDF2', false, ['deriveBits']);
+  const base = await crypto.subtle.importKey('raw', enc.encode(normalizarPalavraPasse(palavraPasse)), 'PBKDF2', false, ['deriveBits']);
   return hex(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: enc.encode('campo-de-ourique/' + normalizarUtilizador(utilizador)), iterations: ITERACOES }, base, 256));
 }
 export async function verificadorDe(chave) { return hex(await crypto.subtle.digest('SHA-256', enc.encode('verificador/' + chave))); }
@@ -165,5 +169,16 @@ export function criarContas({ armazem, iniciais = [], segredo = '', horas = 12, 
       .filter(e => (!freguesia || e.freguesia === freguesia) && (!n || normalizarUtilizador(e.utilizador) === n || normalizarUtilizador(e.alvo) === n))
       .sort((a, b) => b.quando.localeCompare(a.quando)).slice(0, Math.max(1, Math.min(Number(limite) || 300, 2000)));
   }
-  return { entrar, verificar, mudarPalavraPasse, reporPalavraPasse, listar, registar, historico, garantir };
+  // ---- evento: um levantamento no terreno (por exemplo da iluminação pública) que a administração liga e desliga ----
+  const KE = 'evento/atual.json';
+  async function lerEvento() { const e = await lerJSON(KE); return e && e.id ? e : null; }
+  async function definirEvento(admin, { id, nome, ativo }, contexto = {}) {
+    if (!admin || admin.papel !== 'admin') return { erro: 'Só a administração liga e desliga eventos', codigo: 403 };
+    if (!/^[a-z0-9][a-z0-9-]{0,40}$/.test(String(id || ''))) return { erro: 'Evento inválido', codigo: 400 };
+    const atual = await lerEvento(), evento = { id, nome: String(nome || (atual && atual.nome) || id).slice(0, 80), ativo: !!ativo, desde: new Date().toISOString(), por: admin.utilizador };
+    await armazem.escrever(KE, JSON.stringify(evento, null, 1));
+    await registar({ conta: admin, acao: (ativo ? 'ativou' : 'desativou') + ' o evento', alvo: evento.nome, origem: contexto.origem });
+    return { evento };
+  }
+  return { entrar, verificar, mudarPalavraPasse, reporPalavraPasse, listar, registar, historico, garantir, lerEvento, definirEvento };
 }

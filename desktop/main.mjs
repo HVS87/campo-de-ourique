@@ -102,7 +102,7 @@ async function abrirJanela() {
     if (r === 0) e.preventDefault(); // preventDefault aqui deixa fechar
   });
   janela.webContents.session.setPermissionRequestHandler((wc, permissao, decidir) => decidir(['geolocation', 'fullscreen', 'clipboard-sanitized-write'].includes(permissao)));
-  if (TESTE) ligarTeste();
+  if (TESTE) { ligarTeste(); janela.webContents.on('dom-ready', () => janela.webContents.executeJavaScript('try { localStorage.setItem("co-visita-guiada", JSON.stringify({ feita: true, edicaoFeita: true })); } catch (e) {}').catch(() => {})); } // sem a visita guiada automática no teste
   await janela.loadURL(origem + '/');
 }
 

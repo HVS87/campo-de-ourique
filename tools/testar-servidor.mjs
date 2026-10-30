@@ -62,6 +62,8 @@ async function cenario(nome, raiz, gravavel) {
       const { r, c, j } = await entrar('alcântara', PALAVRAS.Alcantara, 'Alcantara'); assert.equal(r.status, 200); assert.equal(j.sessao.utilizador, 'Alcantara');
       assert.match(c, /HttpOnly/); assert.match(c, /SameSite=Strict/); assert.match(c, new RegExp('co_sessao_' + porta + '='));
       assert.doesNotMatch(c, /Max-Age/, 'sem «lembrar-me» o cookie devia acabar ao fechar o browser'); assert.equal(j.sessao.lembrar, false);
+      assert.equal((await entrar('Alcantara', 'tésté-alcântara', 'acentos')).r.status, 200, 'a palavra-passe com acentos devia valer (os acentos não contam)');
+      assert.equal((await entrar('Alcantara', 'Teste-alcantara', 'maiuscula')).r.status, 401, 'as maiúsculas contam');
       assert.equal((await (await get('/sessao', 'Alcantara')).json()).sessao.utilizador, 'Alcantara');
       assert.equal((await (await post('/guardar', '{"sonda":true}', { quem: 'Alcantara' })).json()).sessao.utilizador, 'Alcantara');
     },
@@ -140,6 +142,17 @@ async function cenario(nome, raiz, gravavel) {
       assert.equal((await post('/contas/Alcantara/palavra-passe', JSON.stringify({ nova: await derivarChave('Alcantara', 'reposta') }), { quem: 'Admin.Teste' })).status, 200);
       assert.equal((await entrar('Alcantara', 'reposta')).r.status, 200);
       assert.ok((await (await get('/historico', 'Admin.Teste')).json()).historico.some(e => e.acao === 'repôs a palavra-passe' && e.alvo === 'Alcantara'));
+    },
+    'evento: todos leem, só a administração liga e desliga': async () => {
+      assert.equal((await (await get('/evento')).json()).evento, null);
+      assert.equal((await post('/evento', JSON.stringify({ id: 'iluminacao', nome: 'Levantamento Iluminação Pública', ativo: true }), { quem: 'Alcantara' })).status, 403);
+      assert.equal((await post('/evento', JSON.stringify({ id: 'iluminacao', nome: 'Levantamento Iluminação Pública', ativo: true }), { quem: 'Cidade.Teste' })).status, 403);
+      assert.equal((await post('/evento', JSON.stringify({ id: 'Má id!', ativo: true }), { quem: 'Admin.Teste' })).status, 400);
+      const r = await post('/evento', JSON.stringify({ id: 'iluminacao', nome: 'Levantamento Iluminação Pública', ativo: true }), { quem: 'Admin.Teste' }); assert.equal(r.status, 200);
+      const e = (await (await get('/evento')).json()).evento; assert.equal(e.ativo, true); assert.equal(e.nome, 'Levantamento Iluminação Pública'); assert.equal(e.por, 'Admin.Teste');
+      assert.equal((await post('/evento', JSON.stringify({ id: 'iluminacao', ativo: false }), { quem: 'Admin.Teste' })).status, 200);
+      assert.equal((await (await get('/evento')).json()).evento.ativo, false);
+      const { historico } = await (await get('/historico', 'Admin.Teste')).json(); assert.ok(historico.some(x => x.acao === 'ativou o evento' && x.utilizador === 'Admin.Teste')); assert.ok(historico.some(x => x.acao === 'desativou o evento'));
     },
     'terminar a sessão': async () => {
       const r = await post('/sessao/terminar', '', { quem: 'Alcantara' }); assert.match(r.headers.get('set-cookie'), /Max-Age=0/);

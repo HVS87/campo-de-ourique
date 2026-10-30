@@ -32,6 +32,26 @@ diz a freguesia (`?cidade` também abre neste mapa). Os
 limites (`dados/freguesias/limites.js`, 38 kB) só se transferem quando se abre o mapa de Lisboa. No ecrã tátil, juntar
 os dedos (pinça) na vista geral da freguesia também abre o mapa de Lisboa.
 
+### Visita guiada
+
+Na primeira vez que se abre a apresentação, uma visita guiada explica a interface passo a passo: cada passo realça
+um elemento do ecrã (escurecendo o resto) e explica-o num cartão, com «Seguinte», «Anterior» e uma barra de
+progresso. Nos passos do mapa pode-se experimentar ao mesmo tempo; os outros preparam o ecrã sozinhos (abrem o
+índice, a legenda, as camadas ou um cartão) e arrumam-no ao sair do passo.
+
+- **Duas partes:** a da visualização arranca na primeira visita; a da edição arranca sozinha na primeira vez que se
+  entra no modo de edição (ferramentas, cartão em formulário, «+», guardar e rascunhos, «⋯ Mais», conta, sair).
+- **Sair e retomar:** ✕, «Sair» ou Esc interrompem a visita a qualquer momento. O ponto onde se ia fica lembrado
+  neste browser (`co-visita-guiada`), e o botão do índice passa a «🎓 Retomar a visita guiada»; «↺ Do início» recomeça.
+  Uma visita interrompida só não volta a aparecer sozinha; a terminada também não.
+- **Mudar de freguesia a meio:** no mapa de Lisboa, a visita convida a clicar numa freguesia e continua lá, depois
+  de a página recarregar.
+- **Teclado:** → ou Espaço avança, ← recua, Esc sai.
+- **Adapta-se:** os passos que não se aplicam saltam-se (sem categorias, sem pontos desmaterializados, no mapa de
+  Lisboa só os passos da cidade).
+
+A antiga «Visita guiada» dos destaques passou a chamar-se **Vista de Apresentação** (ver o modo de edição e o índice).
+
 ## Como abrir
 
 Há duas versões, feitas do mesmo código e dos mesmos dados: a **versão browser** e a **aplicação de computador**.
@@ -148,6 +168,35 @@ cidade toda:
   mudá-la, muda nos dois. Se o servidor central recusar, a página avisa e os envios esperam na fila até a conta
   entrar lá.
 
+## Eventos: levantamentos no terreno
+
+Um **evento** é um levantamento feito por equipas por toda a cidade, como o **Levantamento Iluminação Pública**
+(candeeiros apagados ou fundidos e candeeiros em falta ou zonas escuras). O `System.Admin` liga-o e desliga-o no menu da
+conta → **Evento** (ou na página de consulta do servidor central). O estado fica no servidor central, se houver, e no
+servidor local; a apresentação lembra-o neste browser para abrir sem rede.
+
+Com o evento ativo:
+
+- **Ao entrar no modo de edição e no «+»** (também na vista normal, depois do login), pergunta-se o que se quer
+  registar: **Levantamento Iluminação Pública** ou **Registar Ocorrência**, que leva ao menu habitual.
+- **O levantamento:**
+  1. escolhe-se o tipo: 💡 Candeeiro apagado/fundido ou 🌑 Candeeiro em falta/zona escura (o último fica lembrado);
+  2. a apresentação acompanha o GPS durante uns segundos até ter precisão de 12 m (ou o melhor em 9 s) e põe um
+     marcador no mapa, ampliado ao máximo; sem GPS (no computador, ou sem autorização), pede um toque no mapa;
+  3. sugere a **morada** (rua e número de porta) a partir dos números de polícia da CML (`edificado.js`) e das ruas, sem
+     precisar de internet; arrastar o marcador atualiza a sugestão, e os campos podem corrigir-se à mão;
+  4. **Confirmar registo** acrescenta o ponto ao conjunto do evento da freguesia (criado no primeiro registo) e grava.
+- **O conjunto por freguesia** («Levantamento Iluminação Pública», prioridade importante, competência Câmara) tem no
+  cartão uma tabela com o total de falhas registadas e o número de cada tipo, e a lista dos registos com morada e
+  data (clicar num leva ao sítio no mapa). Os marcadores têm a cor do tipo. Em edição, cada registo pode tirar-se.
+- **O resumo da cidade**, no mapa de Lisboa (botão «💡 Resumo da cidade» na barra), é uma tabela com o total de
+  Lisboa e, por freguesia, o número de cada tipo. Vem do servidor central (que junta as 24 freguesias) ou, sem ele,
+  dos ficheiros de cada freguesia neste computador.
+- **A visita guiada não arranca sozinha** na primeira abertura enquanto o evento durar; continua no índice (☰ → 🎓 Visita guiada).
+
+No modelo de dados, o conjunto leva `evento: "iluminacao"` e `detalhes`, uma entrada por ponto:
+`{ c: "fundido" | "falta", rua, numero, quando, autor, precisao? }`.
+
 ## Modo de edição
 
 Liga-se no lápis (canto superior direito), depois de iniciar sessão. Barra de ferramentas no topo (em telemóvel
@@ -178,17 +227,17 @@ mostra só as ferramentas; «⋯ Mais» abre o título, o subtítulo e os preset
   (OpenStreetMap em Campo de Ourique, Câmara Municipal nas outras freguesias).
 - **Lote**: liga a camada dos lotes e um clique num lote cria uma zona com o contorno do cadastro.
 - **Título e subtítulo** editam-se na segunda linha da barra.
-- **Visita guiada** (no índice, em edição): lista ordenada dos destaques com ↑ ↓ e ✕, seletor para acrescentar
-  qualquer elemento (incluindo pontos dentro de zonas) e «Repor» para voltar à ordem natural. Cada cartão em
-  formulário tem também a caixa «Destaque na visita guiada».
+- **Vista de Apresentação** (no índice, em edição): lista ordenada dos destaques com ↑ ↓ e ✕, seletor para
+  acrescentar qualquer elemento (incluindo pontos dentro de zonas) e «Repor» para voltar à ordem natural. Cada cartão
+  em formulário tem também a caixa «Destaque na Vista de Apresentação».
 - **Categorias** (no índice, em edição): «+ Nova categoria» abre o cartão da categoria com nome, símbolo, cor,
   lista de membros (tirar com ✕, acrescentar pelo seletor) e «Apagar categoria»; ✎ na etiqueta da categoria
   volta a abri-lo.
   Em cada cartão de elemento há caixas para o pôr nas categorias. Um elemento pode estar em várias.
 - **Cartão em modo de formulário**: nome, prioridade, competência, símbolo, texto (parágrafos separados por linha em branco; aceita HTML,
   com botões para ligação, negrito e itálico), fotos (ficheiros do computador, que o servidor grava em
-  `assets/fotos/`, ou por endereço; legenda por foto), ordem no índice (↑ ↓; a visita segue esta ordem
-  enquanto não for personalizada), caixas de categorias e de destaque na visita, apagar.
+  `assets/fotos/`, ou por endereço; legenda por foto), ordem no índice (↑ ↓; a Vista de Apresentação segue esta
+  ordem enquanto não for personalizada), caixas de categorias e de destaque na apresentação, apagar.
 - **Guardar** escreve, através do servidor local, o ficheiro do preset (`presets/<id>.js`) e a cópia ativa
   `conteudos.js`, na pasta da freguesia (`dados/` em Campo de Ourique, `dados/freguesias/<id>/` nas outras); o
   `conteudos.js` anterior fica em `conteudos.anterior.js`.
@@ -248,17 +297,18 @@ mostra só as ferramentas; «⋯ Mais» abre o título, o subtítulo e os preset
 ## Ficheiros
 
 - `index.html` — a apresentação final, pensada para ecrãs 16:9 mas funcional em tablet e telemóvel (em ecrãs
-  estreitos o zoom faz-se com os dedos e os controlos saem da frente do cartão e da visita). Satélite
+  estreitos o zoom faz-se com os dedos e os controlos saem da frente do cartão e da apresentação). Satélite
   DGT OrtoSat 2023 em direto por WMS, com a imagem fixa por baixo (aparece logo e fica como reserva automática
   se o servidor da DGT falhar ou não houver rede); exterior da freguesia escurecido a 72 %. Os pontos de
   interesse são círculos com a cor da prioridade, que pulsam ao passar o cursor, tal como as ruas destacadas
   e as zonas, de onde saem ondas da mesma cor; a informação abre num cartão
   central (no telemóvel, em baixo; com o telemóvel deitado, à direita). À esquerda, um painel colapsável
   (fechado ao arrancar, botão ☰) com as categorias (etiquetas que
-  filtram o mapa e o índice; combinam-se; ▶ visita a categoria; «Mostrar tudo» limpa), o índice por tipo,
-  o botão «Visita guiada» (setas ‹ › ou teclado: ←, →, Espaço, Home, End; um seletor na barra troca entre a
-  visita completa e a visita de cada categoria) e «Vista geral». As categorias também aparecem na pesquisa e,
-  nos cartões, como etiquetas que abrem o cartão da categoria (lista de membros, «Visitar», «Mostrar só esta»). Em cima à direita,
+  filtram o mapa e o índice; combinam-se; ▶ apresenta a categoria; «Mostrar tudo» limpa), o índice por tipo,
+  o botão «🎓 Visita guiada» (explica a interface, ver acima), o botão «▶ Vista de Apresentação» (percorre os
+  destaques um a um: setas ‹ › ou teclado: ←, →, Espaço, Home, End; um seletor na barra troca entre a
+  apresentação completa e a de cada categoria) e «Vista geral». As categorias também aparecem na pesquisa e,
+  nos cartões, como etiquetas que abrem o cartão da categoria (lista de membros, «Apresentar», «Mostrar só esta»). Em cima à direita,
   uma caixa de pesquisa discreta (atalho: tecla /) que procura pontos, zonas, categorias, todas as ruas e as
   freguesias, sem acentos e com várias palavras («quinta lou»), com escrita preditiva (a conclusão aparece a
   cinzento; Tab ou → aceita; ↑ ↓ e Enter escolhem na lista).
