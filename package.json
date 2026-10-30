@@ -1,0 +1,118 @@
+{
+  "name": "campo-de-ourique",
+  "productName": "Campo de Ourique",
+  "version": "1.2.0",
+  "description": "Apresentação interativa das freguesias de Lisboa num mapa de satélite, com modo de edição (versão browser e aplicação de computador)",
+  "author": "Hugo (HVS87)",
+  "license": "MIT",
+  "homepage": "https://github.com/HVS87/campo-de-ourique",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HVS87/campo-de-ourique.git"
+  },
+  "private": true,
+  "main": "desktop/main.mjs",
+  "scripts": {
+    "start": "node tools/serve.mjs",
+    "app": "electron .",
+    "test": "node tools/testar-servidor.mjs && node servidor-central/testar.mjs",
+    "testar": "node tools/testar-servidor.mjs && node servidor-central/testar.mjs",
+    "testar:app": "node desktop/testar-app.mjs",
+    "central": "node servidor-central/servidor.mjs",
+    "dist": "electron-builder --win --publish never",
+    "dist:linux": "electron-builder --linux --publish never",
+    "dist:mac": "electron-builder --mac --publish never",
+    "central:local": "wrangler dev --config servidor-central/cloudflare/wrangler.toml --local",
+    "central:publicar": "wrangler deploy --config servidor-central/cloudflare/wrangler.toml"
+  },
+  "dependencies": {
+    "electron-updater": "6.8.10"
+  },
+  "devDependencies": {
+    "electron": "44.7.1",
+    "electron-builder": "26.17.0",
+    "wrangler": "4.150.0"
+  },
+  "build": {
+    "appId": "pt.hvs87.campo-de-ourique",
+    "productName": "Campo de Ourique",
+    "copyright": "© 2026 Hugo (HVS87) · código MIT; dados e imagens de terceiros: ver LICENCAS-TERCEIROS.md",
+    "directories": {
+      "output": "dist",
+      "buildResources": "desktop/recursos"
+    },
+    "files": [
+      "index.html",
+      "config.js",
+      "vendor/**",
+      "dados/**",
+      "assets/**",
+      "tools/servidor.mjs",
+      "desktop/main.mjs",
+      "desktop/recursos/icone.png",
+      "LICENSE",
+      "LICENCAS-TERCEIROS.md",
+      "package.json",
+      "!dados/**/*.anterior.js",
+      "!dados/**/*.apagado.bak",
+      "!**/*.geojson"
+    ],
+    "asar": true,
+    "compression": "normal",
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "desktop/recursos/icone.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Campo de Ourique",
+      "artifactName": "Campo-de-Ourique-${version}-instalador.${ext}",
+      "language": "2070",
+      "installerLanguages": [
+        "pt_PT"
+      ]
+    },
+    "portable": {
+      "artifactName": "Campo-de-Ourique-${version}-portatil.${ext}"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Education",
+      "artifactName": "Campo-de-Ourique-${version}.${ext}",
+      "icon": "desktop/recursos/icone.png"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.education",
+      "artifactName": "Campo-de-Ourique-${version}.${ext}",
+      "icon": "desktop/recursos/icone.png"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "HVS87",
+        "repo": "campo-de-ourique"
+      }
+    ]
+  }
+}

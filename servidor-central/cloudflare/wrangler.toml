@@ -1,0 +1,24 @@
+# Servidor central no Cloudflare Workers (plano grátis). Passos para publicar: servidor-central/README.md.
+name = "campo-de-ourique-central"
+main = "worker.mjs"
+compatibility_date = "2026-10-01"
+
+# dados no R2, na União Europeia (o balde cria-se com: npx wrangler r2 bucket create campo-de-ourique-central --jurisdiction eu)
+[[r2_buckets]]
+binding = "DADOS"
+bucket_name = "campo-de-ourique-central"
+jurisdiction = "eu"
+
+[vars]
+NOME = "Servidor central das freguesias de Lisboa"
+# endereços da apresentação que podem usar a API a partir do browser (separados por vírgulas; * = todos)
+ORIGENS = "*"
+# "1" deixa consultar sem chave
+LEITURA_PUBLICA = "0"
+# a chave de administração não fica aqui: npx wrangler secret put CHAVE_ADMIN
+
+# a página de consulta entra no Worker como texto
+[[rules]]
+type = "Text"
+globs = ["**/*.html"]
+fallthrough = true

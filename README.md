@@ -33,6 +33,34 @@ os dedos (pinça) na vista geral da freguesia também abre o mapa de Lisboa.
 
 ## Como abrir
 
+Há duas versões, feitas do mesmo código e dos mesmos dados: a **versão browser** e a **aplicação de computador**.
+Tudo o que muda numa muda também na outra, e cada release do GitHub traz as duas.
+
+### Aplicação de computador (Windows, macOS, Linux)
+
+Transfere-se em [Releases](https://github.com/HVS87/campo-de-ourique/releases):
+
+| Ficheiro | Sistema | Notas |
+|---|---|---|
+| `Campo-de-Ourique-<versão>-instalador.exe` | Windows | Instala e atualiza-se sozinho a partir das releases |
+| `Campo-de-Ourique-<versão>-portatil.exe` | Windows | Não instala nada; abre logo, mas não se atualiza sozinho |
+| `Campo-de-Ourique-<versão>.dmg` | macOS | |
+| `Campo-de-Ourique-<versão>.AppImage` | Linux | |
+
+- **Sem internet:** traz todos os dados das 24 freguesias e funciona sem internet. O satélite em direto passa para
+  as imagens guardadas, que dão menos zoom. O «Mapa da cidade», o satélite em direto e o servidor central precisam
+  de rede.
+- **Onde fica o que se grava:** os presets, as fotos e a cópia ativa ficam na pasta de dados do utilizador, que se
+  abre em «Ficheiro → Abrir a pasta dos meus dados» (no Windows, `%APPDATA%\Campo de Ourique\dados-do-utilizador`).
+  Sobrepõem-se aos dados que vêm com o programa, e as atualizações não lhes tocam. A gravação automática e a fila
+  do servidor central também ficam guardadas.
+- **Aviso do sistema:** os executáveis não estão assinados. Na primeira vez, o Windows (SmartScreen) e o macOS
+  (Gatekeeper) avisam: no Windows escolhe-se «Mais informações → Executar mesmo assim»; no macOS, botão direito
+  → «Abrir».
+- **Localização:** «Ponto onde estou» depende de o sistema dar a localização à aplicação.
+
+### Versão browser
+
 ```bash
 node tools/serve.mjs
 ```
@@ -45,6 +73,40 @@ Depois: http://localhost:8081/ (arranca em modo de visualização; o lápis no c
 modo de edição, e `?editor` abre-o logo). Também abre diretamente a partir do ficheiro `index.html`, sem
 servidor; só a imagem de satélite em direto precisa de internet, e sem o servidor local o modo de edição
 não grava diretamente (transfere o ficheiro).
+
+### Servidor central (opcional)
+
+Com um servidor central, cada «Guardar» envia também o preset para um sítio comum, onde se recolhem e consultam os
+dados de todas as pessoas e freguesias. Sem rede, os envios ficam numa fila e seguem quando a rede voltar. O
+servidor corre grátis no Cloudflare Workers, com os dados no R2 na União Europeia, e de 24 em 24 horas uma cópia
+vem para este computador. A ligação configura-se em `config.js` (para todos) ou no painel «☁ Servidor central» do
+modo de edição (para quem o usa). Como o publicar, a cópia local, a reposição e a API estão em
+[servidor-central/README.md](servidor-central/README.md).
+
+### Para programar
+
+```bash
+npm install
+```
+
+| Comando | O que faz |
+|---|---|
+| `npm start` | versão browser (`tools/serve.mjs`) |
+| `npm run app` | aplicação de computador a partir do código |
+| `npm test` e `npm run testar` | testes do servidor da apresentação e do servidor central (em Node e no Worker local) |
+| `npm run testar:app` | abre a aplicação, guarda, muda de freguesia e simula a falta de internet |
+| `npm run dist` | gera o instalador e a versão portátil para Windows em `dist/` |
+| `npm run central` | servidor central em Node (dados em ficheiros) |
+| `npm run central:local` | servidor central no Worker do Cloudflare, local, com um R2 simulado |
+| `npm run central:publicar` | publica o servidor central no Cloudflare (depois de `npx wrangler login`) |
+
+Para publicar uma versão nova das duas:
+
+1. Subir `version` no `package.json`.
+2. Fazer commit e criar a tag `v<versão>` (`git tag v1.2.0 && git push --tags`).
+3. A compilação automática (`.github/workflows/aplicacao.yml`) testa, gera os executáveis para Windows, macOS e
+   Linux e junta-os à release dessa tag. As aplicações instaladas atualizam-se a partir daí. Se o repositório tiver
+   o segredo `CLOUDFLARE_API_TOKEN`, republica também o servidor central.
 
 ## Modo de edição
 
@@ -190,6 +252,13 @@ ferramentas; «⋯ Mais» abre o título, o subtítulo e os presets):
 - `vendor/leaflet/` — Leaflet 1.9.4 guardado localmente (funciona sem internet).
 - `prototipo.html` — protótipo com todas as alternativas comutáveis (satélite, máscara, janela,
   navegação, marcadores, editor), mantido para consulta. Usa o Leaflet do CDN.
+- `tools/servidor.mjs` — o servidor em si (ficheiros e gravações do modo de edição), partilhado pela versão browser e
+  pela aplicação de computador; pode ler de uma pasta e gravar noutra. `tools/testar-servidor.mjs` testa-o nos dois
+  modos.
+- `desktop/main.mjs` — a aplicação de computador (Electron): arranca o mesmo servidor só neste computador e abre a
+  apresentação numa janela; atualizações pelas releases do GitHub. `desktop/testar-app.mjs` verifica o arranque.
+- `config.js` — configuração comum (endereço do servidor central).
+- `servidor-central/` — servidor central de referência, página de consulta e testes.
 - `tools/serve.mjs` — servidor local simples (porta 8081), sem dependências; aceita do modo de edição a gravação
   dos presets (`dados/presets/`, cópia ativa em `dados/conteudos.js`) e das fotos em `assets/fotos/` (só a
   partir desta máquina e da própria página).

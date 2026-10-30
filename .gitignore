@@ -7,3 +7,9 @@ dados/conteudos.anterior.js
 dados/presets/*.apagado.bak
 dados/freguesias/*/conteudos.anterior.js
 dados/freguesias/*/presets/*.apagado.bak
+dist/
+.wrangler/
+servidor-central/cloudflare/.wrangler/
+servidor-central/cloudflare/.dev.vars
+copia-central/
+dados-central/

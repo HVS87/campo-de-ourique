@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consulta dos dados</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root { --bg: #0f1216; --painel: #161b22; --borda: rgba(255,255,255,.12); --ink: #eef1f5; --dim: #a6afbb; --acento: #f3c35b; --acento-ink: #1a1405; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--borda); background: var(--painel); position: sticky; top: 0; z-index: 1000; }
+  header h1 { font-size: 17px; margin: 0; }
+  header small { color: var(--dim); }
+  .esp { flex: 1; }
+  input, select, button { font: inherit; font-size: 13px; color: var(--ink); background: rgba(255,255,255,.06); border: 1px solid var(--borda); border-radius: 8px; padding: 6px 9px; }
+  select option { background: #1a1f27; }
+  button { cursor: pointer; }
+  button:hover { background: rgba(255,255,255,.12); }
+  button.on { background: var(--acento); color: var(--acento-ink); border-color: transparent; font-weight: 600; }
+  main { padding: 14px 16px 40px; display: grid; gap: 14px; max-width: 1500px; margin: 0 auto; }
+  .filtros { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .filtros label { color: var(--dim); font-size: 12px; display: flex; flex-direction: column; gap: 3px; }
+  .resumo { display: flex; flex-wrap: wrap; gap: 8px; }
+  .resumo span { padding: 4px 10px; border-radius: 999px; border: 1px solid var(--borda); font-size: 12.5px; }
+  .resumo i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--c); margin-right: 6px; box-shadow: 0 0 0 1px rgba(255,255,255,.5); }
+  .grelha { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 14px; }
+  @media (max-width: 960px) { .grelha { grid-template-columns: 1fr; } }
+  #mapa { height: 520px; border-radius: 12px; border: 1px solid var(--borda); background: #0b0d10; }
+  .tabela { overflow: auto; max-height: 520px; border: 1px solid var(--borda); border-radius: 12px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 9px; border-bottom: 1px solid var(--borda); vertical-align: top; }
+  th { position: sticky; top: 0; background: var(--painel); color: var(--dim); font-weight: 600; font-size: 12px; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: rgba(255,255,255,.05); }
+  .pri { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--c); color: var(--t); font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+  .nota { color: var(--dim); font-size: 12.5px; }
+  .erro { color: #ffc27a; }
+  h2 { font-size: 14px; margin: 6px 0 0; color: var(--dim); text-transform: uppercase; letter-spacing: .6px; }
+  .leaflet-popup-content { font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <div><h1 id="titulo">Consulta dos dados</h1><small id="sub">Todos os pontos, ruas e zonas enviados pela apresentação</small></div>
+  <span class="esp"></span>
+  <input id="chave" type="password" placeholder="Chave de acesso" aria-label="Chave de acesso" autocomplete="off">
+  <button id="entrar" class="on">Entrar</button>
+</header>
+<main>
+  <div class="filtros">
+    <label>Freguesia<select id="f-freguesia"><option value="">Todas</option></select></label>
+    <label>Prioridade<select id="f-prioridade"><option value="">Todas</option></select></label>
+    <label>Competência<select id="f-competencia"><option value="">Todas</option></select></label>
+    <label>Tipo<select id="f-tipo"><option value="">Todos</option></select></label>
+    <label>Texto<input id="f-q" placeholder="nome, texto ou categoria"></label>
+    <span class="esp"></span>
+    <button id="csv">Exportar CSV</button>
+    <button id="geojson">Exportar GeoJSON</button>
+  </div>
+  <div class="resumo" id="resumo"></div>
+  <div class="nota" id="estado"></div>
+  <div class="grelha">
+    <div id="mapa"></div>
+    <div class="tabela"><table><thead><tr><th>Freguesia</th><th>Nome</th><th>Prioridade</th><th>Competência</th><th>Categorias</th><th>Autor</th><th>Recebido</th></tr></thead><tbody id="linhas"></tbody></table></div>
+  </div>
+  <section id="admin" hidden>
+    <h2>Chaves de acesso</h2>
+    <p class="nota">Cada pessoa usa a sua chave no painel «☁ Servidor central» da apresentação. Contribuidor envia e consulta; leitor só consulta; administração também gere as chaves.</p>
+    <div class="filtros">
+      <label>Nome<input id="c-nome" placeholder="por exemplo Junta de Freguesia de Belém"></label>
+      <label>Papel<select id="c-papel"><option value="contribuidor">Contribuidor</option><option value="leitor">Leitor</option><option value="admin">Administração</option></select></label>
+      <button id="c-criar" class="on">Criar chave</button>
+    </div>
+    <p id="c-nova" class="nota" hidden></p>
+    <div class="tabela" style="max-height:260px"><table><thead><tr><th>Nome</th><th>Papel</th><th>Criada</th><th></th></tr></thead><tbody id="chaves"></tbody></table></div>
+  </section>
+  <h2>Presets recebidos</h2>
+  <div class="tabela" style="max-height:340px"><table><thead><tr><th>Freguesia</th><th>Preset</th><th>Elementos</th><th>Revisão</th><th>Autor</th><th>Origem</th><th>Recebido</th><th></th></tr></thead><tbody id="presets"></tbody></table></div>
+</main>
+<script>
+'use strict';
+const API = location.origin + '/api/v1';
+const FREGUESIAS = { ajuda: 'Ajuda', alcantara: 'Alcântara', alvalade: 'Alvalade', areeiro: 'Areeiro', arroios: 'Arroios', 'avenidas-novas': 'Avenidas Novas', beato: 'Beato', belem: 'Belém', benfica: 'Benfica', 'campo-de-ourique': 'Campo de Ourique', campolide: 'Campolide', carnide: 'Carnide', estrela: 'Estrela', lumiar: 'Lumiar', marvila: 'Marvila', misericordia: 'Misericórdia', olivais: 'Olivais', 'parque-das-nacoes': 'Parque das Nações', 'penha-de-franca': 'Penha de França', 'santa-clara': 'Santa Clara', 'santa-maria-maior': 'Santa Maria Maior', 'santo-antonio': 'Santo António', 'sao-domingos-de-benfica': 'São Domingos de Benfica', 'sao-vicente': 'São Vicente' };
+const PRI = { urgente: ['Problema urgente', '#111111', '#fff'], importante: ['Situação importante', '#c62828', '#fff'], preocupante: ['Situação preocupante', '#fdd835', '#1a1405'], pouco: ['Pouco preocupante', '#43a047', '#1a1405'], sugestao: ['Sugestão', '#f5f5f5', '#1a1405'], sem: ['Sem classificação', '#9aa3ad', '#1a1405'] };
+const COMP = { governo: 'Governo', camara: 'Câmara Municipal', junta: 'Junta de Freguesia', sem: 'Por definir' };
+const TIPOS = { ponto: 'Ponto', grupo: 'Conjunto de pontos', desmaterializado: 'Ponto desmaterializado', rua: 'Rua', zona: 'Zona' };
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const nomeFreg = id => FREGUESIAS[id] || id;
+const data = s => s ? new Date(s).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' }) : '';
+let chave = ''; try { chave = localStorage.getItem('central-chave') || ''; } catch (e) { /* sem armazenamento local */ }
+$('#chave').value = chave;
+const opcoes = (sel, obj) => { for (const [k, v] of Object.entries(obj)) sel.insertAdjacentHTML('beforeend', `<option value="${k}">${esc(Array.isArray(v) ? v[0] : v)}</option>`); };
+opcoes($('#f-prioridade'), PRI); opcoes($('#f-competencia'), COMP); opcoes($('#f-tipo'), TIPOS);
+async function pedir(caminho, bruto) {
+  const r = await fetch(API + caminho, { headers: chave ? { Authorization: 'Bearer ' + chave } : {} });
+  if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(j.erro || 'erro ' + r.status); }
+  return bruto ? r.blob() : r.json();
+}
+const filtros = () => { const q = new URLSearchParams(); for (const k of ['freguesia', 'prioridade', 'competencia', 'tipo', 'q']) { const v = $('#f-' + k).value.trim(); if (v) q.set(k, v); } return q.toString(); };
+const mapa = L.map('mapa').setView([38.72, -9.15], 12);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(mapa);
+const camada = L.featureGroup().addTo(mapa); const porId = new Map();
+async function atualizar() {
+  $('#estado').textContent = 'A carregar…'; $('#estado').classList.remove('erro');
+  try {
+    const { elementos, total } = await pedir('/elementos?' + filtros());
+    camada.clearLayers(); porId.clear();
+    const conta = {};
+    $('#linhas').innerHTML = elementos.map((e, i) => {
+      const p = PRI[e.prioridade || 'sem']; conta[e.prioridade || 'sem'] = (conta[e.prioridade || 'sem'] || 0) + 1;
+      if (e.lat != null) { const m = L.circleMarker([e.lat, e.lon], { radius: 7, color: e.prioridade === 'urgente' ? '#fff' : '#111', weight: 1.5, fillColor: p[1], fillOpacity: .95 }).bindPopup(`<b>${esc(e.nome)}</b><br>${esc(nomeFreg(e.freguesia))} · ${esc(TIPOS[e.tipo] || e.tipo)}<br>${esc(p[0])}${e.competencia ? ' · ' + esc(COMP[e.competencia]) : ''}${e.dentroDe ? '<br>dentro de ' + esc(e.dentroDe) : ''}`); camada.addLayer(m); porId.set(i, m); }
+      return `<tr data-i="${i}"><td>${esc(nomeFreg(e.freguesia))}</td><td>${esc(e.nome)}${e.dentroDe ? `<br><span class="nota">em ${esc(e.dentroDe)}</span>` : ''}</td><td><span class="pri" style="--c:${p[1]};--t:${p[2]}">${esc(p[0])}</span></td><td>${esc(COMP[e.competencia] || '')}</td><td>${esc(e.categorias.join(', '))}</td><td>${esc(e.autor)}</td><td>${esc(data(e.recebido))}</td></tr>`;
+    }).join('') || '<tr><td colspan="7" class="nota">Nenhum elemento com estes filtros.</td></tr>';
+    $('#resumo').innerHTML = `<span><b>${total}</b> elemento${total === 1 ? '' : 's'}</span>` + Object.keys(PRI).filter(k => conta[k]).map(k => `<span><i style="--c:${PRI[k][1]}"></i>${esc(PRI[k][0])}: ${conta[k]}</span>`).join('');
+    if (camada.getLayers().length) mapa.fitBounds(camada.getBounds(), { padding: [30, 30], maxZoom: 16 });
+    $('#estado').textContent = '';
+  } catch (err) { $('#estado').textContent = 'Não foi possível ler os dados: ' + err.message + '.'; $('#estado').classList.add('erro'); }
+}
+async function carregarPresets() {
+  try {
+    const { presets } = await pedir('/presets');
+    $('#presets').innerHTML = presets.map(p => `<tr><td>${esc(nomeFreg(p.freguesia))}</td><td>${esc(p.titulo)}</td><td>${p.elementos}</td><td>${p.revisao}</td><td>${esc(p.autor || p.contribuidor || '')}</td><td>${esc(p.origem === 'aplicacao' ? 'aplicação' : p.origem)}</td><td>${esc(data(p.recebido))}</td><td><button data-f="${esc(p.freguesia)}" data-p="${esc(p.preset)}">Transferir JSON</button></td></tr>`).join('') || '<tr><td colspan="8" class="nota">Ainda não chegou nenhum preset.</td></tr>';
+    const fregs = [...new Set(presets.map(p => p.freguesia))].sort((a, b) => nomeFreg(a).localeCompare(nomeFreg(b), 'pt'));
+    const sel = $('#f-freguesia'), v = sel.value; sel.innerHTML = '<option value="">Todas</option>' + fregs.map(f => `<option value="${esc(f)}">${esc(nomeFreg(f))}</option>`).join(''); sel.value = v;
+  } catch (err) { $('#presets').innerHTML = `<tr><td colspan="8" class="erro">${esc(err.message)}</td></tr>`; }
+}
+function transferir(blob, nome) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nome; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000); }
+$('#linhas').addEventListener('click', e => { const tr = e.target.closest('tr[data-i]'); const m = tr && porId.get(+tr.dataset.i); if (m) { mapa.setView(m.getLatLng(), 17); m.openPopup(); } });
+$('#presets').addEventListener('click', async e => { const b = e.target.closest('button[data-p]'); if (!b) return; try { transferir(await pedir(`/presets/${b.dataset.f}/${b.dataset.p}`, true), `preset-${b.dataset.f}-${b.dataset.p}.json`); } catch (err) { alert(err.message); } });
+$('#csv').addEventListener('click', async () => { try { transferir(await pedir('/exportar.csv?' + filtros(), true), 'elementos.csv'); } catch (err) { $('#estado').textContent = err.message; } });
+$('#geojson').addEventListener('click', async () => { try { transferir(await pedir('/exportar.geojson?' + filtros(), true), 'elementos.geojson'); } catch (err) { $('#estado').textContent = err.message; } });
+let atraso = null;
+for (const id of ['f-freguesia', 'f-prioridade', 'f-competencia', 'f-tipo']) $('#' + id).addEventListener('change', atualizar);
+$('#f-q').addEventListener('input', () => { clearTimeout(atraso); atraso = setTimeout(atualizar, 300); });
+const PAPEL = { contribuidor: 'Contribuidor', leitor: 'Leitor', admin: 'Administração' };
+async function carregarChaves() { // só aparece com uma chave de administração
+  let e = {}; try { e = await pedir('/estado'); } catch (err) { /* sem ligação */ }
+  const admin = !!(e.chave && e.chave.papel === 'admin'); $('#admin').hidden = !admin; if (!admin) return;
+  try { const { chaves } = await pedir('/chaves'); $('#chaves').innerHTML = chaves.map(c => `<tr><td>${esc(c.nome)}</td><td>${esc(PAPEL[c.papel] || c.papel)}</td><td>${esc(data(c.criada))}</td><td><button data-retirar="${esc(c.id)}" data-nome="${esc(c.nome)}">Retirar</button></td></tr>`).join('') || '<tr><td colspan="4" class="nota">Ainda não há chaves (além da de administração de arranque).</td></tr>'; }
+  catch (err) { $('#chaves').innerHTML = `<tr><td colspan="4" class="erro">${esc(err.message)}</td></tr>`; }
+}
+async function pedirJSON(caminho, corpo) {
+  const r = await fetch(API + caminho, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + chave }, body: corpo ? JSON.stringify(corpo) : undefined });
+  const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.erro || 'erro ' + r.status); return j;
+}
+$('#c-criar').addEventListener('click', async () => {
+  const nome = $('#c-nome').value.trim(); if (!nome) { $('#c-nome').focus(); return; }
+  try { const j = await pedirJSON('/chaves', { nome, papel: $('#c-papel').value }); $('#c-nova').hidden = false; $('#c-nova').innerHTML = `Chave de «${esc(j.nome)}» (${esc(PAPEL[j.papel])}): <b><code>${esc(j.chave)}</code></b> · copia-a já e entrega-a à pessoa; não volta a ser mostrada.`; $('#c-nome').value = ''; carregarChaves(); }
+  catch (err) { $('#c-nova').hidden = false; $('#c-nova').textContent = 'Não foi possível criar a chave: ' + err.message; }
+});
+$('#chaves').addEventListener('click', async e => {
+  const b = e.target.closest('[data-retirar]'); if (!b || !confirm(`Retirar a chave de «${b.dataset.nome}»? Deixa de funcionar de imediato.`)) return;
+  try { await pedirJSON(`/chaves/${encodeURIComponent(b.dataset.retirar)}/retirar`); carregarChaves(); } catch (err) { alert(err.message); }
+});
+function entrar() { chave = $('#chave').value.trim(); try { localStorage.setItem('central-chave', chave); } catch (e) { /* sem armazenamento local */ } carregarChaves(); carregarPresets(); atualizar(); }
+$('#entrar').addEventListener('click', entrar);
+$('#chave').addEventListener('keydown', e => { if (e.key === 'Enter') entrar(); });
+fetch(API + '/estado').then(r => r.json()).then(e => { $('#titulo').textContent = e.nome || 'Consulta dos dados'; document.title = e.nome || document.title; }).catch(() => {});
+entrar();
+</script>
+</body>
+</html>

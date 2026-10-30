@@ -1,0 +1,115 @@
+# Aplicação de computador: a cada versão (tag v*), testa, gera os executáveis a partir do mesmo código da versão
+# browser e junta-os à release do GitHub (de onde a aplicação instalada também se atualiza sozinha).
+# Também se pode correr à mão (Actions → «Aplicação de computador» → Run workflow): os ficheiros ficam nos artefactos.
+name: Aplicação de computador
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: A versão do package.json é a da tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          v=$(node -p "require('./package.json').version")
+          [ "v$v" = "$GITHUB_REF_NAME" ] || { echo "package.json diz $v, a tag é $GITHUB_REF_NAME"; exit 1; }
+      - name: Dependências (sem o Electron, que aqui não faz falta)
+        run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      - name: Servidor da apresentação
+        run: node tools/testar-servidor.mjs
+      - name: Servidor central (Node e Worker do Cloudflare)
+        run: node servidor-central/testar.mjs
+        env:
+          WRANGLER_SEND_METRICS: 'false'
+
+  central:
+    # republica o servidor central no Cloudflare, se o repositório tiver o segredo CLOUDFLARE_API_TOKEN
+    needs: testes
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Publicar o Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+          WRANGLER_SEND_METRICS: 'false'
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then echo 'Sem CLOUDFLARE_API_TOKEN: o servidor central não é republicado.'; exit 0; fi
+          npm ci
+          npm run central:publicar
+
+  release:
+    needs: testes
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Criar a release, se ainda não existir
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --title "Campo de Ourique $GITHUB_REF_NAME" --notes "Ver o README e as notas da versão."
+
+  compilar:
+    needs: [testes, release]
+    if: ${{ !cancelled() && needs.testes.result == 'success' && (needs.release.result == 'success' || needs.release.result == 'skipped') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            alvo: --win
+          - os: ubuntu-latest
+            alvo: --linux
+          - os: macos-latest
+            alvo: --mac
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Gerar os executáveis
+        run: npx electron-builder ${{ matrix.alvo }} --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Verificar o arranque do programa gerado
+        if: matrix.os == 'windows-latest'
+        run: node desktop/testar-app.mjs "dist/win-unpacked/Campo de Ourique.exe"
+      - name: Juntar à release
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          shopt -s nullglob
+          ficheiros=(dist/*.exe dist/*.blockmap dist/latest*.yml dist/*.AppImage dist/*.dmg)
+          gh release upload "$GITHUB_REF_NAME" "${ficheiros[@]}" --clobber
+      - name: Guardar como artefacto (corrida à mão)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: aplicacao-${{ matrix.os }}
+          path: |
+            dist/*.exe
+            dist/*.AppImage
+            dist/*.dmg
+          retention-days: 14

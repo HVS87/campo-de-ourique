@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <script src="vendor/leaflet/leaflet.js"></script>
 <script src="dados/freguesias/index.js"></script>
+<script src="config.js"></script>
 <script>
 // Carrega só os dados da freguesia escolhida: ?freguesia=<id> no endereço, ou a última usada neste browser, ou Campo de Ourique.
 // Campo de Ourique tem os dados em dados/; as outras em dados/freguesias/<id>/ (geradas por tools/freguesias.mjs).
@@ -105,7 +106,7 @@
   .rodape a { color: #ccc; }
 
   /* ---- canto inferior esquerdo: zoom e camada de ruas ---- */
-  .leaflet-bottom.leaflet-left { margin: 0 0 calc(14px + env(safe-area-inset-bottom, 0px)) 14px; display: flex; flex-direction: column-reverse; gap: 8px; }
+  .leaflet-bottom.leaflet-left { margin: 0 0 calc(14px + env(safe-area-inset-bottom, 0px)) 14px; display: flex; flex-direction: column-reverse; align-items: flex-start; gap: 8px; } /* cada controlo com a sua largura (sem isto, o zoom esticava até à do botão «Camadas») */
   .leaflet-bottom.leaflet-left .leaflet-control { margin: 0; }
   .leaflet-bar { border: 1px solid var(--panel-border) !important; border-radius: 12px !important; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,.45) !important; }
   .leaflet-bar a { width: 36px !important; height: 36px !important; line-height: 36px !important; background: var(--panel) !important; color: var(--ink) !important; border-color: var(--panel-border) !important; }
@@ -303,6 +304,8 @@
   #barra-edicao .row.preset { border-top: 1px solid var(--panel-border); padding-top: 6px; }
   #barra-edicao .row.preset b { color: var(--ink-dim); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
   #barra-edicao .estado.auto { font-size: 11px; }
+  #barra-edicao .estado-central { font-size: 11px; color: var(--ink-dim); }
+  #barra-edicao .estado-central.pendente { color: #ffc27a; }
   #barra-edicao input.titulo { font: inherit; font-size: 12.5px; background: rgba(255,255,255,.06); border: 1px solid var(--panel-border); color: var(--ink); border-radius: 8px; padding: 6px 9px; width: 200px; }
   #barra-edicao input.titulo.sub { width: 240px; }
   .btn.perigo { border-color: rgba(255,120,120,.45); color: #ff9b9b; }
@@ -357,6 +360,11 @@
   #dialogo h2 { margin: 0 0 10px; font-size: 18px; }
   #dialogo p { margin: 0 0 8px; font-size: 14px; line-height: 1.5; color: #d8dde5; }
   #dialogo p.alerta { color: #ffc27a; font-size: 13px; }
+  #dialogo .campo-dialogo { display: block; font-size: 12.5px; color: var(--ink-dim); margin: 4px 0 6px; }
+  #dialogo .campo-dialogo select { display: block; width: 100%; margin-top: 6px; font-size: 13.5px; }
+  #dialogo .campo-dialogo + .campo-dialogo { margin-top: 10px; }
+  #dialogo .campo-dialogo input { display: block; width: 100%; margin-top: 6px; font: inherit; font-size: 14px; background: rgba(255,255,255,.06); border: 1px solid var(--panel-border); color: var(--ink); border-radius: 8px; padding: 8px 10px; }
+  #dialogo .campo-dialogo input:focus { outline: none; border-color: rgba(243,195,91,.6); }
   #dialogo .botoes { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 16px; }
 
   /* ---- mapa geral da cidade: as 24 freguesias ---- */
@@ -548,7 +556,9 @@
     <button class="btn" id="btn-importar" title="Carregar um preset exportado (.json) ou um conteudos.js">Importar…</button>
     <button class="btn" id="btn-exportar" title="Transferir o preset atual em JSON">Exportar</button>
     <button class="btn" id="btn-transferir" title="Transferir o ficheiro no formato de dados/conteudos.js">Transferir conteudos.js</button>
-    <button class="btn" id="btn-repor-ficheiro" title="Descartar o trabalho em curso e voltar ao que está em dados/conteudos.js">Repor do ficheiro</button>
+    <button class="btn" id="btn-repor-ficheiro" title="Descartar o trabalho em curso e voltar ao preset tal como está gravado">Repor do ficheiro</button>
+    <button class="btn" id="btn-central" title="Ligação ao servidor central, onde se recolhem e consultam os dados de todos">☁ Servidor central</button>
+    <span class="estado-central" id="estado-central"></span>
     <input type="file" id="ficheiro-preset" accept=".json,.js,application/json,text/javascript" hidden>
     <span class="estado auto" id="estado-auto" title="O trabalho em curso fica guardado neste browser e é reposto ao abrir a página">gravação automática ligada</span>
   </div>
@@ -1472,8 +1482,8 @@ function novaCategoria() {
   mostrarCategoria(cat);
   setTimeout(() => { const i = modalConteudo.querySelector('input[name=cat-nome]'); if (i) { i.focus(); i.select(); } }, 60);
 }
-function apagarCategoria(cat) {
-  if (!confirm(`Apagar a categoria «${cat.nome}»? Os elementos ficam, só perdem a categoria.`)) return;
+async function apagarCategoria(cat) {
+  if (!(await confirmar('Apagar categoria', `Apagar a categoria «${esc(cat.nome)}»? Os elementos ficam, só perdem a categoria.`, 'Apagar', true))) return;
   C.categorias.splice(C.categorias.indexOf(cat), 1); categoriasAtivas.delete(cat.id);
   if (visitaAtual === cat.id) { visitaAtual = null; if (guiaoAberto()) ligarGuiao(false); }
   categoriaAtual = null; fecharCartao(); marcarAlterado(); construirIndice(); construirPesquisa(); aplicarFiltro();
@@ -1605,17 +1615,38 @@ function aviso(txt, ms) {
 }
 // ---------- diálogo com várias escolhas (devolve o id do botão; Esc ou clicar fora = «cancelar») ----------
 const dialogoEl = $('#dialogo');
-function dialogo({ titulo, texto, alerta, botoes }) {
+// Com «campo» ({ rotulo, valor }) tem uma caixa de texto e devolve { r, valor }; Enter escolhe o botão principal.
+// (Substitui prompt() e confirm(): a aplicação de computador não tem prompt(), e assim o aspeto é o mesmo em todo o lado.)
+// Com «campos» ([{ nome, rotulo, valor, tipo?, opcoes? }]) tem vários campos (opcoes: [{ valor, texto }] faz uma lista) e devolve { r, valores }.
+function dialogo({ titulo, texto, alerta, botoes, campo, campos }) {
+  const htmlCampo = c => `<label class="campo-dialogo">${esc(c.rotulo || '')}${c.opcoes ? `<select class="seletor" name="${esc(c.nome || '')}">${c.opcoes.map(o => `<option value="${esc(o.valor)}">${esc(o.texto)}</option>`).join('')}</select>` : `<input type="${c.tipo || 'text'}" name="${esc(c.nome || '')}" value="${esc(c.valor || '')}" spellcheck="false" autocomplete="off">`}</label>`;
   return new Promise(resolve => {
-    dialogoEl.querySelector('.caixa').innerHTML = `<h2 id="dialogo-titulo">${esc(titulo)}</h2>${texto ? `<p>${texto}</p>` : ''}${alerta ? `<p class="alerta">⚠ ${alerta}</p>` : ''}<div class="botoes">${botoes.map(b => `<button type="button" class="btn ${b.classe || ''}" data-r="${b.id}">${esc(b.texto)}</button>`).join('')}</div>`;
+    dialogoEl.querySelector('.caixa').innerHTML = `<h2 id="dialogo-titulo">${esc(titulo)}</h2>${texto ? `<p>${texto}</p>` : ''}${campo ? htmlCampo(campo) : ''}${(campos || []).map(htmlCampo).join('')}${alerta ? `<p class="alerta">⚠ ${alerta}</p>` : ''}<div class="botoes">${botoes.map(b => `<button type="button" class="btn ${b.classe || ''}" data-r="${b.id}">${esc(b.texto)}</button>`).join('')}</div>`;
     const anterior = document.activeElement;
-    const fim = r => { dialogoEl.classList.remove('aberto'); dialogoEl.removeEventListener('click', clique); window.removeEventListener('keydown', tecla, true); if (anterior && anterior.focus) anterior.focus(); resolve(r); };
+    const entrada = dialogoEl.querySelector('.campo-dialogo input, .campo-dialogo select');
+    const fim = r => {
+      const valor = entrada ? entrada.value : undefined, valores = {};
+      dialogoEl.querySelectorAll('.campo-dialogo [name]').forEach(e => { valores[e.name] = e.value; });
+      dialogoEl.classList.remove('aberto'); dialogoEl.removeEventListener('click', clique); window.removeEventListener('keydown', tecla, true); if (anterior && anterior.focus) anterior.focus();
+      resolve(campos ? { r, valores } : campo ? { r, valor } : r);
+    };
     const clique = e => { const b = e.target.closest('[data-r]'); if (b) fim(b.dataset.r); else if (e.target === dialogoEl) fim('cancelar'); };
-    const tecla = e => { if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); fim('cancelar'); } };
+    const tecla = e => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); fim('cancelar'); }
+      else if (e.key === 'Enter' && e.target.matches && e.target.matches('.campo-dialogo input')) { e.preventDefault(); e.stopImmediatePropagation(); const p = botoes.find(b => b.classe === 'on') || botoes[botoes.length - 1]; fim(p.id); }
+    };
     dialogoEl.addEventListener('click', clique); window.addEventListener('keydown', tecla, true);
     dialogoEl.classList.add('aberto');
-    const f = dialogoEl.querySelector('.btn.on') || dialogoEl.querySelector('.btn'); if (f) f.focus();
+    if (entrada) { entrada.focus(); if (entrada.select) entrada.select(); } else { const f = dialogoEl.querySelector('.btn.on') || dialogoEl.querySelector('.btn'); if (f) f.focus(); }
   });
+}
+// confirmação simples (sim/não) e pergunta com texto, no diálogo da página
+async function confirmar(titulo, texto, sim, perigo) {
+  return (await dialogo({ titulo, texto, botoes: [{ id: 'cancelar', texto: 'Cancelar' }, { id: 'sim', texto: sim || 'Sim', classe: perigo ? 'perigo' : 'on' }] })) === 'sim';
+}
+async function perguntarTexto(titulo, rotulo, valor, ok) {
+  const { r, valor: v } = await dialogo({ titulo, campo: { rotulo, valor }, botoes: [{ id: 'cancelar', texto: 'Cancelar' }, { id: 'ok', texto: ok || 'OK', classe: 'on' }] });
+  return r === 'ok' ? v : null;
 }
 // alterações por guardar: guardar, descartar (sem recuperação) ou continuar a editar
 function perguntarGuardar(titulo, verbo) {
@@ -1784,7 +1815,7 @@ function carregarPresetFicheiro(id) { // carrega dados/presets/<id>.js como scri
 }
 async function mudarPreset(id, silencioso) {
   if (!id || id === C.preset) return;
-  if (alterado && confirm(`Guardar as alterações de «${C.titulo}» antes de trocar de preset?`)) await guardar();
+  if (alterado && (await dialogo({ titulo: 'Trocar de preset', texto: `Guardar as alterações de «${esc(C.titulo)}» antes de trocar? Se não guardares, ficam na gravação automática deste preset.`, botoes: [{ id: 'nao', texto: 'Trocar sem guardar' }, { id: 'sim', texto: 'Guardar e trocar', classe: 'on' }] })) === 'sim') await guardar();
   autoGuardarJa(); // sem guardar, as alterações ficam na gravação automática deste preset
   let d = null; try { if (PRESETS_LOCAIS.has(id) && lerAutosaveDe(id)) throw new Error('só neste browser'); d = clonar(await carregarPresetFicheiro(id)); } catch (err) { if (!lerAutosaveDe(id)) { aviso('Não foi possível abrir o preset: ' + err.message, 5000); preencherPresets(); return; } }
   let auto = lerAutosaveDe(id); const base = d || auto.dados;
@@ -1800,10 +1831,10 @@ async function mudarPreset(id, silencioso) {
 }
 function atualizarPresets(lista) { PRESETS.length = 0; PRESETS.push(...lista); for (const id of [...PRESETS_LOCAIS]) { const r = lerAutosaveDe(id); if (PRESETS.some(p => p.id === id)) PRESETS_LOCAIS.delete(id); else if (r) PRESETS.push({ id, nome: r.dados.titulo || id, subtitulo: r.dados.subtitulo || '', elementos: (r.dados.elementos || []).length, local: true }); } garantirPresetAtual(); preencherPresets(); }
 async function novoPreset() {
-  const nome = prompt('Nome do novo preset (fica vazio, pronto a encher):', 'Novo preset'); if (nome === null) return;
+  const nome = await perguntarTexto('Novo preset', 'Nome do novo preset (fica vazio, pronto a encher)', 'Novo preset', 'Criar'); if (nome === null) return;
   const limpoNome = nome.trim() || 'Novo preset';
   let id = idDe(limpoNome); for (let k = 2; PRESETS.some(p => p.id === id); k++) id = idDe(limpoNome) + '-' + k;
-  if (alterado && confirm(`Guardar as alterações de «${C.titulo}» antes de criar o preset novo?`)) await guardar();
+  if (alterado && (await confirmar('Preset novo', `Guardar as alterações de «${esc(C.titulo)}» antes de criar o preset novo? Se não guardares, ficam na gravação automática.`, 'Guardar primeiro'))) await guardar();
   autoGuardarJa();
   PRESETS.push({ id, nome: limpoNome, subtitulo: '', elementos: 0 });
   carregar({ titulo: limpoNome, subtitulo: '', elementos: [], categorias: [] }); C.preset = id; FICHEIRO = clonar(serializar());
@@ -1814,7 +1845,7 @@ async function novoPreset() {
 async function apagarPreset() {
   if (PRESETS.length < 2) { aviso('Não é possível apagar o único preset.', 3000); return; }
   const id = C.preset, nome = C.titulo || id;
-  if (!confirm(`Apagar o preset «${nome}» e o ficheiro dados/presets/${id}.js?\n\nRecomenda-se exportá-lo antes. Fica uma cópia .apagado.bak na pasta.`)) return;
+  if (!(await confirmar('Apagar preset', `Apagar o preset «${esc(nome)}» e o ficheiro ${esc(BASE)}presets/${esc(id)}.js? Recomenda-se exportá-lo antes. Fica uma cópia .apagado.bak na pasta.`, 'Apagar', true))) return;
   const outro = PRESETS.find(p => p.id !== id).id;
   PRESETS.splice(PRESETS.findIndex(p => p.id === id), 1);
   cancelarAuto(); try { localStorage.removeItem(chaveAuto(id)); } catch (err) { /* sem armazenamento local */ }
@@ -1849,7 +1880,7 @@ async function importarPreset(ficheiro) {
   }
   await acrescentarPresetImportado(d);
 }
-async function acrescentarPresetImportado(d) {
+async function acrescentarPresetImportado(d, opcoes = {}) {
   const base = (d.titulo || 'Preset importado').trim() || 'Preset importado';
   let nome = base; for (let k = 1; PRESETS.some(p => p.nome === nome); k++) nome = base + (k === 1 ? ' (importado)' : ` (importado ${k})`);
   let id = idDe(nome); for (let k = 2; PRESETS.some(p => p.id === id); k++) id = idDe(nome) + '-' + k;
@@ -1859,7 +1890,7 @@ async function acrescentarPresetImportado(d) {
   carregar(d); C.preset = id; FICHEIRO = clonar(serializar());
   try { localStorage.setItem(CHAVE_ATIVO, id); } catch (err) { /* sem armazenamento local */ }
   preencherPresets();
-  if (!(await verificarServidor()) || (await guardar()) !== 'servidor') { PRESETS_LOCAIS.add(id); preencherPresets(); marcarAlterado(); autoGuardarJa(); }
+  if (!(await verificarServidor()) || (await guardar(opcoes)) !== 'servidor') { PRESETS_LOCAIS.add(id); preencherPresets(); marcarAlterado(); autoGuardarJa(); }
   aviso(`«${nome}» acrescentado como preset alternativo de ${FREG.nome}${PRESETS_LOCAIS.has(id) ? ' (só neste browser; exporta-o para o guardares)' : ''}. Troca de preset no índice (☰).`, 7000);
 }
 // descarta o trabalho em curso: volta ao preset tal como está gravado
@@ -1869,8 +1900,8 @@ function descartarAlteracoes() {
   try { if (PRESETS_LOCAIS.has(id)) autoGuardar(); else localStorage.removeItem(chaveAuto()); } catch (err) { /* sem armazenamento local */ } // um preset sem ficheiro fica só com a versão de partida
   estado('Alterações descartadas'); $('#estado-auto').textContent = 'gravação automática ligada';
 }
-function reporDoFicheiro() {
-  if (!confirm('Descartar o trabalho em curso e voltar ao preset tal como está gravado?')) return;
+async function reporDoFicheiro() {
+  if (!(await confirmar('Repor do ficheiro', 'Descartar o trabalho em curso e voltar ao preset tal como está gravado? Não se pode desfazer.', 'Descartar', true))) return;
   descartarAlteracoes(); estado('Reposto do ficheiro'); aviso('Reposto o preset gravado.', 3000);
 }
 async function arrancarPresets() { // ao abrir: ativa o preset escolhido na sessão anterior (se for outro) e repõe a gravação automática
@@ -1890,7 +1921,7 @@ async function restaurarAutosave() { // repõe o preset em curso da sessão ante
   estado('Alterações por guardar (recuperadas de ' + new Date(r.quando).toLocaleString('pt-PT') + ')', true);
   aviso('Trabalho da sessão anterior recuperado; ainda não está guardado no ficheiro do preset.', 7000);
 }
-function limpo(el) {
+function limpo(el, completo) { // completo: as ruas levam também o traçado (para o servidor central, que não tem ruas.js)
   const c = { id: el.id, tipo: el.tipo, nome: el.nome };
   if (el.icone) c.icone = el.icone;
   if (el.prioridade) c.prioridade = el.prioridade;
@@ -1899,12 +1930,12 @@ function limpo(el) {
   c.fotos = (el.fotos || []).map(f => typeof f === 'string' ? { src: f, legenda: '' } : { src: f.src, legenda: f.legenda || '' });
   if (el.tipo === 'ponto') c.pos = el.pos.slice();
   if (el.tipo === 'grupo') c.pontos = el.pontos.map(p => p.slice());
-  if (el.tipo === 'rua') { if (el.rua) c.rua = el.rua; else c.linhas = el.linhas.map(l => l.map(p => p.slice())); }
-  if (el.tipo === 'zona') { c.poligono = el.poligono.map(p => p.slice()); if (el.lote) c.lote = el.lote; c.filhos = el.filhos.map(limpo); }
+  if (el.tipo === 'rua') { if (el.rua) c.rua = el.rua; if (!el.rua || completo) c.linhas = el.linhas.map(l => l.map(p => p.slice())); }
+  if (el.tipo === 'zona') { c.poligono = el.poligono.map(p => p.slice()); if (el.lote) c.lote = el.lote; c.filhos = el.filhos.map(f => limpo(f, completo)); }
   return c;
 }
-function serializar() {
-  const d = { preset: C.preset, freguesia: FREG.id, titulo: C.titulo || FREG.nome, subtitulo: C.subtitulo || '', elementos: ELEMENTOS.map(limpo) };
+function serializar(completo) {
+  const d = { preset: C.preset, freguesia: FREG.id, titulo: C.titulo || FREG.nome, subtitulo: C.subtitulo || '', elementos: ELEMENTOS.map(e => limpo(e, completo)) };
   if (Array.isArray(C.visita)) d.visita = C.visita.filter(id => POR_ID[id]);
   if (C.categorias && C.categorias.length) d.categorias = C.categorias.map(c => ({ id: c.id, nome: c.nome, icone: c.icone || '', cor: c.cor, membros: c.membros.filter(id => POR_ID[id]) }));
   return d;
@@ -1931,8 +1962,9 @@ async function verificarServidor() { // o servidor local (tools/serve.mjs) aceit
   barra.classList.toggle('offline', !servidorOk);
   return servidorOk;
 }
-async function guardar() {
+async function guardar(opcoes = {}) {
   const dados = serializar();
+  if (!opcoes.semCentral && CONFIG_CENTRAL.enviarAoGuardar !== false) enfileirarCentral(serializar(true)); // também para o servidor central, se houver (com fila, se não houver rede)
   if (await verificarServidor()) {
     try {
       const r = await fetch('/guardar' + qsFreguesia, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) });
@@ -1946,6 +1978,119 @@ async function guardar() {
   }
   autoGuardarJa(); transferir(dados); // sem servidor o trabalho fica também na gravação automática
   return 'transferido';
+}
+// ---------- servidor central (opcional): recolhe os presets guardados por todos e permite consultá-los ----------
+// O endereço vem de config.js (para todos) ou do painel «☁ Servidor central» (para este browser). Cada «Guardar» põe o
+// preset numa fila, enviada logo que há rede (ao abrir, ao voltar a rede e de minuto a minuto); a fila fica no browser.
+// API: ver servidor-central/README.md. Sem endereço, nada disto corre e a apresentação funciona só localmente.
+const CONFIG_CENTRAL = window.CONFIG_CENTRAL || {};
+const CHAVE_CENTRAL = 'co-central', CHAVE_FILA = 'co-central-fila';
+let AMBIENTE = { app: false, versao: '' }, estadoCentral = '', aEnviar = false;
+function lerCentral() { let c = {}; try { c = JSON.parse(localStorage.getItem(CHAVE_CENTRAL) || '{}'); } catch (err) { c = {}; } return { url: (c.url !== undefined ? c.url : CONFIG_CENTRAL.url) || '', autor: c.autor || '', chave: c.chave || '' }; }
+function gravarCentral(c) { try { localStorage.setItem(CHAVE_CENTRAL, JSON.stringify(c)); } catch (err) { /* sem armazenamento local */ } }
+const urlCentral = () => lerCentral().url.trim().replace(/\/+$/, '');
+function filaCentral() { try { return JSON.parse(localStorage.getItem(CHAVE_FILA) || '[]'); } catch (err) { return []; } }
+function gravarFila(f) { try { localStorage.setItem(CHAVE_FILA, JSON.stringify(f)); return true; } catch (err) { aviso('Sem espaço neste browser para a fila do servidor central (fotos embebidas?).', 6000); return false; } }
+async function pedirCentral(caminho, opcoes = {}) {
+  const c = lerCentral(); if (!urlCentral()) throw Object.assign(new Error('o servidor central não está configurado'), { codigo: 0 });
+  let r;
+  try { r = await fetch(urlCentral() + caminho, { ...opcoes, headers: { 'Content-Type': 'application/json', ...(c.chave ? { Authorization: 'Bearer ' + c.chave } : {}) }, signal: AbortSignal.timeout(30000) }); }
+  catch (err) { throw Object.assign(new Error('sem ligação ao servidor central'), { codigo: 0 }); }
+  if (r.ok && opcoes.texto) return r.text(); // o objeto tal como está (cópia local)
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(j.erro || 'erro ' + r.status), { codigo: r.status });
+  return j;
+}
+// ---- cópia local do servidor central: de tempos a tempos (CONFIG_CENTRAL.copiaHoras, 24 h por omissão) traz os objetos
+// novos ou mudados para uma pasta deste computador, através do servidor local (aplicação de computador ou npm start)
+const CHAVE_COPIA = 'co-central-copia', HORAS_COPIA = Number(CONFIG_CENTRAL.copiaHoras !== undefined ? CONFIG_CENTRAL.copiaHoras : 24);
+let aCopiar = false;
+function estadoCopia() { try { return JSON.parse(localStorage.getItem(CHAVE_COPIA) || 'null'); } catch (err) { return null; } }
+const copiaEmAtraso = () => { const e = estadoCopia(); return !e || Date.now() - e.quando > HORAS_COPIA * 3600e3; };
+async function copiarCentral(manual) {
+  if (aCopiar) return;
+  if (!urlCentral()) { if (manual) aviso('Configura primeiro o servidor central.', 4000); return; }
+  if (!(await verificarServidor())) { if (manual) aviso('A cópia local precisa da aplicação de computador ou do servidor local (npm start).', 6000); return; }
+  aCopiar = true; if (manual) aviso('A copiar o servidor central para este computador…');
+  try {
+    const { objetos } = await pedirCentral('/copia');
+    const locais = await fetch('copia-central/versoes.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : {}).catch(() => ({}));
+    const novos = objetos.filter(o => locais[o.chave] !== o.versao);
+    for (const o of novos) {
+      const texto = await pedirCentral('/objeto?chave=' + encodeURIComponent(o.chave), { texto: true });
+      const r = await fetch('/copia-central?chave=' + encodeURIComponent(o.chave) + '&versao=' + encodeURIComponent(o.versao), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: texto });
+      if (!r.ok) throw new Error('não foi possível gravar a cópia (' + r.status + ')');
+    }
+    try { localStorage.setItem(CHAVE_COPIA, JSON.stringify({ quando: Date.now(), objetos: objetos.length, novos: novos.length })); } catch (err) { /* sem armazenamento local */ }
+    if (manual) aviso(`Cópia local em dia: ${novos.length} ficheiro${novos.length === 1 ? '' : 's'} novo${novos.length === 1 ? '' : 's'} ou mudado${novos.length === 1 ? '' : 's'}, ${objetos.length} no total.`, 6000);
+  } catch (err) { if (manual) aviso('A cópia local falhou: ' + err.message + '.', 6000); }
+  finally { aCopiar = false; }
+}
+setInterval(() => { if (HORAS_COPIA > 0 && urlCentral() && copiaEmAtraso()) copiarCentral(false); }, 3600e3);
+function enfileirarCentral(dados) {
+  if (!urlCentral()) return;
+  const f = filaCentral().filter(x => !(x.freguesia === FREG.id && x.preset === dados.preset)); // só a versão mais recente de cada preset
+  f.push({ freguesia: FREG.id, preset: dados.preset, quando: Date.now(), dados });
+  if (gravarFila(f)) { atualizarEstadoCentral(); enviarFilaCentral(); }
+}
+async function enviarFilaCentral() {
+  if (aEnviar || !urlCentral() || !filaCentral().length) { atualizarEstadoCentral(); return; }
+  if (navigator.onLine === false) { estadoCentral = 'sem rede'; atualizarEstadoCentral(); return; }
+  aEnviar = true;
+  try {
+    for (let f = filaCentral(); f.length; f = filaCentral()) {
+      const x = f[0];
+      try {
+        await pedirCentral('/presets/' + encodeURIComponent(x.freguesia) + '/' + encodeURIComponent(x.preset), { method: 'POST', body: JSON.stringify({ dados: x.dados, autor: lerCentral().autor, origem: AMBIENTE.app ? 'aplicacao' : 'browser', versao: AMBIENTE.versao || '', quando: x.quando }) });
+        estadoCentral = 'enviado às ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5);
+      } catch (err) {
+        // sem rede, servidor em baixo ou chave errada: fica na fila e tenta-se mais tarde; um preset recusado (400, 409, 413) sai da fila
+        if (err.codigo && err.codigo >= 400 && err.codigo < 500 && err.codigo !== 401 && err.codigo !== 403 && err.codigo !== 408 && err.codigo !== 429) aviso(`O servidor central recusou «${x.preset}»: ${err.message}.`, 7000);
+        else { estadoCentral = err.message; break; }
+      }
+      gravarFila(filaCentral().filter(y => !(y.freguesia === x.freguesia && y.preset === x.preset && y.quando === x.quando)));
+    }
+  } finally { aEnviar = false; atualizarEstadoCentral(); }
+}
+function atualizarEstadoCentral() {
+  const el = $('#estado-central'); if (!el) return;
+  const n = filaCentral().length;
+  el.textContent = !urlCentral() ? '' : n ? `central: ${n} por enviar${estadoCentral && !aEnviar ? ' (' + estadoCentral + ')' : ''}` : 'central: em dia' + (estadoCentral.startsWith('enviado') ? ' · ' + estadoCentral : '');
+  el.classList.toggle('pendente', n > 0);
+}
+window.addEventListener('online', enviarFilaCentral);
+setInterval(() => { if (filaCentral().length) enviarFilaCentral(); }, 60000);
+async function painelCentral() {
+  const c = lerCentral(), n = filaCentral().length, ec = estadoCopia();
+  const txtCopia = urlCentral() ? `<br>Cópia neste computador: ${ec ? new Date(ec.quando).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' }) + ` (${ec.objetos} ficheiros)` : 'ainda não feita'}${HORAS_COPIA > 0 ? `, renovada de ${HORAS_COPIA} em ${HORAS_COPIA} horas` : ''}${AMBIENTE.copia ? ', em ' + esc(AMBIENTE.copia) : ''}.` : '';
+  const { r, valores } = await dialogo({ titulo: 'Servidor central',
+    texto: `Cada «Guardar» envia também o preset para um servidor central, onde se recolhem e consultam os dados de todas as freguesias. Sem rede, os envios ficam numa fila neste ${AMBIENTE.app ? 'computador' : 'browser'} e seguem quando a rede voltar.${urlCentral() ? `<br><b>${n ? n + ' envio' + (n > 1 ? 's' : '') + ' por fazer' : 'Tudo enviado'}</b>${estadoCentral ? ' · ' + esc(estadoCentral) : ''}.` : ''}${txtCopia}`,
+    campos: [
+      { nome: 'url', rotulo: 'Endereço da API (por exemplo https://dados.exemplo.pt/api/v1; vazio = sem servidor central)', valor: c.url },
+      { nome: 'autor', rotulo: 'O teu nome (fica registado com cada envio)', valor: c.autor },
+      { nome: 'chave', rotulo: 'Chave de acesso (dada por quem gere o servidor)', valor: c.chave, tipo: 'password' }],
+    botoes: [{ id: 'cancelar', texto: 'Fechar' }, { id: 'consultar', texto: 'Consultar os dados' }, { id: 'abrir', texto: 'Abrir do servidor…' }, { id: 'copiar', texto: 'Copiar agora para este computador' }, { id: 'testar', texto: 'Testar a ligação' }, { id: 'gravar', texto: 'Guardar', classe: 'on' }] });
+  if (r === 'cancelar') return;
+  gravarCentral({ url: valores.url.trim(), autor: valores.autor.trim(), chave: valores.chave.trim() }); estadoCentral = ''; atualizarEstadoCentral();
+  if (!urlCentral()) { aviso('Sem servidor central: os presets ficam só neste ' + (AMBIENTE.app ? 'computador' : 'browser') + ' e nos ficheiros.', 4000); return; }
+  if (r === 'testar') {
+    try { const e = await pedirCentral('/estado'); await pedirCentral('/presets?freguesia=' + encodeURIComponent(FREG.id)); aviso(`Ligação ao servidor central «${e.nome || urlCentral()}» certa; a chave dá acesso.`, 5000); }
+    catch (err) { aviso('Ligação ao servidor central falhou: ' + err.message + '.', 6000); }
+  } else if (r === 'abrir') abrirDoCentral();
+  else if (r === 'copiar') copiarCentral(true);
+  else if (r === 'consultar') window.open(urlCentral().replace(/\/api\/v\d+$/, '') + '/', '_blank', 'noopener');
+  else { aviso('Ligação ao servidor central guardada.', 2500); enviarFilaCentral(); }
+}
+async function abrirDoCentral() { // traz um preset do servidor central como preset alternativo desta freguesia
+  let lista; try { lista = (await pedirCentral('/presets?freguesia=' + encodeURIComponent(FREG.id))).presets || []; } catch (err) { aviso('Não foi possível ler o servidor central: ' + err.message + '.', 6000); return; }
+  if (!lista.length) { aviso(`O servidor central ainda não tem presets de ${FREG.nome}.`, 4000); return; }
+  const data = q => q ? new Date(q).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' }) : '';
+  const { r, valores } = await dialogo({ titulo: 'Abrir do servidor central', texto: `Presets de ${esc(FREG.nome)} no servidor central. O escolhido entra como preset alternativo, sem mexer nos que já tens.`,
+    campos: [{ nome: 'p', rotulo: 'Preset', opcoes: lista.map(p => ({ valor: p.preset, texto: `${p.titulo || p.preset} · ${p.elementos} elementos · ${p.autor || 'sem autor'} · ${data(p.recebido)}` })) }],
+    botoes: [{ id: 'cancelar', texto: 'Cancelar' }, { id: 'abrir', texto: 'Abrir como alternativo', classe: 'on' }] });
+  if (r !== 'abrir') return;
+  try { const j = await pedirCentral('/presets/' + encodeURIComponent(FREG.id) + '/' + encodeURIComponent(valores.p)); await acrescentarPresetImportado(j.dados, { semCentral: true }); }
+  catch (err) { aviso('Não foi possível abrir o preset: ' + err.message + '.', 6000); }
 }
 function transferir(dados) {
   const a = document.createElement('a');
@@ -2044,7 +2189,7 @@ function ruaMaisProxima(ll) { // em metros (aproximados) até ao troço mais pr�
 async function criarAqui(tipo) {
   let ll; try { ll = await localizar(); } catch (err) { aviso('Sem localização: ' + err.message + '.', 5000); return; }
   $('#aviso').classList.remove('aberto');
-  if (!LIMITES.some(a => dentro(ll, a)) && !confirm(`A tua localização fica fora de ${FREG.nome}. Criar mesmo assim nesse sítio?`)) return;
+  if (!LIMITES.some(a => dentro(ll, a)) && !(await confirmar('Fora da freguesia', `A tua localização fica fora de ${esc(FREG.nome)}. Criar mesmo assim nesse sítio?`, 'Criar'))) return;
   map.flyTo(ll, Math.max(map.getZoom(), 18), { duration: .8 });
   if (tipo === 'ponto') { porFerramenta('mover'); novoPonto(ll); return; }
   const r = ruaMaisProxima(ll);
@@ -2055,9 +2200,9 @@ function removerDoModelo(el) {
   const lista = el.pai ? el.pai.filhos : ELEMENTOS; const i = lista.indexOf(el); if (i >= 0) lista.splice(i, 1);
   delete POR_ID[el.id]; for (const f of el.filhos || []) delete POR_ID[f.id];
 }
-function apagar(el) {
+async function apagar(el) {
   const n = (el.filhos || []).length;
-  if (!confirm(`Apagar «${el.nome}»${n ? ` e os seus ${n} ponto${n > 1 ? 's' : ''}` : ''}?`)) return;
+  if (!(await confirmar('Apagar elemento', `Apagar «${esc(el.nome)}»${n ? ` e os seus ${n} ponto${n > 1 ? 's' : ''}` : ''}?`, 'Apagar', true))) return;
   limparSelecao(); fecharCartao(); removerDoModelo(el);
   const ids = [el.id, ...(el.filhos || []).map(f => f.id)]; // sai também das categorias e da visita
   for (const c of C.categorias) c.membros = c.membros.filter(id => !ids.includes(id));
@@ -2250,12 +2395,12 @@ modalConteudo.addEventListener('click', async e => {
   }
   if (!selecionado) return;
   const el = selecionado, ac = b.dataset.ac, form = modalConteudo.querySelector('form'), ta = form.querySelector('textarea[name=texto]');
-  if (ac === 'ligacao') { const url = prompt('Endereço da ligação:', 'https://'); if (url) envolver(ta, `<a href="${esc(url.trim())}" target="_blank" rel="noopener">`, '</a>', 'texto da ligação'); }
+  if (ac === 'ligacao') { const url = await perguntarTexto('Ligação', 'Endereço da ligação', 'https://', 'Inserir'); if (url && url.trim() !== 'https://') envolver(ta, `<a href="${esc(url.trim())}" target="_blank" rel="noopener">`, '</a>', 'texto da ligação'); }
   else if (ac === 'negrito') envolver(ta, '<b>', '</b>', 'texto');
   else if (ac === 'italico') envolver(ta, '<i>', '</i>', 'texto');
   else if (ac === 'foto-remover') { el.fotos.splice(+b.dataset.i, 1); marcarAlterado(); mostrarInfo(el, modal.classList.contains('lado') ? 'lado' : 'baixo'); }
   else if (ac === 'foto-ficheiro') { const inp = form.querySelector('input[type=file]'); inp.onchange = () => adicionarFicheiros(el, [...inp.files]); inp.click(); }
-  else if (ac === 'foto-url') { const u = prompt('Endereço ou caminho da imagem (por exemplo assets/fotos/nome.jpg):'); if (u) { el.fotos.push({ src: u.trim(), legenda: '' }); marcarAlterado(); mostrarInfo(el, modal.classList.contains('lado') ? 'lado' : 'baixo'); } }
+  else if (ac === 'foto-url') { const u = await perguntarTexto('Foto por endereço', 'Endereço ou caminho da imagem (por exemplo assets/fotos/nome.jpg)', '', 'Acrescentar'); if (u && u.trim()) { el.fotos.push({ src: u.trim(), legenda: '' }); marcarAlterado(); mostrarInfo(el, modal.classList.contains('lado') ? 'lado' : 'baixo'); } }
   else if (ac === 'grupo-tirar') {
     if (el.pontos.length <= 1) { aviso('Um conjunto precisa de pelo menos um ponto; para o eliminar, apaga o conjunto.', 4000); return; }
     el.pontos.splice(+b.dataset.i, 1); construir(); marcarAlterado(); selecionar(el, false);
@@ -2308,6 +2453,9 @@ $('#btn-exportar').addEventListener('click', exportarPreset);
 $('#btn-importar').addEventListener('click', () => { const f = $('#ficheiro-preset'); f.value = ''; f.click(); });
 $('#ficheiro-preset').addEventListener('change', e => { if (e.target.files[0]) importarPreset(e.target.files[0]); });
 $('#btn-repor-ficheiro').addEventListener('click', reporDoFicheiro);
+$('#btn-central').addEventListener('click', painelCentral);
+// a aplicação de computador e o servidor local dizem quem são (em file:// ou num servidor qualquer não há resposta)
+fetch('ambiente.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : {}).then(a => { AMBIENTE = Object.assign(AMBIENTE, a); document.body.classList.toggle('na-app', !!AMBIENTE.app); }).catch(() => {}).finally(() => { atualizarEstadoCentral(); enviarFilaCentral(); if (HORAS_COPIA > 0 && urlCentral() && copiaEmAtraso()) setTimeout(() => copiarCentral(false), 8000); });
 barra.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => porFerramenta(b.dataset.tool)));
 $('#ed-titulo').addEventListener('input', e => { C.titulo = e.target.value.trim(); aplicarTitulo(); marcarAlterado(); });
 $('#ed-subtitulo').addEventListener('input', e => { C.subtitulo = e.target.value.trim(); aplicarTitulo(); marcarAlterado(); });
@@ -2322,7 +2470,7 @@ let idInicial = ''; try { idInicial = decodeURIComponent(location.hash.slice(1))
 arrancarPresets().then(() => { const el = POR_ID[idInicial]; if (el && !cidade) map.whenReady(() => setTimeout(() => { if (POR_ID[idInicial] === el) selecionar(el, true); }, 300)); });
 if (new URLSearchParams(location.search).has('cidade') && !EDITOR) map.whenReady(() => abrirCidade(true)); // ?cidade abre no mapa de Lisboa
 if (EDITOR) entrarEdicao(true); // ?editor abre logo em modo de edição; por predefinição arranca em visualização
-window.__mapa = { map, C, FREG, ELEMENTOS, POR_ID, RUAS_VISTA, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, ligarVerdes, ligarMapa, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva, entrarEdicao, porFerramenta, serializar, guardar, carregar, lerPreset, novoPreset, apagarPreset, mudarPreset, PRESETS, importarPreset, reporDoFicheiro, largarPonto, novoPonto, criarRua, criarDeLote, abrirCidade, irParaFreguesia, sairEdicao, descartarAlteracoes, dialogo, construirDesmat, expandirDesmat, pontoDeGrupo, emConjunto, novoDesmaterializado, desmaterializar, colocarNoMapa, criarAqui, ruaMaisProxima, abrirCriar, acrescentarPresetImportado, PRESETS_LOCAIS, get cidade() { return cidade; }, get alterado() { return alterado; }, novaCategoria, definirMembro, alternarCategoria, editarVisita, mostrarCategoria, categoriasAtivas, get edicao() { return edicao; }, get ferramenta() { return ferramenta; }, get passos() { return passos; } };
+window.__mapa = { map, C, FREG, ELEMENTOS, POR_ID, RUAS_VISTA, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, ligarVerdes, ligarMapa, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva, entrarEdicao, porFerramenta, serializar, guardar, carregar, lerPreset, novoPreset, apagarPreset, mudarPreset, PRESETS, importarPreset, reporDoFicheiro, largarPonto, novoPonto, criarRua, criarDeLote, painelCentral, abrirDoCentral, enviarFilaCentral, copiarCentral, estadoCopia, filaCentral, lerCentral, gravarCentral, get AMBIENTE() { return AMBIENTE; }, confirmar, perguntarTexto, abrirCidade, irParaFreguesia, sairEdicao, descartarAlteracoes, dialogo, construirDesmat, expandirDesmat, pontoDeGrupo, emConjunto, novoDesmaterializado, desmaterializar, colocarNoMapa, criarAqui, ruaMaisProxima, abrirCriar, acrescentarPresetImportado, PRESETS_LOCAIS, get cidade() { return cidade; }, get alterado() { return alterado; }, novaCategoria, definirMembro, alternarCategoria, editarVisita, mostrarCategoria, categoriasAtivas, get edicao() { return edicao; }, get ferramenta() { return ferramenta; }, get passos() { return passos; } };
 });
 </script>
 </body>
