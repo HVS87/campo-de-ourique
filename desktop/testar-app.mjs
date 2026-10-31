@@ -1,7 +1,7 @@
 // Verifica o arranque da aplicação de computador: abre-a em modo de teste (sem janela visível), com uma pasta de
 // dados temporária e uma conta de teste, espera que a apresentação monte o mapa, entra, grava e confirma que não houve erros na consola.
 //   node desktop/testar-app.mjs                               → a partir do código (Electron de node_modules)
-//   node desktop/testar-app.mjs "dist/win-unpacked/Campo de Ourique.exe"  → o programa já gerado
+//   node desktop/testar-app.mjs "dist/win-unpacked/PS Lisboa.exe"  → o programa já gerado
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';

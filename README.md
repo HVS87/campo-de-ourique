@@ -1,6 +1,6 @@
-# Campo de Ourique — apresentação interativa
+# PS Lisboa - Repositório da Cidade
 
-Apresentação assente num mapa de satélite da freguesia de Campo de Ourique (Lisboa), com o exterior
+Apresentação interativa assente num mapa de satélite das freguesias de Lisboa, com o exterior
 escurecido e pontos de interesse (pontos, conjuntos de pontos, ruas inteiras e zonas com pontos dentro)
 que abrem um painel de informação.
 
@@ -64,16 +64,16 @@ Transfere-se em [Releases](https://github.com/HVS87/campo-de-ourique/releases):
 
 | Ficheiro | Sistema | Notas |
 |---|---|---|
-| `Campo-de-Ourique-<versão>-instalador.exe` | Windows | Instala e atualiza-se sozinho a partir das releases |
-| `Campo-de-Ourique-<versão>-portatil.exe` | Windows | Não instala nada; abre logo, mas não se atualiza sozinho |
-| `Campo-de-Ourique-<versão>.dmg` | macOS | |
-| `Campo-de-Ourique-<versão>.AppImage` | Linux | |
+| `PS-Lisboa-<versão>-instalador.exe` | Windows | Instala e atualiza-se sozinho a partir das releases |
+| `PS-Lisboa-<versão>-portatil.exe` | Windows | Não instala nada; abre logo, mas não se atualiza sozinho |
+| `PS-Lisboa-<versão>.dmg` | macOS | |
+| `PS-Lisboa-<versão>.AppImage` | Linux | |
 
 - **Sem internet:** traz todos os dados das 24 freguesias e funciona sem internet. O satélite em direto passa para
   as imagens guardadas, que dão menos zoom. O «Mapa da cidade», o satélite em direto e o servidor central precisam
   de rede.
 - **Onde fica o que se grava:** os presets, as fotos e a cópia ativa ficam na pasta de dados do utilizador, que se
-  abre em «Ficheiro → Abrir a pasta dos meus dados» (no Windows, `%APPDATA%\Campo de Ourique\dados-do-utilizador`).
+  abre em «Ficheiro → Abrir a pasta dos meus dados» (no Windows, `%APPDATA%\Campo de Ourique\dados-do-utilizador`, o nome antigo do programa, para manter os dados de quem já o usava).
   Sobrepõem-se aos dados que vêm com o programa, e as atualizações não lhes tocam. A gravação automática e a fila
   do servidor central também ficam guardadas.
 - **Aviso do sistema:** os executáveis não estão assinados. Na primeira vez, o Windows (SmartScreen) e o macOS
@@ -111,7 +111,7 @@ e «Guardar» transfere o ficheiro e envia o preset para o servidor central.
 
 Com um servidor central, cada «Guardar» envia também o preset para um sítio comum, onde se recolhem e consultam os
 dados de todas as pessoas e freguesias. Sem rede, os envios ficam numa fila e seguem quando a rede voltar. O
-servidor corre grátis no Cloudflare Workers, com os dados no R2 na União Europeia, e de 24 em 24 horas uma cópia
+servidor corre grátis no Cloudflare Workers, com os dados no R2 na União Europeia, serve também a própria apresentação (ver `servidor-central/GUIA-CLOUDFLARE.md`), e de 24 em 24 horas uma cópia
 vem para este computador. A ligação configura-se em `config.js` (para todos) ou no painel «☁ Servidor central» do
 modo de edição (para quem o usa). Como o publicar, a cópia local, a reposição e a API estão em
 [servidor-central/README.md](servidor-central/README.md).
@@ -131,7 +131,8 @@ npm install
 | `npm run dist` | gera o instalador e a versão portátil para Windows em `dist/` |
 | `npm run central` | servidor central em Node (dados em ficheiros) |
 | `npm run central:local` | servidor central no Worker do Cloudflare, local, com um R2 simulado |
-| `npm run central:publicar` | publica o servidor central no Cloudflare (depois de `npx wrangler login`) |
+| `npm run site:preparar` | gera a pasta `site/`, o que o Cloudflare serve (sem contas nem cópias de segurança) |
+| `npm run central:publicar` | publica a apresentação e o servidor central no Cloudflare (depois de `npx wrangler login`) |
 
 Para publicar uma versão nova das duas:
 
@@ -365,8 +366,6 @@ mostra só as ferramentas; «⋯ Mais» abre o título, o subtítulo e os preset
   em EPSG:3857, bbox lat 38.7110–38.7254, lon −9.1775 a −9.1528.
 - `assets/fotos/` — fotos dos pontos de interesse, referidas em `conteudos.js`.
 - `vendor/leaflet/` — Leaflet 1.9.4 guardado localmente (funciona sem internet).
-- `prototipo.html` — protótipo com todas as alternativas comutáveis (satélite, máscara, janela,
-  navegação, marcadores, editor), mantido para consulta. Usa o Leaflet do CDN.
 - `tools/servidor.mjs` — o servidor em si (ficheiros e gravações do modo de edição), partilhado pela versão browser e
   pela aplicação de computador; pode ler de uma pasta e gravar noutra. `tools/testar-servidor.mjs` testa-o nos dois
   modos.
@@ -402,7 +401,10 @@ em [LICENCAS-TERCEIROS.md](LICENCAS-TERCEIROS.md).
 ## Conjuntos, quarteirões, duplicados, categorias e modo claro/escuro
 
 - **Conjuntos de pontos:** o cartão geral lista os pontos, e cada ponto tem um sub-cartão com nome, texto e fotos próprios (`detalhes[i]` do conjunto), com a seta ‹ de volta ao cartão-mãe. No telemóvel, as fotos vêm da galeria ou da câmara. Em edição, largar um ponto solto em cima de um ponto do conjunto agrega-o; também se pode agregar pelo cartão, e «Desagregar» devolve-o a ponto solto, com o que levava.
+- **O que o evento trouxe serve todos os conjuntos:** cada ponto fica com morada sugerida, data e autor (e a morada acompanha-o ao arrastar, se não foi escrita à mão). «📍 Registar na minha localização» usa o GPS e pede para confirmar a morada. Cada conjunto pode ter **tipos de ponto** (`tiposPonto`), com a cor no mapa e a tabela de contagens no cartão. Os pontos juntam-se entre dispositivos no servidor central, e os tirados não voltam (`removidosEvento`, pelo id do conjunto). No mapa de Lisboa, «⁘ Conjuntos» soma todos, por freguesia e tipo.
 - **Ruas por quarteirões:** uma rua é o conjunto dos seus quarteirões, de cruzamento a cruzamento (`quarteiroes`: os ids dos ligados; sem o campo, a rua toda; `tracado`: a rua toda, quando a rua não vem dos dados da freguesia). Em edição ligam-se e desligam-se no cartão ou com um clique na rua. A frase dentro de `<span class="quarteiroes-auto">` no texto atualiza-se sozinha; sem ela, é acrescentada no início.
 - **Pontos duplicados:** um ponto a menos de 8 m de outro, ou a menos de 50 m com o mesmo nome, faz perguntar se se consolida ou se mantêm ambos (`duplicadosMantidos` lembra a escolha). As consolidações revertem-se em «Por validar», até à validação, que acontece ao guardar.
 - **Categorias:** ao criar, as sugestões mostram as que já existem, nesta e nas outras freguesias, e um nome semelhante faz propor usar a existente. O `System.Admin`, no menu da conta → **Categorias**, funde categorias em todas as freguesias e presets (`GET /categorias`, `POST /categorias/fundir`, nos dois servidores).
-- **Modo claro e modo escuro:** o claro é o de origem; o slider está no índice ☰ e a escolha fica neste browser (`co-tema`).
+- **Pesquisa no mapa de Lisboa:** encontra as ruas e os lugares de todas as freguesias, com a freguesia ao lado, e leva lá. As ruas vêm de `dados/freguesias/ruas-cidade.js`, gerado por `node tools/indice-ruas.mjs` (corre-o depois de atualizar as ruas de uma freguesia).
+- **Entre dispositivos:** cada ponto de um conjunto leva a data da última edição (`editado`) e do último arrasto (`movido`), e ganha a mais recente de cada; um dispositivo desatualizado não repõe valores antigos. Um registo confirmado com a localização fica com a morada fixa (`moradaManual`).
+- **Modo escuro e modo claro:** o escuro é o de origem; o slider está no índice ☰ e a escolha fica neste browser (`co-modo`).

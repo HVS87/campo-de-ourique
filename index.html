@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Campo de Ourique</title>
+<title>PS Lisboa - Repositório da Cidade</title>
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#e9edf2">
-<script>try { if (localStorage.getItem('co-tema') === 'escuro') { document.documentElement.dataset.tema = 'escuro'; document.querySelector('meta[name=theme-color]').content = '#0f1216'; } } catch (e) { /* sem armazenamento local */ }</script>
+<meta name="theme-color" content="#0f1216">
+<script>(function () { var claro = false; try { claro = localStorage.getItem('co-modo') === 'claro'; } catch (e) { /* sem armazenamento local */ } if (claro) document.querySelector('meta[name=theme-color]').content = '#e9edf2'; else document.documentElement.dataset.tema = 'escuro'; })();</script>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Freguesias">
+<meta name="apple-mobile-web-app-title" content="PS Lisboa">
 <link rel="apple-touch-icon" href="assets/icones/icone-apple-180.png">
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <script src="vendor/leaflet/leaflet.js"></script>
@@ -37,7 +37,7 @@
 })();
 </script>
 <style>
-  :root { /* modo claro (por omissão); o modo escuro está a seguir. --t: a tinta das sobreposições translúcidas */
+  :root { /* modo claro; o modo escuro, o de origem, está a seguir. --t: a tinta das sobreposições translúcidas */
     --bg: #e9edf2; --panel: rgba(250, 251, 253, .97); --panel-border: rgba(20, 28, 40, .18); --t: 20 28 40; --hover: rgba(226, 231, 238, .98); --panel-solido: #fff; --th: #eef1f5; --img-fundo: #dde3ea; --mapa-fundo: #dfe4ea;
     --ink: #161b22; --ink-dim: #4f5966; --ink-texto: #2b323c; --accent: #f3c35b; --accent-ink: #1a1405; --accent-texto: #7a4f00; --aviso: #8f4f00; --perigo: #b3261e;
     --ponto: #9aa3ad; /* as cores de cada elemento vêm da prioridade (PRIORIDADES no script) */
@@ -54,12 +54,19 @@
   body.cidade #logo-ps { left: 14px; }
   .tema { display: flex; align-items: center; gap: 8px; padding: 8px 14px 10px; font-size: 12.5px; color: var(--ink-dim); border-bottom: 1px solid var(--panel-border); }
   .tema input { width: 54px; margin: 0; accent-color: var(--accent-texto); cursor: pointer; }
+  .nome-ferramenta { font-size: 11px; font-weight: 600; letter-spacing: .4px; color: var(--ink-dim); margin-bottom: 6px; }
   .sugestoes-cat { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 10px; }
   .sugestoes-cat small { color: var(--ink-dim); font-weight: 400; }
   .alerta-cat { color: var(--aviso); }
   .abrir-sub { flex: 1; cursor: pointer; border-radius: 6px; padding: 2px 4px; }
   .abrir-sub:hover, .abrir-sub:focus-visible { background: rgb(var(--t) / .08); }
   .nav-sub { justify-content: space-between; margin-top: 12px; }
+  .form-edicao .morada-rua { flex: 1 1 150px; margin: 0; min-width: 0; } .form-edicao .morada .curto { margin: 0; } .form-edicao .morada .curto input { display: block; } .morada .btn { align-self: flex-end; min-height: 36px; }
+  .form-edicao .linha.tipo-ponto { flex-wrap: nowrap; margin-top: 6px; }
+  .form-edicao .tipo-ponto input[name=tipo-icone] { width: 50px; flex: none; margin: 0; text-align: center; padding-inline: 2px; }
+  .form-edicao .tipo-ponto input[name=tipo-nome] { width: auto; flex: 1; min-width: 0; margin: 0; }
+  .form-edicao .tipo-ponto input[type=color] { width: 40px; height: 36px; flex: none; padding: 2px; margin: 0; cursor: pointer; }
+  .tipo-ponto .fechar { position: static; flex: none; }
   .mk.alvo-conjunto .mk-circ { box-shadow: 0 0 0 4px #9be38a, 0 0 16px 6px rgba(155,227,138,.7); }
   .mk.a-agregar .mk-circ { transform: scale(.6); opacity: .8; }
   * { box-sizing: border-box; }
@@ -94,7 +101,7 @@
   #sugestoes button { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 9px 14px; border: 0; background: transparent; color: var(--ink); cursor: pointer; font-size: 13.5px; }
   #sugestoes button:hover, #sugestoes button.ativo { background: rgb(var(--t) / .08); }
   #sugestoes button b { font-weight: 600; color: var(--accent-texto); }
-  #sugestoes .etq { margin-left: auto; font-size: 11.5px; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-dim); flex: none; }
+  #sugestoes .etq { margin-left: auto; font-size: 11.5px; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-dim); flex: none; max-width: 45%; text-align: right; }
   #sugestoes .nada { padding: 10px 14px; color: var(--ink-dim); font-size: 13px; }
   .pinta { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--c); box-shadow: 0 0 0 1px rgb(var(--t) / .45); }
   .pinta.rua, .pinta.zona { border-radius: 2px; }
@@ -573,7 +580,7 @@
     :root { --painel-w: min(86vw, 340px); }
     #marca { display: none; }
     #pesquisa-box { width: 42px; }
-    #pesquisa-box:focus-within, #pesquisa-box.com-texto { width: calc(100vw - 136px); }
+    body #pesquisa-box:focus-within, body #pesquisa-box.com-texto { right: 14px; width: calc(100vw - 128px); } /* enquanto se escreve, ocupa o espaço à direita do logótipo */
     #pesquisa-box:not(:focus-within):not(.com-texto) #pesquisa { padding: 0; color: transparent; }
     #pesquisa-box:not(:focus-within):not(.com-texto) #pesquisa::placeholder { color: transparent; }
     #pesquisa-box:not(:focus-within):not(.com-texto) #ghost { display: none; }
@@ -668,6 +675,7 @@
 
 <aside id="painel" class="vidro">
   <header>
+    <div class="nome-ferramenta">PS Lisboa - Repositório da Cidade</div>
     <div class="titulo-linha"><h1 id="titulo">Campo de Ourique <small id="subtitulo"></small></h1>
       <button class="btn freguesia" id="btn-freguesia" type="button" aria-expanded="false" aria-controls="lista-freguesias" title="Mudar para outra freguesia de Lisboa">⇄ Freguesia</button></div>
     <div id="lista-freguesias" class="lista-freguesias" hidden role="listbox" aria-label="Freguesias de Lisboa"></div>
@@ -679,7 +687,7 @@
     <button class="btn" id="btn-lisboa" title="Mapa de Lisboa com as 24 freguesias">🗺 Lisboa</button>
     <button class="btn" id="btn-instalar" hidden title="Põe a apresentação no ecrã do telemóvel, como uma aplicação">📲 Instalar</button>
   </div>
-  <label class="tema"><span aria-hidden="true">☀️ Claro</span><input type="range" id="tema" min="0" max="1" step="1" value="0" aria-label="Modo de visualização: claro ou escuro"><span aria-hidden="true">🌙 Escuro</span></label>
+  <label class="tema"><span aria-hidden="true">☀️ Claro</span><input type="range" id="tema" min="0" max="1" step="1" value="1" aria-label="Modo de visualização: claro ou escuro"><span aria-hidden="true">🌙 Escuro</span></label>
   <nav id="indice" aria-label="Índice"></nav>
   <div class="preset-vista" id="preset-vista" hidden><label>Preset <select id="sel-preset-vista" class="seletor" aria-label="Preset"></select></label></div>
   <div class="rodape" id="rodape"></div>
@@ -697,7 +705,7 @@
 <div id="convite-instalar" class="vidro" hidden><span>📲 Instalar como aplicação neste telemóvel?</span><button type="button" class="btn" id="convite-nao">Agora não</button><button type="button" class="btn on" id="convite-sim">Instalar</button></div>
 <div id="aviso" class="vidro"></div>
 <div id="dialogo" role="dialog" aria-modal="true" aria-labelledby="dialogo-titulo"><div class="caixa vidro"></div></div>
-<div id="cidade-barra" class="vidro"><span id="cidade-txt"></span><button class="btn" id="btn-evento-cidade" type="button" hidden title="Quantos registos há em cada freguesia"></button><button class="btn on" id="btn-cidade-voltar" type="button"></button></div>
+<div id="cidade-barra" class="vidro"><span id="cidade-txt"></span><button class="btn" id="btn-evento-cidade" type="button" hidden title="Quantos registos há em cada freguesia"></button><button class="btn" id="btn-conjuntos-cidade" type="button" title="Os conjuntos de pontos de todas as freguesias">⁘ Conjuntos</button><button class="btn on" id="btn-cidade-voltar" type="button"></button></div>
 <div id="levantamento" class="vidro" role="dialog" aria-labelledby="lev-titulo"><h3 id="lev-titulo"></h3><p class="nota" id="lev-nota"></p>
   <div class="morada"><label>Rua<input id="lev-rua" list="lista-ruas" autocomplete="off" spellcheck="false" placeholder="Nome da rua"></label><label>N.º porta<input id="lev-numero" autocomplete="off" inputmode="numeric" placeholder="ex.: 12"></label></div>
   <p class="nota" id="lev-fonte"></p>
@@ -757,6 +765,7 @@ if (!window.MAPA_DADOS) { // sem rede, numa freguesia que este aparelho ainda n�
   document.body.appendChild(m); window.addEventListener('online', () => location.reload());
   return;
 }
+const NOME_FERRAMENTA = 'PS Lisboa - Repositório da Cidade';
 const FREG = window.FREGUESIA || { id: 'campo-de-ourique', nome: 'Campo de Ourique', base: 'dados/' }; // freguesia carregada
 const BASE = FREG.base, CO = FREG.id === 'campo-de-ourique';
 const D = window.MAPA_DADOS;
@@ -807,8 +816,9 @@ function subPonto(el, i) { // para escrever: os dados próprios deste ponto (cri
   const d = el.detalhes[i]; if (!d.i) d.i = idRegisto(); if (!Array.isArray(d.fotos)) d.fotos = [];
   return d;
 }
+const tocado = d => { d.editado = new Date().toISOString(); }; // entre dispositivos, ganha a edição mais recente de cada ponto
 const lerSub = (el, i) => (Array.isArray(el.detalhes) && el.detalhes[i]) || {};
-function nomeSub(el, i) { const d = lerSub(el, i); return el.evento && categoriaEvento(el, d) ? moradaTexto(d) : d.nome || 'Ponto ' + (i + 1); }
+function nomeSub(el, i) { const d = lerSub(el, i); return el.evento && tipoDoPonto(el, d) ? moradaTexto(d) : d.nome || (d.rua ? moradaTexto(d) : 'Ponto ' + (i + 1)); }
 const haSub = el => subAtual != null && el.tipo === 'grupo' && subAtual < el.pontos.length;
 function abrirSub(el, i, voar) {
   selecionar(el, false, true); subAtual = i;
@@ -817,17 +827,15 @@ function abrirSub(el, i, voar) {
   mostrarInfo(el, margensVoo(el, edicao).modo);
 }
 function htmlSubInfo(el, i) {
-  const d = lerSub(el, i), cat = el.evento ? categoriaEvento(el, d) : null, p = priDe(el), n = el.pontos.length;
+  const d = lerSub(el, i), cat = tipoDoPonto(el, d), p = priDe(el), n = el.pontos.length;
   let h = `<div class="info"><h2><span class="pinta ponto" style="--c:${cat ? cat.cor : p.cor}"></span><span>${esc(cat ? cat.icone : d.icone || el.icone || '')} ${esc(nomeSub(el, i))}</span></h2>`;
   h += `<div class="tipo">Ponto ${i + 1} de ${n} · em <a data-mae="1">${esc(el.nome)}</a>${cat ? ' · ' + esc(cat.nome) : ''}</div>`;
-  if (el.evento && d.quando) h += `<div class="competencia">Registado a <b>${esc(dataHora(d.quando))}</b>${d.autor && SESSAO && SESSAO.papel === 'admin' ? ' · ' + esc(d.autor) : ''}</div>`;
+  if (d.nome && d.rua) h += `<div class="competencia">Morada: <b>${esc(moradaTexto(d))}</b></div>`;
+  if (d.quando) h += `<div class="competencia">Registado a <b>${esc(dataHora(d.quando))}</b>${d.autor && SESSAO && SESSAO.papel === 'admin' ? ' · ' + esc(d.autor) : ''}</div>`;
   h += htmlFotos(d.fotos) + `<div class="texto">${htmlTexto(d.texto)}</div>`;
   return h + htmlNavSub(el, i) + '</div>';
 }
 const htmlNavSub = (el, i) => el.pontos.length < 2 ? '' : `<div class="linha nav-sub"><button type="button" class="btn" data-sub="${(i - 1 + el.pontos.length) % el.pontos.length}">‹ Ponto anterior</button><button type="button" class="btn" data-sub="${(i + 1) % el.pontos.length}">Ponto seguinte ›</button></div>`;
-function htmlPontosConjunto(el) { // no cartão-mãe: a lista dos sub-cartões
-  return `<div class="filhos"><h3>Pontos deste conjunto</h3>${el.pontos.map((_, i) => { const n = (lerSub(el, i).fotos || []).length; return `<button type="button" data-sub="${i}"><span>${esc(lerSub(el, i).icone || el.icone || '📍')}</span>${esc(nomeSub(el, i))}${n ? ` <small class="nota">📷 ${n}</small>` : ''}</button>`; }).join('')}</div>`;
-}
 function htmlFotosEd(fotos) {
   return `<div class="fotos-ed"><h3>Fotos</h3>
       ${fotos.map((f, i) => `<div class="foto-ed"><img src="${esc(f.src)}" alt="" loading="lazy"><div><input name="foto-src" data-i="${i}" value="${esc(f.src)}" placeholder="assets/fotos/ficheiro.jpg ou https://…"><input name="foto-leg" data-i="${i}" value="${esc(f.legenda || '')}" placeholder="Legenda"></div><button type="button" class="fechar" data-ac="foto-remover" data-i="${i}" aria-label="Remover foto">✕</button></div>`).join('')}
@@ -835,10 +843,14 @@ function htmlFotosEd(fotos) {
     </div>`;
 }
 function htmlFormSub(el, i) {
-  const d = lerSub(el, i), texto = Array.isArray(d.texto) ? d.texto.join('\n\n') : (d.texto || ''), fotos = (d.fotos || []).map(f => typeof f === 'string' ? { src: f, legenda: '' } : f), cat = el.evento ? categoriaEvento(el, d) : null;
+  const d = lerSub(el, i), texto = Array.isArray(d.texto) ? d.texto.join('\n\n') : (d.texto || ''), fotos = (d.fotos || []).map(f => typeof f === 'string' ? { src: f, legenda: '' } : f), tipos = tiposDe(el);
+  encherListaRuas();
   return `<form class="form-edicao" autocomplete="off">
-    <div class="tipo-ed">Ponto ${i + 1} de ${el.pontos.length} · em ${esc(el.nome)}${cat ? ' · ' + esc(cat.nome) : ''}</div>
-    ${cat ? `<div class="nota">${esc(moradaTexto(d))}${d.quando ? ' · ' + esc(dataHora(d.quando)) : ''}</div>` : `<label>Nome<input name="sub-nome" value="${esc(d.nome || '')}" placeholder="Ponto ${i + 1}"></label>`}
+    <div class="tipo-ed">Ponto ${i + 1} de ${el.pontos.length} · em ${esc(el.nome)}</div>
+    ${el.evento ? '' : `<label>Nome<input name="sub-nome" value="${esc(d.nome || '')}" placeholder="${esc(nomeSub({ ...el, detalhes: [{ ...d, nome: '' }] }, 0))}"></label>`}
+    ${tipos.length ? `<label>Tipo<select name="sub-tipo" class="seletor"><option value="">Sem tipo</option>${tipos.map(c => `<option value="${esc(c.id)}"${d.c === c.id ? ' selected' : ''}>${esc(c.icone)} ${esc(c.nome)}</option>`).join('')}</select></label>` : ''}
+    <div class="linha morada"><label class="morada-rua">Rua<input name="sub-rua" list="lista-ruas" value="${esc(d.rua || '')}"></label><label class="curto">Número<input name="sub-numero" value="${esc(d.numero || '')}"></label><button type="button" class="btn" data-ac="sub-morada" title="Sugere a morada a partir da posição do ponto">↺ Sugerir</button></div>
+    ${d.quando ? `<div class="nota">Registado a ${esc(dataHora(d.quando))}${d.autor && SESSAO && SESSAO.papel === 'admin' ? ' · ' + esc(d.autor) : ''}${d.precisao != null ? ' · ±' + d.precisao + ' m' : ''}</div>` : ''}
     <label>Texto<small>parágrafos separados por uma linha em branco; aceita HTML</small><textarea name="sub-texto">${esc(texto)}</textarea></label>
     ${htmlFotosEd(fotos)}${htmlNavSub(el, i)}
     <div class="acoes-ed">${el.evento ? '' : `<button type="button" class="btn" data-ac="desagregar" data-i="${i}" title="Sai do conjunto e fica um ponto solto, com o nome, o texto e as fotos">⇱ Desagregar</button>`}<span class="esp"></span><button type="button" class="btn perigo" data-ac="grupo-tirar" data-i="${i}">Tirar do conjunto</button><button type="button" class="btn on" data-ac="ao-conjunto">Concluído</button></div></form>`;
@@ -861,7 +873,7 @@ function agregarPonto(p, g) { // um ponto solto passa a ponto do conjunto: o nom
 }
 function desagregarPonto(g, i) {
   if (g.pontos.length <= 1) { aviso('Um conjunto precisa de pelo menos um ponto; para o eliminar, apaga o conjunto.', 4000); return; }
-  const d = lerSub(g, i), pos = g.pontos[i]; g.pontos.splice(i, 1); if (Array.isArray(g.detalhes)) g.detalhes.splice(i, 1);
+  const d = lerSub(g, i), pos = g.pontos[i]; g.pontos.splice(i, 1); if (Array.isArray(g.detalhes)) marcarRemovidos(g, g.detalhes.splice(i, 1));
   const o = { tipo: 'ponto', nome: d.nome || g.nome + ' ' + (i + 1), icone: d.icone || g.icone || '📍', pos: pos.slice(), fotos: d.fotos || [], texto: d.texto || '' };
   const pri = d.prioridade || g.prioridade, comp = d.competencia || g.competencia; if (pri) o.prioridade = pri; if (comp) o.competencia = comp;
   const z = zonaEm(pos, null); subAtual = null; const p = acrescentar(o, z && !z.oculto ? z : null);
@@ -1071,7 +1083,9 @@ function preparar(el, pai) {
   if (POR_ID[el.id]) console.warn('Id repetido:', el.id);
   if (pai && el.tipo !== 'ponto') { console.warn('Só pontos podem ser filhos de uma zona:', el.id); return null; }
   el.pai = pai || null;
-  if (el.evento && Array.isArray(el.detalhes)) el.detalhes.forEach((d, i) => { if (d && !d.i && el.pontos[i]) d.i = [d.quando, d.rua, d.numero, el.pontos[i]].join('|'); }); // registos de antes dos ids: o mesmo que o servidor central usa
+  if (el.tipo === 'grupo' && Array.isArray(el.pontos)) { // cada ponto tem os seus dados e um id, que junta os registos entre dispositivos (sem id: pelo conteúdo, como o servidor central)
+    el.detalhes = el.pontos.map((p, i) => { const d = (Array.isArray(el.detalhes) && el.detalhes[i]) || {}; if (!d.i) d.i = [d.quando, d.rua, d.numero, p].join('|'); return d; });
+  }
   // geometrias vindas de geo.js / ruas.js são copiadas, para a edição não alterar os dados partilhados
   if (el.tipo === 'rua') { // tracado: a rua toda; linhas: o que está em destaque (os quarteirões ligados)
     let linhas = el.tracado || (el.rua || !el.linhas ? D.ruas[el.rua || el.nome] : null);
@@ -1186,21 +1200,21 @@ const MUNDO = [[-89, -180], [-89, 180], [89, 180], [89, -180]];
 const mascaraFreguesia = L.polygon([MUNDO, ...LIMITES], { pane: 'mascara', stroke: false, fillColor: '#05070a', fillOpacity: .72, interactive: false }).addTo(map);
 L.polyline(LIMITES.map(a => a.concat([a[0]])), { pane: 'limite', color: '#ffffff', weight: 10, opacity: .35, className: 'limite-halo', interactive: false }).addTo(map);
 const linhaLimite = L.polyline(LIMITES.map(a => a.concat([a[0]])), { pane: 'limite', color: '#ffffff', weight: 2, opacity: .95, className: 'limite', interactive: false }).addTo(map);
-// modo claro (por omissão) e modo escuro: as cores da interface estão no CSS; aqui, o exterior do mapa e o limite
+// modo escuro (o de origem) e modo claro: as cores da interface estão no CSS; aqui, o exterior do mapa e o limite
 let mascaraCidade = null;
 const CORES_TEMA = { claro: { mascara: '#f2f4f7', opac: .66, cidade: .55, limite: '#1c2430', barra: '#e9edf2' }, escuro: { mascara: '#05070a', opac: .72, cidade: .6, limite: '#ffffff', barra: '#0f1216' } };
 const temaAtual = () => document.documentElement.dataset.tema === 'escuro' ? 'escuro' : 'claro';
-function aplicarTema(tema) {
-  const c = CORES_TEMA[tema] ? tema : 'claro', v = CORES_TEMA[c];
+function aplicarTema(tema, guardar) {
+  const c = CORES_TEMA[tema] ? tema : 'escuro', v = CORES_TEMA[c];
   if (c === 'escuro') document.documentElement.dataset.tema = 'escuro'; else delete document.documentElement.dataset.tema;
-  try { localStorage.setItem('co-tema', c); } catch (err) { /* sem armazenamento local */ }
+  if (guardar) try { localStorage.setItem('co-modo', c); } catch (err) { /* sem armazenamento local */ }
   const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.content = v.barra;
   mascaraFreguesia.setStyle({ fillColor: v.mascara, fillOpacity: v.opac }); linhaLimite.setStyle({ color: v.limite });
   if (mascaraCidade) mascaraCidade.setStyle({ fillColor: v.mascara, fillOpacity: v.cidade });
   const s = $('#tema'); if (s) s.value = c === 'escuro' ? '1' : '0';
 }
 aplicarTema(temaAtual());
-$('#tema').addEventListener('input', e => aplicarTema(e.target.value === '1' ? 'escuro' : 'claro'));
+$('#tema').addEventListener('input', e => aplicarTema(e.target.value === '1' ? 'escuro' : 'claro', true));
 
 // ---------- marcadores e geometrias dos pontos de interesse ----------
 const vista = {}; // id -> { el, camadas, marcadores, linha, halo, poligono }
@@ -1212,10 +1226,10 @@ function icone(el, filho) {
 const estiloRua = el => { const p = priDe(el); return { linha: { color: p.cor, weight: 4, opacity: .9 }, halo: { color: p.id === 'urgente' ? '#ffffff' : p.cor, weight: 16, opacity: p.id === 'urgente' ? .28 : .2 } }; };
 const estiloRuaAtiva = el => { const e = estiloRua(el); return { linha: { ...e.linha, weight: 7, opacity: 1 }, halo: { ...e.halo, weight: 26, opacity: .5 } }; };
 function marcador(el, pos, filho, idx) {
-  const d = detalheDe(el, idx), cat = d && categoriaEvento(el, d);
+  const d = detalheDe(el, idx), cat = d && tipoDoPonto(el, d);
   const ico = cat ? L.divIcon({ className: 'mk pri-' + priDe(el).id, html: `<div class="mk-circ" style="--c:${cat.cor}"></div>`, iconSize: [18, 18], iconAnchor: [9, 9] }) : icone(el, filho);
   const m = L.marker(pos, { icon: ico, riseOnHover: true, keyboard: false, bubblingMouseEvents: false, draggable: edicao });
-  m.bindTooltip(cat ? cat.icone + ' ' + moradaTexto(d) : el.tipo === 'grupo' && lerSub(el, idx).nome ? lerSub(el, idx).nome + ' · ' + el.nome : el.nome, { direction: 'top', offset: [0, -12], className: 'rotulo', opacity: 1 });
+  m.bindTooltip(cat ? cat.icone + ' ' + nomeSub(el, idx || 0) : el.tipo === 'grupo' ? nomeSub(el, idx || 0) + ' · ' + el.nome : el.nome, { direction: 'top', offset: [0, -12], className: 'rotulo', opacity: 1 });
   m.on('click', () => { if (el.tipo === 'grupo') abrirSub(el, idx || 0, false); else selecionar(el, false); }); // cada ponto de um conjunto abre o seu sub-cartão
   if (edicao) ligarArrasto(m, el, idx || 0);
   return m;
@@ -1357,7 +1371,7 @@ function htmlInfo(el) {
   const cats = categoriasDe(el);
   if (cats.length) h += `<div class="cats">${cats.map(c => `<button class="chip mini" data-so-cat="${c.id}" style="--c:${c.cor}" title="Ver a categoria">${c.icone ? esc(c.icone) + ' ' : ''}${esc(c.nome)}</button>`).join('')}</div>`;
   h += htmlFotos(el.fotos) + `<div class="texto">${htmlTexto(el.texto)}</div>`;
-  if (el.tipo === 'grupo') h += el.evento ? htmlResumoEvento(el) : htmlPontosConjunto(el);
+  if (el.tipo === 'grupo') h += htmlResumoConjunto(el);
   if (el.filhos.length) h += `<div class="filhos"><h3>Nesta zona</h3>${el.filhos.map(f => `<button data-ir="${f.id}"><span>${esc(f.icone || '📍')}</span>${esc(f.nome)}</button>`).join('')}</div>`;
   return h + '</div>';
 }
@@ -1486,7 +1500,8 @@ async function irParaFreguesia(id, opcoes = {}) {
   const qs = new URLSearchParams(location.search); qs.set('freguesia', id); qs.delete('cidade');
   if (opcoes.editar) qs.set('editor', ''); else qs.delete('editor'); // abre lá em modo de edição (a conta é verificada outra vez)
   if (opcoes.criar) qs.set('criar', ''); else qs.delete('criar');
-  location.href = location.pathname + qsTexto(qs);
+  const lugar = opcoes.lugar || {}; if (lugar.rua) qs.set('rua', lugar.rua); else qs.delete('rua'); // ao chegar, destaca a rua ou abre o lugar procurado no mapa de Lisboa
+  location.href = location.pathname + qsTexto(qs) + (lugar.el ? '#' + encodeURIComponent(lugar.el) : '');
   return true; // a página vai mudar
 }
 // rodapé com as fontes desta freguesia
@@ -1580,7 +1595,7 @@ async function abrirCidade(ligar) {
     cidade = true; document.body.classList.add('cidade'); map.getContainer().classList.add('modo-cidade');
     if (visitaAberta()) irPassoVisita(passosVisita().findIndex(p => p.id === 'cidade')); // saiu para Lisboa a meio da visita: continua pelo passo do mapa de Lisboa
     camadaCidade.limpar();
-    document.title = 'Lisboa · freguesias'; $('#marca-titulo').textContent = 'Lisboa'; $('#marca-sub').textContent = '24 freguesias';
+    document.title = NOME_FERRAMENTA; $('#marca-titulo').textContent = NOME_FERRAMENTA; $('#marca-sub').textContent = '24 freguesias';
     map.setMaxBounds(null); map.setMinZoom(10.5);
     camadaCidade.addTo(map);
     map.once('moveend', () => { if (cidade) map.setMaxBounds(camadaCidade.limites.pad(.8)); }); // antes do voo: sem animação, o moveend é imediato
@@ -1600,6 +1615,7 @@ async function abrirCidade(ligar) {
   history.replaceState(null, '', location.pathname + qsTexto(qs) + location.hash);
 }
 $('#btn-evento-cidade').addEventListener('click', () => resumoCidadeEvento());
+$('#btn-conjuntos-cidade').addEventListener('click', () => resumoConjuntos());
 $('#btn-cidade-voltar').addEventListener('click', () => { if (camadaCidade && camadaCidade.escolhida) irParaFreguesia(camadaCidade.escolhida); else abrirCidade(false); });
 // afastar para lá da vista geral abre o mapa de Lisboa: roda do rato no zoom mínimo, ou «−» quando já não afasta mais
 let rodaAcum = 0, rodaTimer = null;
@@ -1872,16 +1888,47 @@ function estadoCamada(id, ligada) {
 
 // ---------- pesquisa com escrita preditiva ----------
 const INDICE_PESQUISA = [];
+const PREFIXO_VIA = /^(rua|avenida|av\.|travessa|largo|praca|jardim|beco|calcada|estrada|alameda|escadinhas|patio|azinhaga|campo|rotunda|parque|mercado|igreja) (d[aeo]s? )?/;
+function entradaPesquisa(nome, tipo, acao, cor, onde) {
+  const chave = normalizar(nome), m = chave.match(PREFIXO_VIA), nomes = [nome], chaves = [chave];
+  if (m && m[0].length < nome.length) { nomes.push(nome.slice(m[0].length)); chaves.push(chave.slice(m[0].length)); }
+  return { nome, chave, nomes, chaves, tipo, acao, cor, onde };
+}
+// A pesquisa do mapa de Lisboa: as ruas e os lugares de todas as freguesias. Cada freguesia só carrega os seus dados, por isso
+// as ruas vêm de um índice só com os nomes, e os lugares do preset ativo de cada uma; carrega-se na primeira vez que se procura.
+let indiceCidade = null, indiceCidadePronto = false; const INDICE_CIDADE = [];
+function carregarIndiceCidade() {
+  if (indiceCidade) return indiceCidade;
+  indiceCidade = (async () => {
+    await new Promise(ok => { const s = document.createElement('script'); s.src = 'dados/freguesias/ruas-cidade.js'; s.onload = s.onerror = ok; document.head.appendChild(s); });
+    const nomeDe = id => (FREGUESIAS.find(f => f.id === id) || { nome: id }).nome, l = [], lugares = {};
+    await Promise.all(FREGUESIAS.map(async f => {
+      let els = f.id === FREG.id ? serializar().elementos : null;
+      if (!els) { try { const r = await fetch((f.id === 'campo-de-ourique' ? 'dados/' : 'dados/freguesias/' + f.id + '/') + 'conteudos.js'); if (r.ok) els = JSON.parse(jsonDoFicheiro(await r.text())).elementos; } catch (err) { /* sem dados desta freguesia */ } }
+      const nomes = lugares[f.id] = new Set();
+      (function rec(lista, pai) { for (const e of lista || []) { if (!e || !e.nome) continue; if (e.tipo === 'rua') nomes.add(normalizar(e.nome)); l.push(entradaPesquisa(e.nome, pai ? 'ponto' : e.tipo, () => irParaLugar(f.id, { el: e.id }), priDe(e).cor, f.nome)); rec(e.filhos, e); } })(els, null);
+    }));
+    for (const [nome, ids] of window.RUAS_CIDADE || []) for (const id of ids) if (!(lugares[id] && lugares[id].has(normalizar(nome)))) l.push(entradaPesquisa(nome, 'rua-osm', () => irParaLugar(id, { rua: nome }), null, nomeDe(id)));
+    l.sort((a, b) => a.nome.localeCompare(b.nome, 'pt')); for (const e of l) e.daCidade = true;
+    INDICE_CIDADE.push(...l); indiceCidadePronto = true;
+  })();
+  return indiceCidade;
+}
+async function irParaLugar(id, alvo) {
+  if (id !== FREG.id) return irParaFreguesia(id, { lugar: alvo });
+  if (cidade) await abrirCidade(false);
+  abrirLugar(alvo);
+}
+function abrirLugar({ el, rua }) {
+  if (el && POR_ID[el]) { selecionar(POR_ID[el], true); return; }
+  if (!rua) return;
+  const n = normalizar(rua), poi = ELEMENTOS.find(e => e.tipo === 'rua' && normalizar(e.nome) === n); if (poi) { selecionar(poi, true); return; }
+  const r = RUAS_VISTA.find(x => normalizar(x.rua.nome) === n); if (r) destacarRua(r, true);
+}
 function construirPesquisa() {
   INDICE_PESQUISA.length = 0;
   // cada entrada tem o nome completo e, nas vias, um alias sem o tipo («Saraiva de Carvalho» para «Rua Saraiva de Carvalho»)
-  const PREFIXO = /^(rua|avenida|av\.|travessa|largo|praca|jardim|beco|calcada|estrada|alameda|escadinhas|patio|azinhaga|campo|rotunda|parque|mercado|igreja) (d[aeo]s? )?/;
-  const add = (nome, tipo, acao, cor) => {
-    const chave = normalizar(nome), m = chave.match(PREFIXO);
-    const nomes = [nome], chaves = [chave];
-    if (m && m[0].length < nome.length) { nomes.push(nome.slice(m[0].length)); chaves.push(chave.slice(m[0].length)); }
-    INDICE_PESQUISA.push({ nome, chave, nomes, chaves, tipo, acao, cor });
-  };
+  const add = (nome, tipo, acao, cor) => INDICE_PESQUISA.push(entradaPesquisa(nome, tipo, acao, cor));
   const todos = todosElementos();
   for (const el of todos) add(el.nome, el.pai ? 'ponto' : el.tipo, () => selecionar(el, true), corDe(el));
   for (const el of todos) if (el.tipo === 'grupo' && !el.evento) (el.detalhes || []).forEach((d, i) => { if (d && d.nome) add(d.nome, 'ponto', () => abrirSub(el, i, true), corDe(el)); });
@@ -1897,14 +1944,15 @@ let resultados = [], ativo = -1;
 function procurar(q) {
   const n = normalizar(q.trim()); if (!n) return [];
   const comeca = [], contem = [], palavra = [], partes = n.split(/\s+/).filter(Boolean);
-  for (const it of INDICE_PESQUISA) {
+  const fonte = cidade ? INDICE_PESQUISA.filter(x => x.tipo === 'freguesia').concat(INDICE_CIDADE) : INDICE_PESQUISA;
+  for (const it of fonte) {
     const ws = it.chave.split(/[\s\-–,()]+/);
     if (it.chaves.some(c => c.startsWith(n))) comeca.push(it);
     else if (ws.some(w => w.startsWith(n))) palavra.push(it);
     else if (partes.length > 1 && partes.every(p => ws.some(w => w.startsWith(p)))) palavra.push(it); // «quinta lou» encontra «Bairro da Quinta do Loureiro»
     else if (it.chave.includes(n)) contem.push(it);
   }
-  return comeca.concat(palavra, contem).slice(0, 9);
+  return comeca.concat(palavra, contem).slice(0, cidade ? 12 : 9);
 }
 function realcar(nome, q) {
   const t = q.trim(), n = normalizar(nome), k = n.indexOf(normalizar(t));
@@ -1914,6 +1962,7 @@ function realcar(nome, q) {
 function atualizarPesquisa() {
   const q = inp.value;
   pesquisaBox.classList.toggle('com-texto', q.length > 0);
+  if (cidade && !indiceCidade) carregarIndiceCidade().then(() => { if (!cidade || !inp.value || document.activeElement !== inp) return; const a = ativo; atualizarPesquisa(); if (a >= 0) marcarAtivo(Math.min(a, resultados.length - 1)); });
   resultados = procurar(q); ativo = -1;
   // escrita preditiva: completa em cinzento com o primeiro resultado que começa pelo texto escrito
   let comp = null;
@@ -1922,14 +1971,14 @@ function atualizarPesquisa() {
   ghost.dataset.completar = comp || '';
   if (!q.trim()) { sug.classList.remove('aberto'); sug.innerHTML = ''; return; }
   sug.innerHTML = resultados.length
-    ? resultados.map((r, i) => `<button role="option" data-i="${i}"><span class="pinta ${r.tipo}" style="--c:${r.cor || '#ddd'}"></span><span>${realcar(r.nome, q)}</span><span class="etq">${ETQ[r.tipo]}</span></button>`).join('')
-    : '<div class="nada">Nada encontrado.</div>';
+    ? resultados.map((r, i) => `<button role="option" data-i="${i}"><span class="pinta ${r.tipo}" style="--c:${r.cor || '#ddd'}"></span><span>${realcar(r.nome, q)}</span><span class="etq">${ETQ[r.tipo]}${r.onde ? ' · ' + esc(r.onde) : ''}</span></button>`).join('')
+    : `<div class="nada">${cidade && !indiceCidadePronto ? 'A procurar em toda a cidade…' : 'Nada encontrado.'}</div>`;
   sug.classList.add('aberto');
 }
 function escolher(i) {
   const r = resultados[i]; if (!r) return;
   inp.value = r.nome; atualizarPesquisa(); sug.classList.remove('aberto'); inp.blur();
-  if (cidade && r.tipo !== 'freguesia') abrirCidade(false); // um lugar desta freguesia: sai do mapa de Lisboa
+  if (cidade && r.tipo !== 'freguesia' && !r.daCidade) abrirCidade(false); // um lugar desta freguesia: sai do mapa de Lisboa
   r.acao();
 }
 function marcarAtivo(i) {
@@ -2220,7 +2269,7 @@ const legendaVisita = () => PRIORIDADES.concat([SEM_PRIORIDADE]).map(p => `<i cl
 function passosVisita() {
   const daEdicao = { so: 'edicao' };
   return [
-    { id: 'boas-vindas', so: 'ver', titulo: 'Bem-vindo!', texto: 'Esta é a apresentação interativa das freguesias de Lisboa: os pontos de interesse, os problemas e as ideias de cada uma, num mapa de satélite. Em dois minutos mostro-te o que podes fazer aqui.', dica: 'Podes sair quando quiseres (✕ ou Esc) e retomar mais tarde em ☰ → 🎓 Visita guiada. Avança com «Seguinte» ou com a seta →.' },
+    { id: 'boas-vindas', so: 'ver', titulo: 'Bem-vindo!', texto: 'Este é o PS Lisboa - Repositório da Cidade, a apresentação interativa das freguesias de Lisboa: os pontos de interesse, os problemas e as ideias de cada uma, num mapa de satélite. Em dois minutos mostro-te o que podes fazer aqui.', dica: 'Podes sair quando quiseres (✕ ou Esc) e retomar mais tarde em ☰ → 🎓 Visita guiada. Avança com «Seguinte» ou com a seta →.' },
     { id: 'cidade', so: 'cidade', alvo: '#cidade-barra', interativo: true, titulo: 'O mapa de Lisboa', texto: 'Cada forma é uma freguesia. Passa o cursor por cima para a ver pulsar e <b>clica para a abrir</b>; no ecrã tátil, toca duas vezes. Voltas sempre a este mapa ao afastar a freguesia.', dica: 'Experimenta já: clica numa freguesia, e a visita continua lá. Ou carrega em «Abrir» para seguir com ' + esc(FREG.nome) + '.', seguinte: () => abrirCidade(false), textoSeguinte: 'Abrir ' + FREG.nome + ' ›' },
     { id: 'mapa', so: 'freguesia', alvo: '.leaflet-control-zoom', interativo: true, titulo: 'Mover-te no mapa', texto: 'Arrasta para te deslocares; aproxima e afasta com a roda do rato, com os botões + e − ou com dois dedos. Fora do limite da freguesia, o satélite fica escurecido.', dica: 'Afasta para lá da vista geral (ou carrega em − quando já não afasta mais) e voltas ao mapa de Lisboa.' },
     { id: 'pontos', so: 'freguesia', se: () => listaVisita(null).length > 0, alvo: '#modal .cartao', interativo: true, antes: () => { const l = listaVisita(null); if (l[0]) selecionar(l[0], true); }, depois: () => desselecionar(), titulo: 'Pontos, ruas e zonas', texto: 'Cada marcador é um ponto de interesse; as linhas são ruas e as áreas são zonas (que podem ter pontos lá dentro). Clica num para abrir o cartão: texto, fotos, prioridade e a quem compete resolver.', dica: 'Este é o primeiro destaque de ' + esc(FREG.nome) + '. Ao passar o cursor, os marcadores pulsam; Esc fecha o cartão.' },
@@ -2462,7 +2511,7 @@ const DICAS = {
 };
 function aplicarTitulo() {
   const t = C.titulo || FREG.nome, s = C.subtitulo || '';
-  document.title = t; $('#titulo').childNodes[0].textContent = t + ' '; $('#subtitulo').textContent = s; $('#marca-titulo').textContent = t; $('#marca-sub').textContent = s;
+  document.title = t + ' · ' + NOME_FERRAMENTA; $('#titulo').childNodes[0].textContent = t + ' '; $('#subtitulo').textContent = s; $('#marca-titulo').textContent = t; $('#marca-sub').textContent = s;
 }
 function entrarEdicao(ligar) {
   if (ligar === undefined) ligar = !edicao;
@@ -2565,6 +2614,8 @@ async function autosaveValido(id, r) {
     const h = await fetch(BASE + 'presets/' + encodeURIComponent(id) + '.js', { method: 'HEAD', cache: 'no-store' });
     const mod = h.ok && h.headers.get('Last-Modified') ? Date.parse(h.headers.get('Last-Modified')) : 0;
     if (mod && mod > r.quando) {
+      if (naFilaCentral(id)) return true; // ainda não chegou ao servidor central: é este o trabalho mais recente
+      if (r.enviado) { apagarAutosave(id); return false; } // já chegou ao servidor central: o ficheiro mais recente tem-no
       const q = await dialogo({ titulo: 'Rascunho mais antigo do que o ficheiro', texto: `O preset foi gravado depois deste rascunho (de ${esc(dataHora(r.quando))}). O que queres abrir?`, botoes: [{ id: 'rascunho', texto: 'O rascunho' }, { id: 'ficheiro', texto: 'O ficheiro (apaga o rascunho)', classe: 'on' }] });
       if (q === 'ficheiro') { apagarAutosave(id); return false; }
       if (q !== 'rascunho') return false;
@@ -2633,8 +2684,8 @@ async function mudarPreset(id, silencioso) {
   const usarAuto = !!auto && (!d || JSON.stringify(auto.dados) !== JSON.stringify(d));
   carregar(clonar(usarAuto ? auto.dados : base)); C.preset = id; FICHEIRO = clonar(base); FICHEIRO.preset = id; garantirPresetAtual();
   consolidacoes = usarAuto && Array.isArray(auto.consolidacoes) ? auto.consolidacoes : []; rascunhoEnviado = usarAuto && !!auto.enviado; atualizarAvisosEdicao();
-  if (rascunhoEnviado) FICHEIRO = clonar(auto.dados);
-  alterado = usarAuto && !rascunhoEnviado; estado(alterado ? 'Alterações por guardar (gravação automática de ' + new Date(auto.quando).toLocaleString('pt-PT') + ')' : 'Sem alterações', usarAuto);
+  const jaSeguiu = usarAuto && (rascunhoEnviado || naFilaCentral(id)); if (jaSeguiu) FICHEIRO = clonar(auto.dados);
+  alterado = usarAuto && !jaSeguiu; estado(alterado ? 'Alterações por guardar (gravação automática de ' + new Date(auto.quando).toLocaleString('pt-PT') + ')' : 'Sem alterações', usarAuto);
   try { localStorage.setItem(CHAVE_ATIVO, id); } catch (err) { /* sem armazenamento local */ }
   preencherPresets();
   if (await verificarServidor() && podeEditarEm(SESSAO, FREG.id)) { try { const r = await postLocal('/ativar-preset/' + encodeURIComponent(id) + qsFreguesia, ''); const j = await r.json(); if (j.presets) atualizarPresets(j.presets); } catch (err) { /* fica só nesta sessão */ } } // sem sessão (só a ver), a escolha fica neste browser
@@ -2655,12 +2706,14 @@ async function novoPreset() {
   carregar({ titulo: limpoNome, subtitulo: '', elementos: [], categorias: [] }); C.preset = id; FICHEIRO = clonar(serializar());
   try { localStorage.setItem(CHAVE_ATIVO, id); } catch (err) { /* sem armazenamento local */ }
   preencherPresets(); if (edicao) { $('#ed-titulo').value = C.titulo; $('#ed-subtitulo').value = ''; }
-  if (await verificarServidor()) await guardar(); else { PRESETS_LOCAIS.add(id); preencherPresets(); marcarAlterado(); aviso('Preset criado neste browser; sem servidor, exporta-o para o guardares.', 5000); }
+  if ((await verificarServidor()) || soCentral()) await guardar(); else { PRESETS_LOCAIS.add(id); preencherPresets(); marcarAlterado(); aviso('Preset criado neste browser; sem servidor, exporta-o para o guardares.', 5000); }
 }
 async function apagarPreset() {
   if (PRESETS.length < 2) { aviso('Não é possível apagar o único preset.', 3000); return; }
   const id = C.preset, nome = C.titulo || id;
-  if (!(await confirmar('Apagar preset', `Apagar o preset «${esc(nome)}» e o ficheiro ${esc(BASE)}presets/${esc(id)}.js? Recomenda-se exportá-lo antes. Fica uma cópia .apagado.bak na pasta.`, 'Apagar', true))) return;
+  const noCentral = soCentral();
+  if (!(await confirmar('Apagar preset', noCentral ? `Apagar o preset «${esc(nome)}» para todos? Sai da apresentação e da lista; as revisões ficam guardadas no servidor central.` : `Apagar o preset «${esc(nome)}» e o ficheiro ${esc(BASE)}presets/${esc(id)}.js? Recomenda-se exportá-lo antes. Fica uma cópia .apagado.bak na pasta.`, 'Apagar', true))) return;
+  if (noCentral) { try { await pedirCentral('/presets/' + encodeURIComponent(FREG.id) + '/' + encodeURIComponent(id) + '/apagar', { method: 'POST', body: '{}' }); gravarFila(filaCentral().filter(x => !(x.freguesia === FREG.id && x.preset === id))); } catch (err) { aviso('O preset não foi apagado: ' + err.message + '.', 6000); return; } }
   const outro = PRESETS.find(p => p.id !== id).id;
   PRESETS.splice(PRESETS.findIndex(p => p.id === id), 1);
   cancelarAuto(); apagarAutosave(id);
@@ -2706,7 +2759,8 @@ async function acrescentarPresetImportado(d, opcoes = {}) {
   carregar(d); C.preset = id; FICHEIRO = clonar(serializar());
   try { localStorage.setItem(CHAVE_ATIVO, id); } catch (err) { /* sem armazenamento local */ }
   preencherPresets();
-  if (!(await verificarServidor()) || (await guardar(opcoes)) !== 'servidor') { PRESETS_LOCAIS.add(id); preencherPresets(); marcarAlterado(); autoGuardarJa(); }
+  const temServidor = (await verificarServidor()) || soCentral();
+  if (!temServidor || !['servidor', 'central'].includes(await guardar(opcoes))) { PRESETS_LOCAIS.add(id); preencherPresets(); marcarAlterado(); autoGuardarJa(); }
   aviso(`«${nome}» acrescentado como preset alternativo de ${FREG.nome}${PRESETS_LOCAIS.has(id) ? ' (só neste browser; exporta-o para o guardares)' : ''}. Troca de preset no índice (☰).`, 7000);
 }
 // descarta o trabalho em curso: volta ao preset tal como está gravado
@@ -2735,7 +2789,7 @@ async function restaurarAutosave() { // repõe o preset em curso da sessão ante
   if (!r || JSON.stringify(r.dados) === JSON.stringify(FICHEIRO)) return;
   if (!PRESETS_LOCAIS.has(C.preset) && !(await autosaveValido(C.preset, r))) return;
   const id = C.preset; carregar(clonar(r.dados)); C.preset = id; consolidacoes = Array.isArray(r.consolidacoes) ? r.consolidacoes : []; atualizarAvisosEdicao();
-  if (r.enviado) { alterado = false; rascunhoEnviado = true; FICHEIRO = clonar(r.dados); estado('Registos enviados para o servidor central'); return; }
+  if (r.enviado || naFilaCentral(id)) { alterado = false; rascunhoEnviado = !!r.enviado; FICHEIRO = clonar(r.dados); estado(r.enviado ? 'Enviado para o servidor central' : 'Na fila do servidor central'); return; }
   alterado = true;
   marcarAlterado(); estado('Alterações por guardar (rascunho de ' + new Date(r.quando).toLocaleString('pt-PT') + ')', true);
   aviso('Rascunho de ' + dataHora(r.quando) + ' recuperado: ainda não está guardado no ficheiro do preset.', 7000);
@@ -2748,7 +2802,7 @@ function limpo(el, completo) { // completo: as ruas levam também o traçado (pa
   c.texto = el.texto || '';
   c.fotos = (el.fotos || []).map(f => typeof f === 'string' ? { src: f, legenda: '' } : { src: f.src, legenda: f.legenda || '' });
   if (el.tipo === 'ponto') c.pos = el.pos.slice();
-  if (el.tipo === 'grupo') { c.pontos = el.pontos.map(p => p.slice()); if (el.evento) c.evento = el.evento; if (Array.isArray(el.detalhes)) c.detalhes = el.pontos.map((_, i) => ({ ...(el.detalhes[i] || {}) })); }
+  if (el.tipo === 'grupo') { c.pontos = el.pontos.map(p => p.slice()); if (el.evento) c.evento = el.evento; if (el.tiposPonto && el.tiposPonto.length) c.tiposPonto = el.tiposPonto.map(t => ({ ...t })); if (Array.isArray(el.detalhes)) c.detalhes = el.pontos.map((_, i) => ({ ...(el.detalhes[i] || {}) })); }
   if (el.tipo === 'rua') { if (el.rua) c.rua = el.rua; if (!el.rua || completo) c.linhas = el.linhas.map(l => l.map(p => p.slice())); if (el.quarteiroes) { c.quarteiroes = el.quarteiroes.slice(); if (!el.rua) c.tracado = el.tracado.map(l => l.map(p => p.slice())); } }
   if (el.tipo === 'zona') { c.poligono = el.poligono.map(p => p.slice()); if (el.lote) c.lote = el.lote; c.filhos = el.filhos.map(f => limpo(f, completo)); }
   return c;
@@ -2781,7 +2835,7 @@ async function verificarServidor() { // o servidor local (tools/serve.mjs) aceit
   if (servidorOk === true) return true; // se não havia servidor, volta a perguntar (pode ter sido ligado entretanto)
   try { const r = await fetch('/guardar' + qsFreguesia, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"sonda":true}' }); const j = r.ok ? await r.json() : {}; servidorOk = !!j.sonda; }
   catch (err) { servidorOk = false; }
-  barra.classList.toggle('offline', !servidorOk);
+  barra.classList.toggle('offline', !servidorOk && !urlCentral());
   return servidorOk;
 }
 // devolve 'servidor' (gravado no servidor local), 'transferido' (sem servidor: o ficheiro foi transferido), 'central' (sem servidor, com semTransferir: só para a fila) ou
@@ -2814,7 +2868,11 @@ async function gravarPreset(opcoes) {
     }
   } else if (!podeEditarEm(SESSAO, FREG.id)) { autoGuardarJa(); aviso('Para guardar, inicia sessão com uma conta que edite ' + FREG.nome + '.', 6000); return 'recusado'; }
   const naFila = paraCentral && enfileirarCentral(serializar(true), opcoes.soEvento);
-  if (opcoes.semTransferir && naFila) { alterado = false; FICHEIRO = clonar(dados); rascunhoEnviado = true; cancelarAuto(); autoGuardar(); estado('Na fila do servidor central · ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5)); return 'central'; }
+  if (naFila && (opcoes.semTransferir || !contasLocais())) {
+    alterado = false; FICHEIRO = clonar(dados); rascunhoEnviado = false; cancelarAuto(); autoGuardar(); estado('Na fila do servidor central · ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5));
+    PRESETS_LOCAIS.delete(C.preset); const e = PRESETS.find(p => p.id === C.preset); if (e) { e.nome = dados.titulo || e.nome; e.subtitulo = dados.subtitulo || ''; e.elementos = dados.elementos.length; } preencherPresets();
+    return 'central';
+  } // no site alojado, o servidor central é onde se guarda: não há ficheiro a transferir
   autoGuardarJa(); transferir(dados); // sem servidor o trabalho fica também na gravação automática
   return 'transferido';
 }
@@ -2872,6 +2930,14 @@ async function copiarCentral(manual) {
   finally { aCopiar = false; }
 }
 setInterval(() => { if (HORAS_COPIA > 0 && urlCentral() && copiaEmAtraso()) copiarCentral(false); }, 3600e3);
+const soCentral = () => !!urlCentral() && !contasLocais(); // o site alojado: é no servidor central que se guarda
+const naFilaCentral = id => filaCentral().some(x => x.freguesia === FREG.id && x.preset === id);
+function envioConfirmado(x) { // só agora o rascunho deixa de ser trabalho por guardar
+  if (x.freguesia !== FREG.id) return;
+  const este = x.preset === C.preset; if (este && alterado) return; // entretanto já há alterações novas
+  try { const k = chaveAuto(x.preset), r = JSON.parse(localStorage.getItem(k) || 'null'); if (r && r.dados && r.quando <= x.quando + 5000) { r.enviado = true; localStorage.setItem(k, JSON.stringify(r)); } } catch (err) { /* sem armazenamento local */ }
+  if (este) { rascunhoEnviado = true; estado('Enviado para o servidor central · ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5)); }
+}
 function enfileirarCentral(dados, soEvento) {
   if (!urlCentral()) return false;
   const eu = normalizarUtilizador(SESSAO ? SESSAO.utilizador : ''), meu = x => x.freguesia === FREG.id && x.preset === dados.preset && normalizarUtilizador(x.utilizador) === eu;
@@ -2895,16 +2961,16 @@ async function enviarFilaCentral() {
       const x = f[0];
       try {
         await pedirCentral('/presets/' + encodeURIComponent(x.freguesia) + '/' + encodeURIComponent(x.preset), { method: 'POST', body: JSON.stringify({ dados: x.dados, soEvento: !!x.soEvento, origem: AMBIENTE.app ? 'aplicacao' : 'browser', versao: AMBIENTE.versao || '', quando: x.quando }) });
-        estadoCentral = 'enviado às ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5);
+        estadoCentral = 'enviado às ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5); envioConfirmado(x);
       } catch (err) {
         // sem rede, servidor em baixo ou sessão terminada: fica na fila e tenta-se mais tarde; um preset recusado (400, 403 sem
-        // permissão para a freguesia, 409, 413) sai da fila (está guardado neste computador)
-        if ([400, 403, 409, 413].includes(err.codigo)) aviso(`O servidor central recusou «${x.preset}»: ${err.message}.`, 7000);
+        // permissão para a freguesia, 409, 413) sai da fila e volta a ser trabalho por guardar
+        if ([400, 403, 409, 413].includes(err.codigo)) { aviso(`O servidor central recusou «${x.preset}»: ${err.message}. As alterações continuam neste browser, por guardar.`, 8000); if (x.freguesia === FREG.id && x.preset === C.preset) marcarAlterado(); }
         else { estadoCentral = err.codigo === 401 ? 'inicia sessão para enviar' : err.message; break; }
       }
       gravarFila(filaCentral().filter(y => !(y.freguesia === x.freguesia && y.preset === x.preset && y.quando === x.quando)));
     }
-    if (estadoCentral.startsWith('enviado')) sincronizarEvento();
+    if (estadoCentral.startsWith('enviado')) sincronizarConjuntos();
     const resto = filaCentral(); if (resto.length && !resto.some(podeEnviar)) estadoCentral = 'inicia sessão' + (resto[0].utilizador ? ' como ' + resto[0].utilizador : '') + ' para enviar';
   } finally { aEnviar = false; atualizarEstadoCentral(); }
 }
@@ -2936,7 +3002,7 @@ async function painelCentral() {
   } else if (r === 'entrar') { if (await dialogoEntrar({ soCentral: true })) enviarFilaCentral(); }
   else if (r === 'abrir') abrirDoCentral();
   else if (r === 'copiar') copiarCentral(true);
-  else if (r === 'consultar') window.open(urlCentral().replace(/\/api\/v\d+$/, '') + '/', '_blank', 'noopener');
+  else if (r === 'consultar') window.open(urlCentral().replace(/\/api\/v\d+$/, '') + '/consulta', '_blank', 'noopener');
   else { aviso('Ligação ao servidor central guardada.', 2500); enviarFilaCentral(); }
 }
 async function abrirDoCentral() { // traz um preset do servidor central como preset alternativo desta freguesia
@@ -3083,7 +3149,7 @@ async function pedirEdicao({ criar } = {}) {
   await lerEventoServidor(); // o estado guardado pode estar desatualizado
   if (!alterado) { acrescentarPresetsLocais(); preencherPresets(); await restaurarAutosave(); }
   entrandoPorCriar = !!criar; entrarEdicao(true); entrandoPorCriar = false;
-  sincronizarEvento();
+  sincronizarConjuntos();
   if (criar) { abrirCriar(true); if (PARAMS.has('criar')) { const qs = new URLSearchParams(location.search); qs.delete('criar'); history.replaceState(null, '', location.pathname + qsTexto(qs) + location.hash); } }
   return true;
 }
@@ -3239,27 +3305,42 @@ const EVENTOS = {
 const CHAVE_EVENTO = 'co-evento';
 let EVENTO = null; // o que o servidor diz: { id, nome, ativo, desde, por } (em cache neste browser, para abrir sem rede)
 const eventoAtivo = () => EVENTO && EVENTO.ativo && EVENTOS[EVENTO.id] ? EVENTOS[EVENTO.id] : null;
-const detalheDe = (el, i) => el.tipo === 'grupo' && el.evento && Array.isArray(el.detalhes) ? el.detalhes[i || 0] || null : null;
-const categoriaEvento = (el, d) => (EVENTOS[el.evento] ? EVENTOS[el.evento].categorias : []).find(c => c.id === d.c) || null;
+const detalheDe = (el, i) => el.tipo === 'grupo' && Array.isArray(el.detalhes) ? el.detalhes[i || 0] || null : null;
+const tiposDe = el => el.evento ? (EVENTOS[el.evento] ? EVENTOS[el.evento].categorias : []) : (el.tiposPonto || []);
+const tipoDoPonto = (el, d) => (d && d.c && tiposDe(el).find(c => c.id === d.c)) || null;
+const chaveConjunto = e => e.evento || e.id; // como o conjunto se reconhece entre dispositivos
 const moradaTexto = d => d && d.rua ? d.rua + (d.numero ? ', ' + d.numero : '') : 'sem morada';
 // um registo tirado não volta quando o servidor central junta os registos dos vários dispositivos
-function marcarRemovidos(el, lista) { const ids = lista.map(d => d && d.i).filter(Boolean); if (!el.evento || !ids.length) return; C.removidosEvento = C.removidosEvento || {}; C.removidosEvento[el.evento] = [...new Set([...(C.removidosEvento[el.evento] || []), ...ids])]; }
+function marcarRemovidos(el, lista) { const ids = lista.map(d => d && d.i).filter(Boolean), k = chaveConjunto(el); if (!ids.length) return; C.removidosEvento = C.removidosEvento || {}; C.removidosEvento[k] = [...new Set([...(C.removidosEvento[k] || []), ...ids])]; }
 // traz do servidor central os registos deste preset feitos noutros dispositivos
-async function sincronizarEvento() {
-  const ev = eventoAtivo(); if (!ev || !edicao || !urlCentral() || (!lerSessaoCentral() && !lerCentral().chave)) return;
-  const presetPedido = C.preset;
+async function sincronizarConjuntos() {
+  if (!edicao || !urlCentral() || (!lerSessaoCentral() && !lerCentral().chave)) return;
+  const presetPedido = C.preset, ev = eventoAtivo();
   let dados; try { dados = (await pedirCentral('/presets/' + encodeURIComponent(FREG.id) + '/' + encodeURIComponent(presetPedido))).dados; } catch (err) { return; }
   if (!edicao || !dados || C.preset !== presetPedido) return; // entretanto saiu da edição ou trocou de preset
-  const fora = new Set([...((dados.removidosEvento || {})[ev.id] || []), ...((C.removidosEvento || {})[ev.id] || [])]);
-  if (fora.size) { C.removidosEvento = C.removidosEvento || {}; C.removidosEvento[ev.id] = [...fora]; }
-  const la = (dados.elementos || []).find(e => e.tipo === 'grupo' && e.evento === ev.id), g = ELEMENTOS.find(e => e.tipo === 'grupo' && e.evento === ev.id);
-  let mudou = false;
-  if (g) for (let i = g.pontos.length - 1; i >= 0; i--) if (g.detalhes[i] && fora.has(g.detalhes[i].i)) { g.pontos.splice(i, 1); g.detalhes.splice(i, 1); mudou = true; }
-  if (la && Array.isArray(la.detalhes)) la.detalhes.forEach((d, i) => { if (!d || !d.i || fora.has(d.i)) return; let h = ELEMENTOS.find(e => e.tipo === 'grupo' && e.evento === ev.id); const k = h ? h.detalhes.findIndex(x => x && x.i === d.i) : -1; if (k >= 0) { if (String(d.movido || '') > String(h.detalhes[k].movido || '')) { h.pontos[k] = la.pontos[i]; h.detalhes[k] = { ...h.detalhes[k], ...d }; mudou = true; } return; } if (!h) { h = preparar({ ...la, fotos: la.fotos || [], pontos: [la.pontos[i]], detalhes: [d] }, null); if (h) ELEMENTOS.push(h); } else { h.pontos.push(la.pontos[i]); h.detalhes.push(d); } mudou = true; });
-  if (g && !g.pontos.length) { if (selecionado === g) { fecharCartao(); limparSelecao(); } removerDoModelo(g); mudou = true; } // outro dispositivo tirou o último
+  const destes = x => (x.elementos || []).filter(e => e.tipo === 'grupo' && Array.isArray(e.detalhes)), remotos = destes(dados); let mudou = false;
+  for (const [k, ids] of Object.entries(dados.removidosEvento || {})) { C.removidosEvento = C.removidosEvento || {}; C.removidosEvento[k] = [...new Set([...(C.removidosEvento[k] || []), ...ids])]; }
+  for (const chave of new Set([...remotos.map(chaveConjunto), ...ELEMENTOS.filter(e => e.tipo === 'grupo').map(chaveConjunto)])) {
+    const fora = new Set((C.removidosEvento || {})[chave] || []), la = remotos.find(e => chaveConjunto(e) === chave); let g = ELEMENTOS.find(e => e.tipo === 'grupo' && chaveConjunto(e) === chave);
+    if (g) for (let i = g.pontos.length - 1; i >= 0; i--) if (g.detalhes[i] && fora.has(g.detalhes[i].i)) { g.pontos.splice(i, 1); g.detalhes.splice(i, 1); mudou = true; }
+    if (la) la.detalhes.forEach((d, i) => {
+      if (!d || !d.i || fora.has(d.i)) return;
+      const k = g ? g.detalhes.findIndex(x => x && x.i === d.i) : -1;
+      if (k >= 0) {
+        const h = g.detalhes[k], pos = String(d.movido || '') > String(h.movido || ''), ed = String(d.editado || '') > String(h.editado || '');
+        if (pos) { g.pontos[k] = la.pontos[i]; h.movido = d.movido; mudou = true; }
+        if (ed) { g.detalhes[k] = { ...h, ...d }; mudou = true; }
+        return;
+      }
+      if (!g) { if (!ev || la.evento !== ev.id) return; g = preparar({ ...la, fotos: la.fotos || [], pontos: [la.pontos[i]], detalhes: [d] }, null); if (g) ELEMENTOS.push(g); } // um conjunto normal que aqui foi apagado não volta
+      else { g.pontos.push(la.pontos[i]); g.detalhes.push(d); }
+      mudou = true;
+    });
+    if (g && !g.pontos.length) { if (selecionado === g) { fecharCartao(); limparSelecao(); } removerDoModelo(g); mudou = true; } // outro dispositivo tirou o último
+  }
   if (mudou) { construir(); construirIndice(); construirPesquisa(); if (selecionado && POR_ID[selecionado.id] === selecionado) selecionar(selecionado, false, !cartaoAberto()); }
 }
-const contagensDe = el => (el.detalhes || []).reduce((m, d) => { const c = d && d.c ? d.c : 'sem'; m[c] = (m[c] || 0) + 1; return m; }, {});
+const contagensDe = el => (el.detalhes || []).reduce((m, d) => { const t = tipoDoPonto(el, d), c = t ? t.id : 'sem'; m[c] = (m[c] || 0) + 1; return m; }, {});
 async function lerEventoServidor() { // o servidor central, senão o local; a última resposta fica em cache
   try { EVENTO = JSON.parse(localStorage.getItem(CHAVE_EVENTO) || 'null'); } catch (err) { EVENTO = null; }
   aplicarEvento();
@@ -3305,16 +3386,20 @@ async function escolherRegisto() {
 }
 // ---- o levantamento: tipo → localização → confirmar a morada → acrescentar ao conjunto ----
 let levant = null, levantClique = null, levantGps = null; // o registo em curso { ev, cat, m (marcador), loc, morada }; quem espera um toque no mapa; cancelar a espera pelo GPS
+const fonteRegisto = g => ({ id: chaveConjunto(g), nome: g.nome, icone: g.icone || '📍', categorias: tiposDe(g), grupo: g }); // o registo com localização, em qualquer conjunto
 async function levantamento(ev, catId) {
   porFerramenta('mover'); fecharCartao(); abrirCriar(false, true);
   let cat = catId || null; try { if (!cat) cat = localStorage.getItem('co-evento-cat:' + ev.id); } catch (err) { /* sem armazenamento local */ }
-  const r = await dialogo({ titulo: ev.icone + ' ' + ev.nome, texto: 'O que encontraste? A seguir procuro a tua localização e sugiro a morada, que confirmas antes de registar.', classe: 'opcoes',
-    botoes: [...ev.categorias.map(c => ({ id: c.id, texto: c.icone + ' ' + c.nome, classe: c.id === cat ? 'on' : '' })), { id: 'cancelar', texto: 'Cancelar' }] });
-  const categoria = ev.categorias.find(c => c.id === r); if (!categoria) return;
-  try { localStorage.setItem('co-evento-cat:' + ev.id, r); } catch (err) { /* sem armazenamento local */ }
+  let categoria = { id: '', nome: ev.nome, icone: ev.icone, cor: '#9aa3ad' }; // sem tipos, não há nada a perguntar
+  if (ev.categorias.length) {
+    const r = await dialogo({ titulo: ev.icone + ' ' + ev.nome, texto: 'O que encontraste? A seguir procuro a tua localização e sugiro a morada, que confirmas antes de registar.', classe: 'opcoes',
+      botoes: [...ev.categorias.map(c => ({ id: c.id, texto: c.icone + ' ' + c.nome, classe: c.id === cat ? 'on' : '' })), { id: 'cancelar', texto: 'Cancelar' }] });
+    categoria = ev.categorias.find(c => c.id === r); if (!categoria) return;
+    try { localStorage.setItem('co-evento-cat:' + ev.id, r); } catch (err) { /* sem armazenamento local */ }
+  }
   if (levant && levant.m) { levant.cat = categoria; mostrarLevantamento(); return; } // só mudou o tipo
   let loc = null;
-  try { loc = await localizarPrecisa(); } catch (err) { if (err.cancelado) return; aviso('Sem localização (' + err.message + '). Toca no mapa no sítio exato do candeeiro.', 7000); }
+  try { loc = await localizarPrecisa(); } catch (err) { if (err.cancelado) return; aviso('Sem localização (' + err.message + '). Toca no mapa no sítio exato ' + (ev.grupo ? 'do ponto' : 'do candeeiro') + '.', 7000); }
   if (!edicao) return; // saiu da edição enquanto esperava
   if (!loc) { loc = await esperarCliqueNoMapa(); if (!loc) return; }
   abrirLevantamento(ev, categoria, loc);
@@ -3347,12 +3432,13 @@ function moradaSugerida(ll) {
   if (r && r.d <= 80) return { rua: r.r.rua.nome, numero: melhor && md <= 90 && normalizar(melhor[3]) === normalizar(r.r.rua.nome) ? melhor[2] : '', distancia: Math.round(r.d), fonte: 'rua a ' + Math.round(r.d) + ' m; sem número de polícia perto' };
   return { rua: melhor && md <= 120 ? melhor[3] : '', numero: '', distancia: melhor ? Math.round(md) : null, fonte: 'nada perto: escreve a morada' };
 }
+function encherListaRuas() { if (!$('#lista-ruas').children.length) $('#lista-ruas').innerHTML = [...new Set([...RUAS.map(r => r.nome), ...ED.numeros.map(n => n[3])])].filter(Boolean).sort((a, b) => a.localeCompare(b, 'pt')).map(n => `<option value="${esc(n)}">`).join(''); }
 function abrirLevantamento(ev, cat, loc) {
   cancelarLevantamento(true);
   const m = L.marker(loc.ll, { draggable: true, zIndexOffset: 1000, keyboard: false, icon: L.divIcon({ className: 'mk-levant', html: '<div class="levant-ico"></div>', iconSize: [36, 36], iconAnchor: [18, 32] }) }).addTo(map);
   levant = { ev, cat, m, loc, morada: moradaSugerida(loc.ll), manual: false };
   m.on('dragend', () => { levant.loc = { ll: m.getLatLng(), precisao: null }; levant.morada = moradaSugerida(m.getLatLng()); levant.manual = false; mostrarLevantamento(); });
-  if (!$('#lista-ruas').children.length) $('#lista-ruas').innerHTML = [...new Set([...RUAS.map(r => r.nome), ...ED.numeros.map(n => n[3])])].filter(Boolean).sort((a, b) => a.localeCompare(b, 'pt')).map(n => `<option value="${esc(n)}">`).join('');
+  encherListaRuas();
   document.body.classList.add('a-levantar');
   mostrarLevantamento(); centrarLevantamento(loc.ll);
   if (!LIMITES.some(a => dentro(loc.ll, a))) aviso(`A localização fica fora de ${FREG.nome}: confirma que estás na freguesia certa.`, 6000);
@@ -3385,8 +3471,9 @@ async function confirmarLevantamento() {
   if (!rua) { aviso('Falta a rua.', 3000); $('#lev-rua').focus(); return; }
   if (!numero && !(await confirmar('Sem número de porta', 'Não há número de porta. Registar na mesma, só com a rua?', 'Registar'))) { $('#lev-numero').focus(); return; }
   const { ev, cat, m, loc } = levant;
+  if (ev.grupo && POR_ID[ev.grupo.id] !== ev.grupo) { cancelarLevantamento(true); aviso(`O conjunto «${ev.grupo.nome}» já não existe: o registo não foi feito.`, 6000); return; }
   const b = new Uint8Array(6); crypto.getRandomValues(b); // o id deixa juntar os registos de vários dispositivos no servidor central
-  const d = { i: [...b].map(x => x.toString(16).padStart(2, '0')).join(''), c: cat.id, rua, numero, quando: new Date().toISOString(), autor: SESSAO ? SESSAO.utilizador : '' }; if (loc.precisao != null) d.precisao = Math.round(loc.precisao);
+  const d = { i: [...b].map(x => x.toString(16).padStart(2, '0')).join(''), c: cat.id, rua, numero, quando: new Date().toISOString(), autor: SESSAO ? SESSAO.utilizador : '', moradaManual: true }; if (loc.precisao != null) d.precisao = Math.round(loc.precisao); // a morada foi confirmada: arrastar depois não a muda
   const soEvento = !alterado; // sem mais nada por guardar, o envio só mexe no conjunto do evento: não pisa o que outro dispositivo mudou no resto do preset
   const g = registarNoConjunto(ev, arredLL(m.getLatLng()), d);
   cancelarLevantamento(true);
@@ -3394,7 +3481,7 @@ async function confirmarLevantamento() {
   aviso(`${cat.icone} Registado: ${moradaTexto(d)} · ${total} registo${total === 1 ? '' : 's'} em ${FREG.nome}${r === 'servidor' ? ' (guardado)' : r === 'central' ? ' (a enviar)' : r === 'recusado' ? ' (por guardar)' : ''}.`, 6000);
 }
 function registarNoConjunto(ev, pos, d) { // o conjunto do evento nesta freguesia (criado no primeiro registo)
-  let g = ELEMENTOS.find(e => e.tipo === 'grupo' && e.evento === ev.id);
+  let g = ev.grupo && POR_ID[ev.grupo.id] === ev.grupo ? ev.grupo : ELEMENTOS.find(e => e.tipo === 'grupo' && e.evento === ev.id);
   if (g) {
     if (!Array.isArray(g.detalhes)) g.detalhes = []; while (g.detalhes.length < g.pontos.length) g.detalhes.push({});
     g.pontos.push(pos); g.detalhes.push(d);
@@ -3409,13 +3496,12 @@ function registarNoConjunto(ev, pos, d) { // o conjunto do evento nesta freguesi
   marcarAlterado();
   return g;
 }
-function htmlResumoEvento(el) { // no cartão do conjunto: a tabela por categoria e a lista dos registos
-  const ev = EVENTOS[el.evento]; if (!ev) return '';
-  const cont = contagensDe(el), n = el.pontos.length;
-  return `<div class="evento-resumo"><table><thead><tr><th>${esc(ev.nome)} · ${esc(FREG.nome)}</th><th>Registos</th></tr></thead><tbody>
-    ${ev.categorias.map(c => `<tr><td><span class="pinta" style="--c:${c.cor}"></span>${esc(c.icone)} ${esc(c.nome)}</td><td>${cont[c.id] || 0}</td></tr>`).join('')}
-    <tr class="total"><td>Total de falhas registadas</td><td>${n}</td></tr></tbody></table>
-    <h3>Registos</h3><ol class="evento-lista">${el.pontos.map((p, i) => { const d = detalheDe(el, i) || {}, c = categoriaEvento(el, d); return `<li><button type="button" data-ponto="${i}" title="Ver no mapa">${c ? esc(c.icone) : '•'} ${esc(moradaTexto(d))}<small>${d.quando ? esc(dataHora(d.quando)) : ''}${d.autor && SESSAO && SESSAO.papel === 'admin' ? ' · ' + esc(d.autor) : ''}</small></button></li>`; }).join('')}</ol></div>`;
+function htmlResumoConjunto(el) { // no cartão de qualquer conjunto: a tabela por tipo e a lista dos pontos
+  const ev = EVENTOS[el.evento], tipos = tiposDe(el), cont = contagensDe(el), n = el.pontos.length, sem = cont.sem || 0;
+  const tabela = !tipos.length ? '' : `<table><thead><tr><th>${esc(ev ? ev.nome : el.nome)} · ${esc(FREG.nome)}</th><th>${ev ? 'Registos' : 'Pontos'}</th></tr></thead><tbody>
+    ${tipos.map(c => `<tr><td><span class="pinta" style="--c:${c.cor}"></span>${esc(c.icone)} ${esc(c.nome)}</td><td>${cont[c.id] || 0}</td></tr>`).join('')}${sem ? `<tr><td><span class="pinta" style="--c:#9aa3ad"></span>Sem tipo</td><td>${sem}</td></tr>` : ''}
+    <tr class="total"><td>${ev ? 'Total de falhas registadas' : 'Total de pontos'}</td><td>${n}</td></tr></tbody></table>`;
+  return `<div class="evento-resumo">${tabela}<h3>${ev ? 'Registos' : 'Pontos deste conjunto'} (${n})</h3><ol class="evento-lista">${el.pontos.map((p, i) => { const d = lerSub(el, i), c = tipoDoPonto(el, d), f = (d.fotos || []).length; return `<li><button type="button" data-sub="${i}" title="Abrir o cartão deste ponto">${esc(c ? c.icone : d.icone || el.icone || '•')} ${esc(nomeSub(el, i))}${f ? ' 📷' + f : ''}<small>${d.nome && d.rua ? esc(moradaTexto(d)) + ' · ' : ''}${d.quando ? esc(dataHora(d.quando)) : ''}${d.autor && SESSAO && SESSAO.papel === 'admin' ? ' · ' + esc(d.autor) : ''}</small></button></li>`; }).join('')}</ol></div>`;
 }
 // o resumo da cidade: do servidor central (que junta as 24 freguesias) ou, sem ele, dos ficheiros de cada freguesia
 async function resumoLocalEvento(ev) {
@@ -3434,6 +3520,48 @@ async function resumoLocalEvento(ev) {
     } catch (err) { /* freguesia sem dados */ }
   }));
   return out;
+}
+// Todos os conjuntos da cidade, pelo nome: quantos pontos em cada freguesia e de que tipo
+function juntarLinhasConjuntos(linhas) { // [{ freguesia, nome, tipos, registos: [{ i, c }] }]
+  const m = new Map();
+  for (const l of linhas) {
+    const k = normalizar(l.nome).trim(); if (!m.has(k)) m.set(k, { nome: l.nome, tipos: [], porF: {} }); const c = m.get(k);
+    for (const t of l.tipos || []) if (!c.tipos.some(x => x.id === t.id)) c.tipos.push(t);
+    const v = c.porF[l.freguesia] = c.porF[l.freguesia] || new Map(); (l.registos || []).forEach((r, n) => v.set(r.i || l.preset + '#' + n, r.c || 'sem'));
+  }
+  return [...m.values()].map(c => { const freguesias = {}; let total = 0; for (const [f, v] of Object.entries(c.porF)) { const contagens = {}; for (const x of v.values()) { const k = c.tipos.some(t => t.id === x) ? x : 'sem'; contagens[k] = (contagens[k] || 0) + 1; } freguesias[f] = { total: v.size, contagens }; total += v.size; } return { nome: c.nome, tipos: c.tipos, freguesias, total }; }).filter(c => c.total).sort((a, b) => a.nome.localeCompare(b.nome, 'pt'));
+}
+async function linhasConjuntosLocais() {
+  const out = [];
+  await Promise.all(FREGUESIAS.map(async f => {
+    const base = f.id === 'campo-de-ourique' ? 'dados/' : 'dados/freguesias/' + f.id + '/'; let presets = [];
+    try {
+    const indice = (await (await fetch(base + 'presets/index.js', { cache: 'no-store' })).text()).replace(/^[\s\S]*?=\s*/, '').replace(/;\s*$/, '');
+    presets = await Promise.all(JSON.parse(indice).map(async p => { if (f.id === FREG.id && p.id === C.preset) return serializar(); try { return JSON.parse(jsonDoFicheiro(await (await fetch(base + 'presets/' + p.id + '.js', { cache: 'no-store' })).text())); } catch (err) { return null; } }));
+    } catch (err) { /* freguesia sem dados */ }
+    if (f.id === FREG.id && !presets.some(p => p && p.preset === C.preset)) presets.push(serializar()); // sem servidor nem índice, o que está aberto conta na mesma
+    for (const d of presets) for (const e of (d && d.elementos) || []) if (e.tipo === 'grupo' && Array.isArray(e.detalhes)) out.push({ freguesia: f.id, preset: d.preset, nome: e.nome, tipos: e.evento && EVENTOS[e.evento] ? EVENTOS[e.evento].categorias : e.tiposPonto, registos: e.detalhes.map(x => ({ i: x && x.i, c: x && x.c })) });
+  }));
+  return out;
+}
+async function resumoConjuntos() {
+  aviso('A juntar os conjuntos das 24 freguesias…');
+  let linhas = null, fonte = '';
+  if (urlCentral() && (lerSessaoCentral() || lerCentral().chave)) { try { linhas = ((await pedirCentral('/elementos?tipo=grupo')).elementos || []).filter(e => e.registos).map(e => ({ freguesia: e.freguesia, preset: e.preset, nome: e.nome, tipos: e.evento && EVENTOS[e.evento] ? EVENTOS[e.evento].categorias : e.tipos, registos: e.registos })); fonte = 'servidor central'; } catch (err) { linhas = null; } }
+  if (!linhas) { linhas = await linhasConjuntosLocais(); fonte = AMBIENTE.app ? 'dados desta aplicação' : 'ficheiros desta apresentação'; }
+  $('#aviso').classList.remove('aberto');
+  const lista = juntarLinhasConjuntos(linhas);
+  for (;;) {
+    const r = await dialogo({ titulo: 'Conjuntos de pontos · Lisboa', largo: true, texto: `${lista.length} conjunto${lista.length === 1 ? '' : 's'} (fonte: ${esc(fonte)}).`,
+      corpo: `<div class="tabela-dialogo"><table><thead><tr><th>Conjunto</th><th class="num">Freguesias</th><th class="num">Pontos</th><th></th></tr></thead><tbody>${lista.map((c, i) => `<tr><td>${esc(c.nome)}</td><td class="num">${Object.keys(c.freguesias).length}</td><td class="num"><b>${c.total}</b></td><td><button type="button" class="btn" data-r="ver:${i}">Ver</button></td></tr>`).join('') || '<tr><td colspan="4" class="nota">Ainda não há conjuntos.</td></tr>'}</tbody></table></div>`,
+      botoes: [{ id: 'ok', texto: 'Fechar', classe: 'on' }] });
+    if (!String(r).startsWith('ver:')) return;
+    const c = lista[+r.slice(4)], fr = FREGUESIAS.map(f => ({ f, x: c.freguesias[f.id] })).filter(l => l.x), tem = fr.some(l => l.x.contagens.sem);
+    const q = await dialogo({ titulo: c.nome + ' · Lisboa', largo: true, texto: `<b>${c.total}</b> ponto${c.total === 1 ? '' : 's'} em ${fr.length} freguesia${fr.length === 1 ? '' : 's'}.`,
+      corpo: `<div class="tabela-dialogo"><table><thead><tr><th>Freguesia</th>${c.tipos.map(t => `<th class="num">${esc(t.icone || '')} ${esc(t.nome)}</th>`).join('')}${c.tipos.length && tem ? '<th class="num">Sem tipo</th>' : ''}<th class="num">Total</th></tr></thead><tbody>${fr.map(l => `<tr><td>${esc(l.f.nome)}</td>${c.tipos.map(t => `<td class="num">${l.x.contagens[t.id] || 0}</td>`).join('')}${c.tipos.length && tem ? `<td class="num">${l.x.contagens.sem || 0}</td>` : ''}<td class="num"><b>${l.x.total}</b></td></tr>`).join('')}</tbody></table></div>`,
+      botoes: [{ id: 'ok', texto: 'Voltar', classe: 'on' }] });
+    if (q !== 'ok') return;
+  }
 }
 async function resumoCidadeEvento() {
   const ev = eventoAtivo(); if (!ev) return;
@@ -3498,18 +3626,22 @@ function criarDeLote(l) {
   porFerramenta('mover');
 }
 // conjunto de pontos: um só cartão para vários pontos no mapa
+function novoDetalhe(pos) { // o que fica registado de cada ponto: quando, quem e a morada sugerida
+  let s = {}; try { s = moradaSugerida(pos); } catch (err) { /* sem dados de moradas nesta freguesia */ }
+  return { i: idRegisto(), quando: new Date().toISOString(), autor: SESSAO ? SESSAO.utilizador : '', rua: s.rua || '', numero: s.numero || '' };
+}
 function pontoDeGrupo(ll) {
   if (grupoEmCurso && POR_ID[grupoEmCurso.id] === grupoEmCurso) {
-    grupoEmCurso.pontos.push(arredLL(ll)); construir(); marcarAlterado(); selecionar(grupoEmCurso, false);
+    grupoEmCurso.pontos.push(arredLL(ll)); subPonto(grupoEmCurso, 0); grupoEmCurso.detalhes[grupoEmCurso.pontos.length - 1] = novoDetalhe(arredLL(ll)); construir(); marcarAlterado(); selecionar(grupoEmCurso, false);
     aviso(`«${grupoEmCurso.nome}»: ${grupoEmCurso.pontos.length} pontos.`, 1800); return;
   }
   criados++;
-  const g = acrescentar({ tipo: 'grupo', nome: 'Novo conjunto ' + criados, icone: '⁘', pontos: [arredLL(ll)] }, null);
+  const g = acrescentar({ tipo: 'grupo', nome: 'Novo conjunto ' + criados, icone: '⁘', pontos: [arredLL(ll)], detalhes: [novoDetalhe(arredLL(ll))] }, null);
   if (g) { grupoEmCurso = g; $('#dica').textContent = `Clica no mapa para acrescentar pontos a «${g.nome}» · Esc termina`; }
 }
 function emConjunto(el) { // um ponto passa a conjunto (com esse ponto como primeiro)
   if (el.pai) { aviso('Um ponto dentro de uma zona não pode ser conjunto.', 3000); return; }
-  el.tipo = 'grupo'; el.pontos = [el.pos]; delete el.pos;
+  el.tipo = 'grupo'; el.pontos = [el.pos]; el.detalhes = [{ ...novoDetalhe(el.pos), nome: el.nome }]; delete el.pos;
   construir(); construirIndice(); construirPesquisa(); marcarAlterado();
   porFerramenta('grupo', el); selecionar(el, false);
 }
@@ -3571,7 +3703,7 @@ function removerDoModelo(el) {
 async function apagar(el) {
   const n = (el.filhos || []).length;
   if (!(await confirmar('Apagar elemento', `Apagar «${esc(el.nome)}»${n ? ` e os seus ${n} ponto${n > 1 ? 's' : ''}` : ''}?`, 'Apagar', true))) return;
-  limparSelecao(); fecharCartao(); removerDoModelo(el); if (el.evento) marcarRemovidos(el, el.detalhes || []);
+  limparSelecao(); fecharCartao(); removerDoModelo(el); if (el.tipo === 'grupo') marcarRemovidos(el, el.detalhes || []);
   esquecerIds([el.id, ...(el.filhos || []).map(f => f.id)]);
   construir(); construirIndice(); construirPesquisa(); marcarAlterado();
 }
@@ -3584,7 +3716,7 @@ function reordenar(el, delta) {
 // o ponto foi largado depois de arrastado: nova posição e, se for o caso, nova zona-mãe
 function largarPonto(el, idx, ll, zona) {
   const pos = arredLL(ll);
-  if (el.tipo === 'grupo') { el.pontos[idx] = pos; const d = detalheDe(el, idx); if (d) d.movido = new Date().toISOString(); } // entre dispositivos, ganha o último arrasto
+  if (el.tipo === 'grupo') { el.pontos[idx] = pos; const d = detalheDe(el, idx); if (d) { d.movido = new Date().toISOString(); if (!d.moradaManual && !el.evento) { const s = moradaSugerida(pos); d.rua = s.rua || ''; d.numero = s.numero || ''; tocado(d); } } } // entre dispositivos, ganha o último arrasto; a morada acompanha, se não foi escrita à mão
   else {
     el.pos = pos; delete el.area;
     if (zona !== el.pai) {
@@ -3667,13 +3799,17 @@ function htmlForm(el) {
     <div class="acoes-ed"><button type="button" class="btn" data-ac="subir" title="Mover para cima na ordem">↑</button><button type="button" class="btn" data-ac="descer" title="Mover para baixo na ordem">↓</button><span class="esp"></span><button type="button" class="btn perigo" data-ac="apagar">Apagar</button><button type="button" class="btn on" data-ac="concluir">Concluído</button></div>
   </form>`;
 }
+function htmlTiposPonto(el) { // os tipos deste conjunto: dão a cor de cada ponto e as linhas da tabela do cartão
+  const l = el.tiposPonto || [];
+  return `<div class="fotos-ed"><h3>Tipos de ponto</h3>${l.map((t, i) => `<div class="linha tipo-ponto"><input name="tipo-icone" data-i="${i}" value="${esc(t.icone || '')}" maxlength="4" aria-label="Símbolo do tipo"><input name="tipo-nome" data-i="${i}" value="${esc(t.nome)}" aria-label="Nome do tipo"><input type="color" name="tipo-cor" data-i="${i}" value="${esc(t.cor)}" aria-label="Cor do tipo"><button type="button" class="fechar" data-ac="tipo-tirar" data-i="${i}" aria-label="Tirar este tipo">✕</button></div>`).join('')}<div class="linha"><button type="button" class="btn" data-ac="tipo-mais">＋ Acrescentar tipo</button></div><div class="nota">Com tipos, cada ponto ganha a cor do seu tipo e o cartão mostra a tabela com as contagens.</div></div>`;
+}
 function htmlFormLugar(el) { // pontos do conjunto; tirar do mapa ou pôr no mapa
   if (el.tipo === 'grupo') {
     const p = priDe(el), aAcrescentar = ferramenta === 'grupo' && grupoEmCurso === el;
     return `<div class="fotos-ed"><h3>Pontos do conjunto (${el.pontos.length})</h3>
-      ${el.pontos.map((q, i) => { const d = detalheDe(el, i), cat = d && categoriaEvento(el, d); return `<div class="membro"><span class="pinta" style="--c:${cat ? cat.cor : p.cor}"></span><span class="abrir-sub" role="button" tabindex="0" data-sub="${i}" title="Abrir o cartão deste ponto">${cat ? esc(cat.icone) + ' ' + esc(moradaTexto(d)) : esc(nomeSub(el, i))} <small class="nota">${cat && d.quando ? esc(dataHora(d.quando)) : q[0].toFixed(5) + ', ' + q[1].toFixed(5)}</small></span><button type="button" class="fechar" data-ac="grupo-tirar" data-i="${i}" aria-label="Tirar o ponto ${i + 1}">✕</button></div>`; }).join('')}
-      ${el.evento ? '' : `<div class="linha"><button type="button" class="btn${aAcrescentar ? ' on' : ''}" data-ac="grupo-mais">＋ Acrescentar pontos no mapa</button>${(s => s.length ? `<select name="agregar-solto" class="seletor" aria-label="Agregar um ponto solto"><option value="">⁘ Agregar um ponto solto…</option>${s.map(x => `<option value="${esc(x.id)}">${esc(x.nome)}</option>`).join('')}</select>` : '')(pontosComLugar())}</div>`}
-      <div class="nota">Toca num ponto para abrir o seu cartão. Arrasta os pontos no mapa para os mudar de sítio; ${el.evento ? '' : 'largar um ponto solto em cima de um ponto do conjunto agrega-o.'}</div></div>`;
+      ${el.pontos.map((q, i) => { const d = detalheDe(el, i), cat = d && tipoDoPonto(el, d); return `<div class="membro"><span class="pinta" style="--c:${cat ? cat.cor : p.cor}"></span><span class="abrir-sub" role="button" tabindex="0" data-sub="${i}" title="Abrir o cartão deste ponto">${cat ? esc(cat.icone) + ' ' + esc(moradaTexto(d)) : esc(nomeSub(el, i))} <small class="nota">${cat && d.quando ? esc(dataHora(d.quando)) : q[0].toFixed(5) + ', ' + q[1].toFixed(5)}</small></span><button type="button" class="fechar" data-ac="grupo-tirar" data-i="${i}" aria-label="Tirar o ponto ${i + 1}">✕</button></div>`; }).join('')}
+      ${el.evento ? '' : `<div class="linha"><button type="button" class="btn" data-ac="grupo-registar" title="Procura a tua localização e sugere a morada, que confirmas antes de registar">📍 Registar na minha localização</button><button type="button" class="btn${aAcrescentar ? ' on' : ''}" data-ac="grupo-mais">＋ Acrescentar pontos no mapa</button>${(s => s.length ? `<select name="agregar-solto" class="seletor" aria-label="Agregar um ponto solto"><option value="">⁘ Agregar um ponto solto…</option>${s.map(x => `<option value="${esc(x.id)}">${esc(x.nome)}</option>`).join('')}</select>` : '')(pontosComLugar())}</div>`}
+      <div class="nota">Toca num ponto para abrir o seu cartão. Arrasta os pontos no mapa para os mudar de sítio; ${el.evento ? '' : 'largar um ponto solto em cima de um ponto do conjunto agrega-o.'}</div></div>${el.evento ? '' : htmlTiposPonto(el)}`;
   }
   if (el.tipo === 'ponto') return `<div class="fotos-ed"><h3>Lugar no mapa</h3><div class="linha">${el.pai ? '' : '<button type="button" class="btn" data-ac="em-conjunto" title="Acrescentar mais pontos com este mesmo cartão">⁘ Transformar em conjunto</button>'}<button type="button" class="btn" data-ac="desmaterializar" title="Fica sem lugar no mapa, no canto superior direito">◌ Desmaterializar</button>${(c => c.length ? `<select name="agregar-a" class="seletor" aria-label="Agregar a um conjunto"><option value="">⁘ Agregar a um conjunto…</option>${c.map(x => `<option value="${esc(x.id)}">${esc(x.nome)}</option>`).join('')}</select>` : '')(ELEMENTOS.filter(x => x.tipo === 'grupo' && !x.evento))}</div></div>`;
   if (el.tipo === 'rua') return htmlQuarteiroes(el);
@@ -3718,7 +3854,7 @@ async function adicionarFicheiros(el, ficheiros, dono) { // dono: quem fica com 
       } else alvo.fotos.push({ src: await redimensionar(f, 1600), legenda: '' });
     } catch (err) { aviso('Foto não acrescentada: ' + err.message, 4000); }
   }
-  marcarAlterado(); if (selecionado === el) mostrarInfo(el, modal.classList.contains('lado') ? 'lado' : 'baixo'); // entretanto pode ter sido escolhido outro elemento
+  if (dono) tocado(dono); marcarAlterado(); if (selecionado === el) mostrarInfo(el, modal.classList.contains('lado') ? 'lado' : 'baixo'); // entretanto pode ter sido escolhido outro elemento
 }
 modalConteudo.addEventListener('input', e => {
   if (!edicao) return;
@@ -3731,13 +3867,16 @@ modalConteudo.addEventListener('input', e => {
   if (!selecionado) return;
   const el = selecionado;
   if (n === 'quarteirao') { alternarQuarteirao(el, t.value); return; }
+  if (n === 'tipo-nome' || n === 'tipo-icone' || n === 'tipo-cor') { const x = el.tiposPonto[+t.dataset.i]; if (!x) return; x[n.slice(5)] = n === 'tipo-nome' ? (t.value.trim() || x.nome) : t.value.trim(); marcarAlterado(); if (n === 'tipo-cor') construir(); return; }
   if (haSub(el)) {
     const d = subPonto(el, subAtual);
-    if (n === 'sub-nome') { const v = t.value.trim(); if (v) d.nome = v; else delete d.nome; const m = vista[el.id].marcadores[subAtual]; if (m && m.getTooltip()) m.setTooltipContent(v ? v + ' · ' + el.nome : el.nome); clearTimeout(timerNome); timerNome = setTimeout(construirPesquisa, 400); }
+    if (n === 'sub-rua' || n === 'sub-numero') { d[n === 'sub-rua' ? 'rua' : 'numero'] = t.value.trim(); d.moradaManual = true; }
+    else if (n === 'sub-tipo') { d.c = t.value; tocado(d); const i = subAtual; marcarAlterado(); construir(); abrirSub(el, i, false); return; }
+    else if (n === 'sub-nome') { const v = t.value.trim(); d.nome = v; const m = vista[el.id].marcadores[subAtual]; if (m && m.getTooltip()) m.setTooltipContent(v ? v + ' · ' + el.nome : el.nome); clearTimeout(timerNome); timerNome = setTimeout(construirPesquisa, 400); }
     else if (n === 'sub-texto') { const ps = t.value.split(/\n\s*\n/).map(s => s.trim()).filter(Boolean); d.texto = ps.length > 1 ? ps : (ps[0] || ''); }
     else if (n === 'foto-src' || n === 'foto-leg') { const i = +t.dataset.i, f = d.fotos[i], o = typeof f === 'string' ? { src: f, legenda: '' } : f; if (n === 'foto-src') { o.src = t.value.trim(); const img = t.closest('.foto-ed').querySelector('img'); if (img) img.src = o.src; } else o.legenda = t.value; d.fotos[i] = o; }
     else return;
-    marcarAlterado(); return;
+    tocado(d); marcarAlterado(); return;
   }
   if (n === 'cat') { const c = catPorId(t.value); if (c) definirMembro(c, el, t.checked); return; }
   if (n === 'visita') { editarVisita(t.checked ? 'por' : 'tirar', el.id); return; }
@@ -3784,14 +3923,18 @@ modalConteudo.addEventListener('click', async e => {
   if (ac === 'ligacao') { const url = await perguntarTexto('Ligação', 'Endereço da ligação', 'https://', 'Inserir'); if (url && url.trim() !== 'https://') envolver(ta, `<a href="${esc(url.trim())}" target="_blank" rel="noopener">`, '</a>', 'texto da ligação'); }
   else if (ac === 'negrito') envolver(ta, '<b>', '</b>', 'texto');
   else if (ac === 'italico') envolver(ta, '<i>', '</i>', 'texto');
-  else if (ac === 'foto-remover') { dono.fotos.splice(+b.dataset.i, 1); marcarAlterado(); mostrarInfo(el, modal.classList.contains('lado') ? 'lado' : 'baixo'); }
+  else if (ac === 'foto-remover') { dono.fotos.splice(+b.dataset.i, 1); if (dono !== el) tocado(dono); marcarAlterado(); mostrarInfo(el, modal.classList.contains('lado') ? 'lado' : 'baixo'); }
   else if (ac === 'foto-ficheiro' || ac === 'foto-camara') { const inp = form.querySelector(ac === 'foto-camara' ? 'input[name=camara]' : 'input[name=ficheiros]'); inp.onchange = () => adicionarFicheiros(el, [...inp.files], dono); inp.click(); }
-  else if (ac === 'foto-url') { const u = await perguntarTexto('Foto por endereço', 'Endereço ou caminho da imagem (por exemplo assets/fotos/nome.jpg)', '', 'Acrescentar'); if (u && u.trim()) { dono.fotos.push({ src: u.trim(), legenda: '' }); marcarAlterado(); mostrarInfo(el, modal.classList.contains('lado') ? 'lado' : 'baixo'); } }
+  else if (ac === 'foto-url') { const u = await perguntarTexto('Foto por endereço', 'Endereço ou caminho da imagem (por exemplo assets/fotos/nome.jpg)', '', 'Acrescentar'); if (u && u.trim()) { dono.fotos.push({ src: u.trim(), legenda: '' }); if (dono !== el) tocado(dono); marcarAlterado(); mostrarInfo(el, modal.classList.contains('lado') ? 'lado' : 'baixo'); } }
   else if (ac === 'grupo-tirar') {
     if (el.pontos.length <= 1) { aviso('Um conjunto precisa de pelo menos um ponto; para o eliminar, apaga o conjunto.', 4000); return; }
     el.pontos.splice(+b.dataset.i, 1); if (Array.isArray(el.detalhes)) marcarRemovidos(el, el.detalhes.splice(+b.dataset.i, 1)); construir(); marcarAlterado(); selecionar(el, false);
   }
   else if (ac === 'desagregar') desagregarPonto(el, +b.dataset.i);
+  else if (ac === 'grupo-registar') levantamento(fonteRegisto(el));
+  else if (ac === 'sub-morada') { const d = subPonto(el, subAtual), s = moradaSugerida(el.pontos[subAtual]); d.rua = s.rua || ''; d.numero = s.numero || ''; d.moradaManual = false; tocado(d); marcarAlterado(); mostrarInfo(el, modal.classList.contains('lado') ? 'lado' : 'baixo'); aviso('Sugestão: ' + s.fonte + '.', 3500); }
+  else if (ac === 'tipo-mais') { const l = el.tiposPonto = el.tiposPonto || []; l.push({ id: idRegisto(), nome: 'Novo tipo', icone: '📍', cor: PALETA[l.length % PALETA.length] }); marcarAlterado(); mostrarInfo(el, modal.classList.contains('lado') ? 'lado' : 'baixo'); }
+  else if (ac === 'tipo-tirar') { const t = el.tiposPonto.splice(+b.dataset.i, 1)[0]; for (const d of el.detalhes) if (d.c === t.id) { d.c = ''; tocado(d); } marcarAlterado(); construir(); selecionar(el, false); }
   else if (ac === 'ao-conjunto') selecionar(el, false);
   else if (ac === 'grupo-mais') { porFerramenta('grupo', el); selecionar(el, false); aviso(`Clica no mapa para acrescentar pontos a «${el.nome}». Esc termina.`, 4000); }
   else if (ac === 'em-conjunto') emConjunto(el);
@@ -3876,14 +4019,17 @@ FICHEIRO = clonar(serializar()); preencherPresets();
 try { if (localStorage.getItem('co-fundo') === 'mapa') ligarMapa(true); } catch (err) { /* sem armazenamento local: fica o satélite */ }
 let idInicial = ''; try { idInicial = decodeURIComponent(location.hash.slice(1)); } catch (err) { /* endereço com # malformado: ignora */ }
 // o elemento do endereço (#id) só se procura depois de repostos o preset ativo e a gravação automática, que recriam os elementos
-arrancarPresets().then(() => { const el = POR_ID[idInicial]; if (el && !cidade) map.whenReady(() => setTimeout(() => { if (POR_ID[idInicial] === el) selecionar(el, true); }, 300)); });
+arrancarPresets().then(() => {
+  const el = POR_ID[idInicial]; if (el && !cidade) map.whenReady(() => setTimeout(() => { if (POR_ID[idInicial] === el) selecionar(el, true); }, 300));
+  if (PARAMS.has('rua')) map.whenReady(() => setTimeout(() => { const rua = PARAMS.get('rua'), qs = new URLSearchParams(location.search); qs.delete('rua'); history.replaceState(null, '', location.pathname + qsTexto(qs) + location.hash); abrirLugar({ rua }); }, 300)); // veio da pesquisa do mapa de Lisboa
+});
 // sem freguesia no endereço (ou com ?cidade), abre no mapa de Lisboa; ?freguesia=<id> abre essa freguesia
 const PARAMS = new URLSearchParams(location.search);
 if (EDITOR || idInicial) semFreguesia = false; // ?editor e #id abrem logo a freguesia
 if (window.ENTRA_NA_CIDADE) map.whenReady(() => abrirCidade(true));
 if (EDITOR) pedirEdicao({ criar: PARAMS.has('criar') }); // ?editor abre logo em modo de edição (depois de iniciar sessão); ?criar abre também o «+»
 sessaoPronta.then(lerEventoServidor).finally(() => map.whenReady(() => setTimeout(arrancarVisitaGuiada, 1400))); // depois de o mapa se acomodar (o voo até Lisboa dura 1,1 s)
-window.__mapa = { aplicarTema, temaAtual, abrirSub, subPonto, agregarPonto, desagregarPonto, get subAtual() { return subAtual; }, quarteiroesDe, alternarQuarteirao, frasePedacos, paresDuplicados, perguntarDuplicado, consolidar, reverterConsolidacao, verConsolidacoes, get consolidacoes() { return consolidacoes; }, semelhancaNomes, novaCategoria, criarCategoria, gerirCategorias, categoriasConhecidas, map, C, FREG, ELEMENTOS, POR_ID, RUAS_VISTA, atualizarInstalar, instalarApp, podeInstalar, get satVisivel() { return satVisivel; }, EVENTOS, get EVENTO() { return EVENTO; }, get levant() { return levant; }, lerEventoServidor, aplicarEvento, gerirEvento, escolherRegisto, levantamento, abrirLevantamento, mostrarLevantamento, confirmarLevantamento, cancelarLevantamento, moradaSugerida, registarNoConjunto, resumoCidadeEvento, localizarPrecisa, iniciarVisita, sairVisita, terminarVisita, irPassoVisita, seguinteVisita, visitaAberta, lerEstadoVisita, get visitaPasso() { return visitaPassos[visitaI] && visitaPassos[visitaI].id; }, get visitaPassos() { return visitaPassos; }, pedirEdicao, entrarConta, lerSessao, terminarSessao, menuConta, verHistorico, gerirContas, mudarPalavraPasse, dialogoEntrar, get SESSAO() { return SESSAO; }, lerSessaoCentral, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, ligarVerdes, ligarMapa, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva, entrarEdicao, porFerramenta, serializar, guardar, carregar, lerPreset, novoPreset, apagarPreset, mudarPreset, PRESETS, importarPreset, reporDoFicheiro, largarPonto, novoPonto, criarRua, criarDeLote, painelCentral, abrirDoCentral, enviarFilaCentral, copiarCentral, estadoCopia, filaCentral, lerCentral, gravarCentral, get AMBIENTE() { return AMBIENTE; }, confirmar, perguntarTexto, abrirCidade, irParaFreguesia, sairEdicao, descartarAlteracoes, dialogo, construirDesmat, expandirDesmat, pontoDeGrupo, emConjunto, novoDesmaterializado, desmaterializar, colocarNoMapa, criarAqui, ruaMaisProxima, abrirCriar, acrescentarPresetImportado, PRESETS_LOCAIS, get cidade() { return cidade; }, get alterado() { return alterado; }, novaCategoria, definirMembro, alternarCategoria, editarVisita, mostrarCategoria, categoriasAtivas, get edicao() { return edicao; }, get ferramenta() { return ferramenta; }, get passos() { return passos; } };
+window.__mapa = { get RUAS_CIDADE() { return window.RUAS_CIDADE; }, carregarIndiceCidade, procurar, irParaLugar, fonteRegisto, resumoConjuntos, juntarLinhasConjuntos, sincronizarConjuntos, tiposDe, aplicarTema, temaAtual, abrirSub, subPonto, agregarPonto, desagregarPonto, get subAtual() { return subAtual; }, quarteiroesDe, alternarQuarteirao, frasePedacos, paresDuplicados, perguntarDuplicado, consolidar, reverterConsolidacao, verConsolidacoes, get consolidacoes() { return consolidacoes; }, semelhancaNomes, novaCategoria, criarCategoria, gerirCategorias, categoriasConhecidas, map, C, FREG, ELEMENTOS, POR_ID, RUAS_VISTA, atualizarInstalar, instalarApp, podeInstalar, get satVisivel() { return satVisivel; }, EVENTOS, get EVENTO() { return EVENTO; }, get levant() { return levant; }, lerEventoServidor, aplicarEvento, gerirEvento, escolherRegisto, levantamento, abrirLevantamento, mostrarLevantamento, confirmarLevantamento, cancelarLevantamento, moradaSugerida, registarNoConjunto, resumoCidadeEvento, localizarPrecisa, iniciarVisita, sairVisita, terminarVisita, irPassoVisita, seguinteVisita, visitaAberta, lerEstadoVisita, get visitaPasso() { return visitaPassos[visitaI] && visitaPassos[visitaI].id; }, get visitaPassos() { return visitaPassos; }, pedirEdicao, entrarConta, lerSessao, terminarSessao, menuConta, verHistorico, gerirContas, mudarPalavraPasse, dialogoEntrar, get SESSAO() { return SESSAO; }, lerSessaoCentral, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, ligarVerdes, ligarMapa, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva, entrarEdicao, porFerramenta, serializar, guardar, carregar, lerPreset, novoPreset, apagarPreset, mudarPreset, PRESETS, importarPreset, reporDoFicheiro, largarPonto, novoPonto, criarRua, criarDeLote, painelCentral, abrirDoCentral, enviarFilaCentral, copiarCentral, estadoCopia, filaCentral, lerCentral, gravarCentral, get AMBIENTE() { return AMBIENTE; }, confirmar, perguntarTexto, abrirCidade, irParaFreguesia, sairEdicao, descartarAlteracoes, dialogo, construirDesmat, expandirDesmat, pontoDeGrupo, emConjunto, novoDesmaterializado, desmaterializar, colocarNoMapa, criarAqui, ruaMaisProxima, abrirCriar, acrescentarPresetImportado, PRESETS_LOCAIS, get cidade() { return cidade; }, get alterado() { return alterado; }, novaCategoria, definirMembro, alternarCategoria, editarVisita, mostrarCategoria, categoriasAtivas, get edicao() { return edicao; }, get ferramenta() { return ferramenta; }, get passos() { return passos; } };
 });
 </script>
 </body>

@@ -1,5 +1,6 @@
-// Servidor central no Cloudflare Workers (plano grátis): a API de servidor-central/nucleo.mjs com os dados no R2,
-// guardados na União Europeia (jurisdição «eu», ver wrangler.toml). Publicar: ver servidor-central/README.md.
+// Servidor central e apresentação no Cloudflare Workers (plano grátis): a API de servidor-central/nucleo.mjs com os dados
+// no R2, guardados na União Europeia (jurisdição «eu», ver wrangler.toml), e o site (pasta site/, gerada por
+// tools/preparar-site.mjs) como ficheiros estáticos. Publicar: ver servidor-central/GUIA-CLOUDFLARE.md.
 //   npm run central:local     → em http://127.0.0.1:8787 com um R2 simulado (dados em .wrangler/)
 //   npm run central:publicar  → publica na conta Cloudflare (depois de «npx wrangler login»)
 import pagina from '../consulta.html';
@@ -31,6 +32,22 @@ function armazemR2(r2) {
   };
 }
 
+// /dados/conteudos.js, /dados/presets/x.js, e os mesmos em /dados/freguesias/<id>/: o que está guardado no R2 ou, sem nada, o ficheiro
+const FICHEIRO_DADOS = /^\/dados\/(?:freguesias\/([a-z0-9-]+)\/)?(conteudos\.js|presets\/[a-z0-9-]+\.js)$/;
+async function servirDados(request, env, m) {
+  const f = m[1] || 'campo-de-ourique', ficheiro = m[2];
+  let base = null;
+  if (ficheiro === 'presets/index.js') { try { const r = await env.ASSETS.fetch(request.url); base = JSON.parse((await r.text()).replace(/^[\s\S]*?=\s*/, '').replace(/;\s*$/, '')); } catch (err) { base = null; } }
+  let d = null; try { d = await api.dadosApresentacao(f, ficheiro, base); } catch (err) { d = null; } // uma falha no R2 não pode deixar a página sem dados
+  if (d && d.apagados) { // o preset dos ficheiros foi apagado: serve o primeiro dos que restam
+    const pasta = m[0].slice(0, -'conteudos.js'.length), ativo = await env.ASSETS.fetch(request.url), txt = await ativo.text(), id = (/"preset": *"([^"]+)"/.exec(txt) || [])[1];
+    if (id && d.apagados.includes(id)) { try { const r = await env.ASSETS.fetch(new URL(pasta + 'presets/index.js', request.url)), l = JSON.parse((await r.text()).replace(/^[\s\S]*?=\s*/, '').replace(/;\s*$/, '')), outro = l.find(p => !d.apagados.includes(p.id)); if (outro) return new Response((await (await env.ASSETS.fetch(new URL(pasta + 'presets/' + outro.id + '.js', request.url))).text()).replace('window.CONTEUDOS_PRESET', 'window.CONTEUDOS'), { headers: { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-store' } }); } catch (err) { /* serve o ficheiro */ } }
+    return env.ASSETS.fetch(request);
+  }
+  if (!d) return env.ASSETS.fetch(request);
+  return new Response(request.method === 'HEAD' ? null : d.texto, { headers: { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-store', ...(d.quando ? { 'Last-Modified': new Date(d.quando).toUTCString() } : {}) } });
+}
+
 let api = null; // uma por instância do Worker (guarda a chave das sessões já preparada entre pedidos)
 export default {
   async fetch(request, env) {
@@ -43,6 +60,8 @@ export default {
       segredoSessoes: env.SEGREDO_SESSOES || '', // opcional; sem ele, o segredo das sessões é gerado na primeira vez e fica no R2
       pagina,
     });
+    const m = env.ASSETS && (request.method === 'GET' || request.method === 'HEAD') ? FICHEIRO_DADOS.exec(new URL(request.url).pathname) : null;
+    if (m) return servirDados(request, env, m);
     return api.tratar(request);
   },
 };

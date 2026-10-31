@@ -23,21 +23,23 @@ duas versões partilham o mesmo código (`nucleo.mjs` e `contas.mjs`):
 
 ## Publicar no Cloudflare
 
+O Worker serve a apresentação (ficheiros estáticos da pasta `site/`, gerada por `tools/preparar-site.mjs`) e a API. Os dados da apresentação (`/dados/…/conteudos.js`, `presets/…`) passam pelo Worker: o que está guardado no R2, sem autoria, ou o ficheiro publicado, se ainda não houver nada guardado.
+
 Os passos todos, desde a criação da conta, estão em [GUIA-CLOUDFLARE.md](GUIA-CLOUDFLARE.md). Em resumo, na pasta do
 projeto e depois de `npm install`:
 
 ```bash
 npx wrangler login
-npx wrangler r2 bucket create campo-de-ourique-central --jurisdiction eu
+npx wrangler r2 bucket create ps-lisboa-repositorio --jurisdiction eu
 npm run central:publicar
 npx wrangler secret put CHAVE_ADMIN --config servidor-central/cloudflare/wrangler.toml
 ```
 
 Depois:
-1. Abre o endereço que aparece no fim (`https://campo-de-ourique-central.<subdomínio>.workers.dev`).
-2. Entra como `System.Admin`.
+1. O endereço que aparece no fim (`https://ps-lisboa-repositorio.<subdomínio>.workers.dev`) é a apresentação, já ligada ao servidor. A consulta dos dados está em `/consulta`.
+2. Em `/consulta`, entra como `System.Admin`.
 3. **Repõe as palavras-passe de todas as contas.**
-4. Põe o endereço da API em `config.js`.
+4. Só para a aplicação de computador: põe o endereço da API em `config.js`.
 
 Opcional:
 - **Limitar quem usa a API a partir do browser:** em `wrangler.toml`, `ORIGENS` passa a ter os endereços da

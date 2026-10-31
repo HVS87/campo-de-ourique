@@ -3,7 +3,7 @@
 //   node servidor-central/testar.mjs          → os dois
 //   node servidor-central/testar.mjs node     → só o Node (não precisa de npm install)
 //   node servidor-central/testar.mjs worker   → só o Worker
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -32,6 +32,7 @@ async function arrancar(tipo) {
   else {
     const wrangler = path.join(RAIZ, 'node_modules', 'wrangler', 'bin', 'wrangler.js');
     if (!fs.existsSync(wrangler)) { console.log('  (sem wrangler: corre «npm install» para testar o Worker)'); return null; }
+    spawnSync(process.execPath, [path.join(RAIZ, 'tools', 'preparar-site.mjs')], { stdio: 'ignore' }); // o site que o Worker serve
     proc = spawn(process.execPath, [wrangler, 'dev', '--config', path.join(AQUI, 'cloudflare', 'wrangler.toml'), '--local', '--port', String(porta), '--ip', '127.0.0.1', '--persist-to', dados, '--var', 'CHAVE_ADMIN:' + ADMIN, '--var', 'ORIGENS:http://127.0.0.1:8081', '--show-interactive-dev-session=false'],
       { env: { ...process.env, WRANGLER_SEND_METRICS: 'false', NO_COLOR: '1' }, stdio: ['ignore', 'pipe', 'pipe'] });
   }
@@ -207,6 +208,17 @@ async function bateria(tipo) {
       await pedir(ADMIN, '/categorias/fundir', { method: 'POST', body: JSON.stringify({ de: ['Alfa', 'Gama'], para: 'Beta', freguesia: 'penha' }) });
       assert.deepEqual((await (await pedir(ADMIN, '/presets/penha/tres')).json()).dados.categorias.map(c => [c.nome, c.membros.length]), [['Beta', 2]], 'o nome final de uma categoria não selecionada criou duas iguais');
     },
+    'todos os conjuntos juntam os pontos entre dispositivos, com tipos e sem pisar o resto': async () => {
+      const P = (i, s) => ({ i, c: 't1', rua: 'Rua Z', quando: '2026-11-03T10:00:0' + s + '.000Z' }), G = (l, extra = {}) => ({ id: 'bancos', tipo: 'grupo', nome: 'Bancos', texto: '', fotos: [], tiposPonto: [{ id: 't1', nome: 'Partido', icone: '🪑', cor: '#123456' }], pontos: l.map((_, n) => [38.7, -9.1 + n / 1000]), detalhes: l, ...extra });
+      const base = (els, extra = {}) => ({ preset: 'cj', freguesia: 'lumiar', titulo: 'CJ', elementos: els, ...extra }), ler = async () => (await (await pedir(ADMIN, '/presets/lumiar/cj')).json()).dados, gr = d => d.elementos.find(e => e.id === 'bancos');
+      await enviar(contribuidor, 'lumiar', 'cj', base([G([P('a', 1)])])); await enviar(contribuidor, 'lumiar', 'cj', base([G([P('b', 2)])]));
+      assert.deepEqual(gr(await ler()).detalhes.map(x => x.i), ['a', 'b'], 'um dispositivo apagou os pontos do outro');
+      await enviar(contribuidor, 'lumiar', 'cj', base([G([P('b', 2)], { nome: 'Velho' })]), { soEvento: true }); assert.equal(gr(await ler()).nome, 'Bancos', 'um registo mudou o nome do conjunto');
+      await enviar(contribuidor, 'lumiar', 'cj', base([G([P('b', 2)])], { removidosEvento: { bancos: ['a'] } })); assert.deepEqual(gr(await ler()).detalhes.map(x => x.i), ['b'], 'o ponto tirado voltou');
+      await enviar(contribuidor, 'lumiar', 'cj', base([{ id: 'bancos', tipo: 'desmaterializado', nome: 'Bancos', texto: '', fotos: [] }])); assert.equal((await ler()).elementos.filter(e => e.id === 'bancos').length, 1, 'o elemento ficou repetido');
+      await enviar(contribuidor, 'lumiar', 'cj2', { ...base([G([P('x', 1), P('y', 2)])]), preset: 'cj2' });
+      const l = (await (await pedir(ADMIN, '/elementos?freguesia=lumiar')).json()).elementos.find(e => e.preset === 'cj2' && e.id === 'bancos'); assert.equal(l.pontos, 2); assert.equal(l.contagens.t1, 2); assert.equal(l.tipos[0].nome, 'Partido');
+    },
     'evento: um registo não pisa o resto do preset, envios simultâneos não se perdem, sem id não duplica': async () => {
       const R = (i, q, extra = {}) => ({ i, c: 'fundido', rua: 'Rua W', numero: '1', quando: '2026-11-02T10:00:0' + q + '.000Z', autor: 'Equipa', ...extra });
       const grupo = (lista, pontos) => ({ id: 'lev', tipo: 'grupo', nome: 'Lev', evento: 'iluminacao', texto: '', fotos: [], pontos: pontos || lista.map((_, n) => [38.7, -9.2 + n / 1000]), detalhes: lista });
@@ -245,7 +257,33 @@ async function bateria(tipo) {
       await enviar(contribuidor, 'ajuda', 'copia', { ...g([R('a1', 'fundido', 1), R('c1', 'falta', 4)]), preset: 'copia' });
       const r = await (await pedir(contribuidor, '/evento/resumo?id=iluminacao')).json(); assert.equal(r.freguesias.ajuda.total, 3, 'o resumo devia somar os presets sem contar duas vezes'); assert.deepEqual(r.freguesias.ajuda.contagens, { fundido: 2, falta: 1 });
     },
-    'página de consulta': async () => { const r = await fetch(s.base + '/'); assert.equal(r.status, 200); assert.ok((await r.text()).includes('Consulta dos dados')); },
+    'pontos: a edição mais recente ganha; apagar um preset tira-o e um envio novo trá-lo': async () => {
+      const G = (l, p) => ({ id: 'cj', tipo: 'grupo', nome: 'CJ', texto: '', fotos: [], pontos: p || l.map(() => [38.7, -9.1]), detalhes: l }), base = els => ({ preset: 'ed', freguesia: 'estrela', titulo: 'Ed', elementos: els }), ler = async () => (await (await pedir(ADMIN, '/presets/estrela/ed')).json()).dados.elementos.find(e => e.id === 'cj').detalhes[0];
+      await enviar(contribuidor, 'estrela', 'ed', base([G([{ i: 'p', rua: 'Antiga' }])]));
+      await enviar(contribuidor, 'estrela', 'ed', base([G([{ i: 'p', rua: 'Nova', editado: '2026-11-04T10:00:00.000Z' }])]));
+      await enviar(contribuidor, 'estrela', 'ed', base([G([{ i: 'p', rua: 'Antiga' }])]), { soEvento: true }); assert.equal((await ler()).rua, 'Nova', 'um dispositivo desatualizado repôs uma edição antiga');
+      await enviar(contribuidor, 'estrela', 'ed', base([G([{ i: 'p', rua: 'Mais nova', editado: '2026-11-04T11:00:00.000Z' }])])); assert.equal((await ler()).rua, 'Mais nova');
+      const lista = async () => (await (await pedir(ADMIN, '/presets?freguesia=estrela')).json()).presets.map(p => p.preset);
+      assert.ok((await lista()).includes('ed')); assert.equal((await pedir(null, '/presets/estrela/ed/apagar', { method: 'POST', body: '{}' })).status, 401);
+      assert.equal((await pedir(contribuidor, '/presets/estrela/ed/apagar', { method: 'POST', body: '{}' })).status, 200); assert.ok(!(await lista()).includes('ed'), 'o preset apagado continua na lista');
+      await enviar(contribuidor, 'estrela', 'ed', base([G([{ i: 'p', rua: 'De volta', editado: '2026-11-04T12:00:00.000Z' }])])); assert.ok((await lista()).includes('ed'), 'um envio novo devia trazê-lo de volta');
+      await enviar(contribuidor, 'estrela', 'gr', { preset: 'gr', freguesia: 'estrela', titulo: 'Gr', elementos: [{ id: 'cj', tipo: 'grupo', nome: 'CJ', texto: '', fotos: [], pontos: [[38.7, -9.1]] }] }); await enviar(contribuidor, 'estrela', 'gr', { preset: 'gr', freguesia: 'estrela', titulo: 'Gr', elementos: [G([{ i: 'n' }])] }, { soEvento: true });
+      assert.equal((await (await pedir(ADMIN, '/presets/estrela/gr')).json()).dados.elementos.filter(e => e.id === 'cj').length, 1, 'o conjunto ficou repetido');
+    },
+    ...(tipo === 'node' ? {} : { 'apresentação alojada: o site e os dados guardados, sem autoria': async () => {
+      const r = await fetch(s.base + '/'); assert.equal(r.status, 200); assert.ok((await r.text()).includes('id="logo-ps"'), 'a raiz devia ser a apresentação');
+      assert.ok((await (await fetch(s.base + '/config.js')).text()).includes('location.origin'), 'o config.js devia apontar para este endereço');
+      const antes = await (await fetch(s.base + '/dados/freguesias/beato/conteudos.js')).text(); assert.ok(antes.includes('window.CONTEUDOS'), 'sem nada guardado, servem os ficheiros');
+      await enviar(contribuidor, 'beato', 'hospedado', { preset: 'hospedado', freguesia: 'beato', titulo: 'Guardado Aqui', elementos: [{ id: 'g', tipo: 'grupo', nome: 'G', texto: '', fotos: [], pontos: [[38.7, -9.1]], detalhes: [{ i: 'x', autor: 'Segredo' }] }] });
+      const depois = await fetch(s.base + '/dados/freguesias/beato/conteudos.js'), txt = await depois.text(); assert.ok(txt.startsWith('window.CONTEUDOS = ') && txt.includes('Guardado Aqui'), 'devia servir o preset guardado'); assert.ok(!txt.includes('Segredo'), 'o autor chegou ao público'); assert.equal(depois.headers.get('cache-control'), 'no-store');
+      assert.ok((await (await fetch(s.base + '/dados/freguesias/beato/presets/hospedado.js')).text()).startsWith('window.CONTEUDOS_PRESET = '));
+      const ind = await (await fetch(s.base + '/dados/freguesias/beato/presets/index.js')).text(); assert.ok(ind.includes('Guardado Aqui') && ind.startsWith('window.PRESETS'), 'o preset novo devia estar no índice');
+      assert.equal((await fetch(s.base + '/.contas/contas.json')).status === 200, false, 'as contas não podem ser servidas');
+      await pedir(contribuidor, '/presets/beato/hospedado/apagar', { method: 'POST', body: '{}' });
+      const semEle = await (await fetch(s.base + '/dados/freguesias/beato/presets/index.js')).text(); assert.ok(!semEle.includes('Guardado Aqui'), 'o preset apagado continua no índice');
+      await enviar(ADMIN, 'ajuda', 'exemplo-apagado', { preset: 'exemplo-apagado', freguesia: 'ajuda', titulo: 'X', elementos: [] }); await pedir(ADMIN, '/presets/ajuda/exemplo-apagado/apagar', { method: 'POST', body: '{}' });
+    } }),
+    'página de consulta': async () => { const r = await fetch(s.base + '/consulta'); assert.equal(r.status, 200); assert.ok((await r.text()).includes('Consulta dos dados')); },
   };
   console.log(`\n${tipo === 'node' ? 'Servidor Node' : 'Worker do Cloudflare (local)'}:`);
   for (const [t, f] of Object.entries(testes)) { try { await f(); console.log('  ok  ' + t); } catch (err) { falhas++; console.log('FALHA ' + t + ' — ' + err.message); } }

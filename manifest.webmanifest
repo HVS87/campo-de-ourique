@@ -1,14 +1,14 @@
 {
-  "name": "Campo de Ourique · Freguesias de Lisboa",
-  "short_name": "Freguesias",
+  "name": "PS Lisboa - Repositório da Cidade",
+  "short_name": "PS Lisboa",
   "description": "Apresentação interativa das freguesias de Lisboa num mapa de satélite.",
   "lang": "pt-PT",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#e9edf2",
-  "theme_color": "#e9edf2",
+  "background_color": "#0f1216",
+  "theme_color": "#0f1216",
   "icons": [
     { "src": "assets/icones/icone-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "assets/icones/icone-512.png", "sizes": "512x512", "type": "image/png" },

@@ -1,7 +1,7 @@
 {
   "name": "campo-de-ourique",
-  "productName": "Campo de Ourique",
-  "version": "1.6.0",
+  "productName": "PS Lisboa - Repositório da Cidade",
+  "version": "1.7.0",
   "description": "Apresentação interativa das freguesias de Lisboa num mapa de satélite, com modo de edição (versão browser e aplicação de computador)",
   "author": "Hugo (HVS87)",
   "license": "MIT",
@@ -22,8 +22,9 @@
     "dist": "electron-builder --win --publish never",
     "dist:linux": "electron-builder --linux --publish never",
     "dist:mac": "electron-builder --mac --publish never",
-    "central:local": "wrangler dev --config servidor-central/cloudflare/wrangler.toml --local",
-    "central:publicar": "wrangler deploy --config servidor-central/cloudflare/wrangler.toml"
+    "site:preparar": "node tools/preparar-site.mjs",
+    "central:local": "node tools/preparar-site.mjs && wrangler dev --config servidor-central/cloudflare/wrangler.toml --local",
+    "central:publicar": "node tools/preparar-site.mjs && wrangler deploy --config servidor-central/cloudflare/wrangler.toml"
   },
   "dependencies": {
     "electron-updater": "6.8.10"
@@ -35,7 +36,8 @@
   },
   "build": {
     "appId": "pt.hvs87.campo-de-ourique",
-    "productName": "Campo de Ourique",
+    "productName": "PS Lisboa - Repositório da Cidade",
+    "executableName": "PS Lisboa",
     "copyright": "© 2026 Hugo (HVS87) · código MIT; dados e imagens de terceiros: ver LICENCAS-TERCEIROS.md",
     "directories": {
       "output": "dist",
@@ -84,22 +86,22 @@
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "shortcutName": "Campo de Ourique",
-      "artifactName": "Campo-de-Ourique-${version}-instalador.${ext}",
+      "shortcutName": "PS Lisboa",
+      "artifactName": "PS-Lisboa-${version}-instalador.${ext}",
       "language": "2070",
       "installerLanguages": [
         "pt_PT"
       ]
     },
     "portable": {
-      "artifactName": "Campo-de-Ourique-${version}-portatil.${ext}"
+      "artifactName": "PS-Lisboa-${version}-portatil.${ext}"
     },
     "linux": {
       "target": [
         "AppImage"
       ],
       "category": "Education",
-      "artifactName": "Campo-de-Ourique-${version}.${ext}",
+      "artifactName": "PS-Lisboa-${version}.${ext}",
       "icon": "desktop/recursos/icone.png"
     },
     "mac": {
@@ -107,7 +109,7 @@
         "dmg"
       ],
       "category": "public.app-category.education",
-      "artifactName": "Campo-de-Ourique-${version}.${ext}",
+      "artifactName": "PS-Lisboa-${version}.${ext}",
       "icon": "desktop/recursos/icone.png"
     },
     "publish": [

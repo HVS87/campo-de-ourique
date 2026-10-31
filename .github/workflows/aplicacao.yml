@@ -31,7 +31,7 @@ jobs:
       - name: Servidor da apresentação
         run: node tools/testar-servidor.mjs
       - name: Servidor central (Node e Worker do Cloudflare)
-        run: node servidor-central/testar.mjs
+        run: npm run site:preparar && node servidor-central/testar.mjs
         env:
           WRANGLER_SEND_METRICS: 'false'
 
@@ -65,7 +65,7 @@ jobs:
       - name: Criar a release, se ainda não existir
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --title "Campo de Ourique $GITHUB_REF_NAME" --notes "Ver o README e as notas da versão."
+        run: gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --title "PS Lisboa - Repositório da Cidade $GITHUB_REF_NAME" --notes "Ver o README e as notas da versão."
 
   compilar:
     needs: [testes, release]
@@ -94,7 +94,7 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
       - name: Verificar o arranque do programa gerado
         if: matrix.os == 'windows-latest'
-        run: node desktop/testar-app.mjs "dist/win-unpacked/Campo de Ourique.exe"
+        run: node desktop/testar-app.mjs "dist/win-unpacked/PS Lisboa.exe"
       - name: Juntar à release
         if: startsWith(github.ref, 'refs/tags/')
         shell: bash

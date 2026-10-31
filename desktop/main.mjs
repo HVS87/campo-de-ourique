@@ -14,7 +14,8 @@ const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PORTA_BASE = 47831; // porta fixa: o que a página guarda no browser (gravação automática, fila do servidor central) depende da origem
 const TESTE = process.env.CO_TESTE === '1'; // arranque de verificação (desktop/testar-app.mjs): abre, confere e fecha
 let janela = null, origem = '';
-if (process.env.CO_PASTA_DADOS) app.setPath('userData', process.env.CO_PASTA_DADOS); // para os testes não mexerem nos dados verdadeiros
+// a pasta dos dados não muda com o nome do programa: é onde estão as contas e o trabalho de quem já o usava
+app.setPath('userData', process.env.CO_PASTA_DADOS || path.join(app.getPath('appData'), 'Campo de Ourique')); // CO_PASTA_DADOS: para os testes não mexerem nos dados verdadeiros
 
 if (!app.requestSingleInstanceLock()) app.quit(); // uma só instância: a segunda traz a primeira para a frente
 app.on('second-instance', () => { if (janela) { if (janela.isMinimized()) janela.restore(); janela.focus(); } });
@@ -53,7 +54,7 @@ function menu() {
     { label: 'Ajuda', submenu: [
       { label: 'Página do projeto', click: ir('https://github.com/HVS87/campo-de-ourique') },
       { label: 'Procurar atualizações', click: () => procurarAtualizacoes(true) },
-      { label: 'Sobre', click: () => dialog.showMessageBox(janela, { type: 'info', title: 'Sobre', message: 'Campo de Ourique ' + app.getVersion(), detail: 'Apresentação interativa das freguesias de Lisboa.\nCódigo MIT; dados e imagens de terceiros com as suas licenças (LICENCAS-TERCEIROS.md).\n\nOs teus dados: ' + pastaDados(), buttons: ['Fechar'] }) },
+      { label: 'Sobre', click: () => dialog.showMessageBox(janela, { type: 'info', title: 'Sobre', message: 'PS Lisboa - Repositório da Cidade ' + app.getVersion(), detail: 'Apresentação interativa das freguesias de Lisboa.\nCódigo MIT; dados e imagens de terceiros com as suas licenças (LICENCAS-TERCEIROS.md).\n\nOs teus dados: ' + pastaDados(), buttons: ['Fechar'] }) },
     ] },
   ]));
 }
@@ -84,7 +85,7 @@ async function abrirJanela() {
   origem = `http://127.0.0.1:${porta}`;
   registo(`servidor em ${origem}; dados em ${pastaDados()}`);
   janela = new BrowserWindow({
-    width: 1600, height: 900, minWidth: 360, minHeight: 360, show: false, backgroundColor: '#e9edf2', title: 'Campo de Ourique',
+    width: 1600, height: 900, minWidth: 360, minHeight: 360, show: false, backgroundColor: '#0f1216', title: 'PS Lisboa - Repositório da Cidade',
     icon: path.join(RAIZ, 'desktop', 'recursos', 'icone.png'), autoHideMenuBar: true,
     webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, spellcheck: false },
   });
@@ -139,7 +140,7 @@ function ligarTeste() { // verificação (desktop/testar-app.mjs): arranque, ses
 
 app.whenReady().then(async () => {
   menu();
-  try { await abrirJanela(); } catch (err) { dialog.showErrorBox('Campo de Ourique', 'Não foi possível arrancar: ' + (err && err.message)); app.quit(); return; }
+  try { await abrirJanela(); } catch (err) { dialog.showErrorBox('PS Lisboa - Repositório da Cidade', 'Não foi possível arrancar: ' + (err && err.message)); app.quit(); return; }
   if (!TESTE) setTimeout(() => procurarAtualizacoes(false), 5000);
 });
 app.on('window-all-closed', () => app.quit());

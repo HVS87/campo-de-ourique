@@ -1,13 +1,20 @@
-# Servidor central no Cloudflare Workers (plano grátis). Passos para publicar: servidor-central/GUIA-CLOUDFLARE.md.
-name = "campo-de-ourique-central"
+# Apresentação e servidor central no Cloudflare Workers (plano grátis). Passos para publicar: servidor-central/GUIA-CLOUDFLARE.md.
+name = "ps-lisboa-repositorio"
 main = "worker.mjs"
 compatibility_date = "2026-10-01"
 
-# dados no R2, na União Europeia (o balde cria-se com: npx wrangler r2 bucket create campo-de-ourique-central --jurisdiction eu)
+# dados no R2, na União Europeia (o balde cria-se com: npx wrangler r2 bucket create ps-lisboa-repositorio --jurisdiction eu)
 [[r2_buckets]]
 binding = "DADOS"
-bucket_name = "campo-de-ourique-central"
+bucket_name = "ps-lisboa-repositorio"
 jurisdiction = "eu"
+
+# o site: ficheiros estáticos gerados por «node tools/preparar-site.mjs» (a pasta site/ não vai para o git)
+[assets]
+directory = "../../site"
+binding = "ASSETS"
+# a API, a página de consulta e os dados guardados passam pelo Worker; o resto é servido diretamente
+run_worker_first = ["/api/*", "/consulta", "/consulta.html", "/dados/conteudos.js", "/dados/presets/*", "/dados/freguesias/*/conteudos.js", "/dados/freguesias/*/presets/*"]
 
 [vars]
 NOME = "Servidor central das freguesias de Lisboa"
