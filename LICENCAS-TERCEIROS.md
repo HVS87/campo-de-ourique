@@ -16,3 +16,7 @@ A licença MIT do ficheiro [LICENSE](LICENSE) cobre o código deste projeto (HTM
 | Espaços verdes e hortas urbanas | `dados/verdes.js`, `dados/freguesias/*/verdes.js` | Câmara Municipal de Lisboa, dados abertos («Ambiente DMEVAE») |
 | Mapa da cidade (fundo opcional, carregado em direto) | tile.openstreetmap.org | © colaboradores do OpenStreetMap, ODbL; mosaicos sob a política de uso da OSMF |
 | Imagens exemplificativas | `assets/fotos/exemplos/` | Wikimedia Commons; autor e licença de cada uma em [CREDITOS.md](assets/fotos/exemplos/CREDITOS.md) |
+
+## Logótipo do Partido Socialista
+
+`assets/icones/ps-logotipo.png` é o logótipo do Partido Socialista (Portugal), usado para identificar a ferramenta. Pertence ao partido, **não** está coberto pela licença MIT deste repositório e não se pode reutilizar sem autorização. Ficheiro obtido na [Wikipédia em português](https://pt.wikipedia.org/wiki/Ficheiro:Partido_Socialista_(Portugal).png), onde está marcado como conteúdo restrito.

@@ -177,6 +177,8 @@ Os pedidos levam `Authorization: Bearer <testemunho da sessão ou chave de acess
 | `GET /api/v1/historico?freguesia=&utilizador=&limite=&meses=` | admin | quem fez o quê, do mais recente para o mais antigo |
 | `GET /api/v1/evento` | todos | o evento em curso: `{ evento: { id, nome, ativo, desde, por } | null }` |
 | `POST /api/v1/evento` | admin | recebe `{ id, nome, ativo }` e liga ou desliga o evento |
+| `GET /api/v1/categorias` | leitor | as categorias de todos os presets e onde são usadas |
+| `POST /api/v1/categorias/fundir` | administração | `{ de: [nomes], para, icone, cor }` junta-as numa só em todo o lado (cada preset alterado ganha uma revisão) |
 | `GET /api/v1/evento/resumo?id=` | leitor | por freguesia, quantos registos de cada categoria tem o evento, somando os presets, e o total da cidade |
 | `GET /api/v1/contas` | admin | as contas, sem os verificadores, com a última entrada e o bloqueio |
 | `POST /api/v1/contas/<utilizador>/palavra-passe` | admin | recebe `{ nova }` (chave de entrada) e repõe a palavra-passe |

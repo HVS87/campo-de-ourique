@@ -56,6 +56,10 @@ async function cenario(nome, raiz, gravavel) {
       assert.equal((await post('/apagar-preset/alcantara?freguesia=alcantara', '')).status, 401);
       assert.equal((await fetch(base + '/guardar-foto/x.jpg', { method: 'POST', headers: { Origin: base }, body: Buffer.from([255, 216, 255]) })).status, 401);
     },
+    'categorias: a lista lê-se; fundir precisa da administração': async () => {
+      const r = await fetch(base + '/categorias', { headers: { Origin: base } }); assert.equal(r.status, 200); assert.ok(Array.isArray((await r.json()).categorias));
+      assert.equal((await post('/categorias/fundir', JSON.stringify({ de: ['a'], para: 'b' }))).status, 401);
+    },
     'palavra-passe errada': async () => { const { r, j } = await entrar('Alcantara', 'errada', 'x'); assert.equal(r.status, 401); assert.equal(j.erro, 'Utilizador ou palavra-passe errados'); },
     'utilizador desconhecido dá o mesmo erro': async () => { const { r, j } = await entrar('Ninguem', 'x', 'x'); assert.equal(r.status, 401); assert.equal(j.erro, 'Utilizador ou palavra-passe errados'); },
     'entrar (sem acentos nem maiúsculas)': async () => {

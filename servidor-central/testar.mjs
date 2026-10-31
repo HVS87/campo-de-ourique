@@ -188,6 +188,25 @@ async function bateria(tipo) {
       assert.equal((await (await pedir(null, '/evento')).json()).evento.ativo, false);
       assert.ok((await (await pedir(sessoes.Admin, '/copia')).json()).objetos.some(o => o.chave === 'evento/atual.json'));
     },
+    'categorias: lista e fundir em todos os presets (só a administração)': async () => {
+      const base = (cats, p) => ({ preset: p, freguesia: 'penha', titulo: p, elementos: [{ id: 'a', tipo: 'ponto', nome: 'A', texto: '', fotos: [], pos: [38.7, -9.1] }, { id: 'b', tipo: 'ponto', nome: 'B', texto: '', fotos: [], pos: [38.71, -9.1] }], categorias: cats });
+      await enviar(contribuidor, 'penha', 'um', base([{ id: 'c1', nome: 'Passeios', icone: '🚶', cor: '#111111', membros: ['a'] }, { id: 'c2', nome: 'passeio', icone: '', cor: '#222222', membros: ['b'] }], 'um'));
+      await enviar(contribuidor, 'penha', 'dois', base([{ id: 'c3', nome: 'Passeio', icone: '', cor: '#333333', membros: ['a'] }, { id: 'c4', nome: 'Outra', icone: '', cor: '#444444', membros: ['a'] }], 'dois'));
+      const nomes = async () => (await (await pedir(ADMIN, '/categorias')).json()).categorias.filter(c => /passeio|outra/i.test(c.nome));
+      assert.equal((await nomes()).length, 3, 'passeio e Passeio são a mesma categoria');
+      assert.equal((await pedir(contribuidor, '/categorias/fundir', { method: 'POST', body: JSON.stringify({ de: ['Passeios'], para: 'X' }) })).status, 403);
+      const r = await pedir(ADMIN, '/categorias/fundir', { method: 'POST', body: JSON.stringify({ de: ['Passeios', 'passeio'], para: 'Passeios', icone: '🚶', cor: '#111111' }) }); assert.equal(r.status, 200);
+      assert.equal((await r.json()).alterados.length, 2);
+      const um = (await (await pedir(ADMIN, '/presets/penha/um')).json()), dois = (await (await pedir(ADMIN, '/presets/penha/dois')).json()).dados;
+      assert.deepEqual(um.dados.categorias.map(c => [c.nome, c.membros]), [['Passeios', ['a', 'b']]]); assert.equal(um.revisao, 2, 'fundir cria uma revisão');
+      assert.deepEqual(dois.categorias.map(c => c.nome).sort(), ['Outra', 'Passeios']); assert.equal(dois.categorias.find(c => c.nome === 'Passeios').icone, '🚶');
+      assert.equal((await pedir(ADMIN, '/categorias/fundir', { method: 'POST', body: '{}' })).status, 400);
+      await enviar(contribuidor, 'penha', 'um', base([{ id: 'c1', nome: 'passeio', icone: '', cor: '#222222', membros: ['a', 'b'] }], 'um'));
+      assert.deepEqual((await (await pedir(ADMIN, '/presets/penha/um')).json()).dados.categorias.map(c => c.nome), ['Passeios'], 'um envio de um ficheiro antigo desfez a fusão');
+      await enviar(contribuidor, 'penha', 'tres', base([{ id: 'x', nome: 'Alfa', icone: '', cor: '#111111', membros: ['a'] }, { id: 'y', nome: 'Beta', icone: '', cor: '#222222', membros: ['b'] }], 'tres'));
+      await pedir(ADMIN, '/categorias/fundir', { method: 'POST', body: JSON.stringify({ de: ['Alfa', 'Gama'], para: 'Beta', freguesia: 'penha' }) });
+      assert.deepEqual((await (await pedir(ADMIN, '/presets/penha/tres')).json()).dados.categorias.map(c => [c.nome, c.membros.length]), [['Beta', 2]], 'o nome final de uma categoria não selecionada criou duas iguais');
+    },
     'evento: um registo não pisa o resto do preset, envios simultâneos não se perdem, sem id não duplica': async () => {
       const R = (i, q, extra = {}) => ({ i, c: 'fundido', rua: 'Rua W', numero: '1', quando: '2026-11-02T10:00:0' + q + '.000Z', autor: 'Equipa', ...extra });
       const grupo = (lista, pontos) => ({ id: 'lev', tipo: 'grupo', nome: 'Lev', evento: 'iluminacao', texto: '', fotos: [], pontos: pontos || lista.map((_, n) => [38.7, -9.2 + n / 1000]), detalhes: lista });

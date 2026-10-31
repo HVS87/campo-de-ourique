@@ -189,7 +189,7 @@ servidor local; a apresentação lembra-o neste browser para abrir sem rede.
 Com o evento ativo:
 
 - **Ao entrar no modo de edição e no «+»** (também na vista normal, depois de iniciar sessão), pergunta-se o que se quer
-  registar: **Levantamento Iluminação Pública** ou **Registar Ocorrência**, que leva ao menu habitual.
+  registar: **Levantamento Iluminação Pública** ou **Outros Problemas**, que leva ao menu habitual.
 - **O levantamento:**
   1. escolhe-se o tipo: 💡 Candeeiro apagado/fundido ou 🌑 Candeeiro em falta/zona escura (o último fica lembrado);
   2. a apresentação acompanha o GPS durante uns segundos até ter precisão de 12 m (ou o melhor em 9 s) e põe um
@@ -398,3 +398,11 @@ camada `ortoSat2023-CorVerdadeira` (~0,3 m/píxel).
 O código deste projeto está sob a licença MIT: ver [LICENSE](LICENSE). Os dados e as imagens de terceiros
 (Leaflet, DGT, OpenStreetMap, Câmara Municipal de Lisboa e Wikimedia Commons) mantêm as suas licenças, listadas
 em [LICENCAS-TERCEIROS.md](LICENCAS-TERCEIROS.md).
+
+## Conjuntos, quarteirões, duplicados, categorias e modo claro/escuro
+
+- **Conjuntos de pontos:** o cartão geral lista os pontos, e cada ponto tem um sub-cartão com nome, texto e fotos próprios (`detalhes[i]` do conjunto), com a seta ‹ de volta ao cartão-mãe. No telemóvel, as fotos vêm da galeria ou da câmara. Em edição, largar um ponto solto em cima de um ponto do conjunto agrega-o; também se pode agregar pelo cartão, e «Desagregar» devolve-o a ponto solto, com o que levava.
+- **Ruas por quarteirões:** uma rua é o conjunto dos seus quarteirões, de cruzamento a cruzamento (`quarteiroes`: os ids dos ligados; sem o campo, a rua toda; `tracado`: a rua toda, quando a rua não vem dos dados da freguesia). Em edição ligam-se e desligam-se no cartão ou com um clique na rua. A frase dentro de `<span class="quarteiroes-auto">` no texto atualiza-se sozinha; sem ela, é acrescentada no início.
+- **Pontos duplicados:** um ponto a menos de 8 m de outro, ou a menos de 50 m com o mesmo nome, faz perguntar se se consolida ou se mantêm ambos (`duplicadosMantidos` lembra a escolha). As consolidações revertem-se em «Por validar», até à validação, que acontece ao guardar.
+- **Categorias:** ao criar, as sugestões mostram as que já existem, nesta e nas outras freguesias, e um nome semelhante faz propor usar a existente. O `System.Admin`, no menu da conta → **Categorias**, funde categorias em todas as freguesias e presets (`GET /categorias`, `POST /categorias/fundir`, nos dois servidores).
+- **Modo claro e modo escuro:** o claro é o de origem; o slider está no índice ☰ e a escolha fica neste browser (`co-tema`).

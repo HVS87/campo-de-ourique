@@ -84,7 +84,7 @@ async function abrirJanela() {
   origem = `http://127.0.0.1:${porta}`;
   registo(`servidor em ${origem}; dados em ${pastaDados()}`);
   janela = new BrowserWindow({
-    width: 1600, height: 900, minWidth: 360, minHeight: 360, show: false, backgroundColor: '#0f1216', title: 'Campo de Ourique',
+    width: 1600, height: 900, minWidth: 360, minHeight: 360, show: false, backgroundColor: '#e9edf2', title: 'Campo de Ourique',
     icon: path.join(RAIZ, 'desktop', 'recursos', 'icone.png'), autoHideMenuBar: true,
     webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, spellcheck: false },
   });

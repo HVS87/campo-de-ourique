@@ -63,6 +63,32 @@ export function resumoAlteracoes(antes, depois) {
 }
 
 // horas: validade de uma sessão normal; horasLembrar: com «lembrar-me» (fica neste dispositivo, por exemplo 30 dias)
+// Categorias: o mesmo nome (sem contar acentos nem maiúsculas) é a mesma categoria, em qualquer freguesia ou preset.
+export const nomeCategoria = n => String(n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+// junta num só as categorias com estes nomes, neste preset; devolve true se o preset mudou
+export function fundirCategorias(dados, de, para, modelo = {}) {
+  const lista = dados && dados.categorias; if (!Array.isArray(lista)) return false;
+  const nomes = new Set([...de, para].map(nomeCategoria)), iguais = lista.filter(c => c && nomes.has(nomeCategoria(c.nome))); if (!iguais.length) return false;
+  const fica = iguais.find(c => nomeCategoria(c.nome) === nomeCategoria(para)) || iguais[0], mudou = iguais.length > 1 || fica.nome !== para;
+  fica.nome = para; fica.membros = [...new Set(iguais.flatMap(c => c.membros || []))];
+  if (modelo.icone) fica.icone = modelo.icone; if (modelo.cor) fica.cor = modelo.cor;
+  dados.categorias = lista.filter(c => !iguais.includes(c) || c === fica);
+  return mudou;
+}
+// a lista para a administração: cada categoria e onde é usada. presets: [{ freguesia, preset, dados }]
+export function juntarCategorias(presets) {
+  const m = new Map();
+  for (const { freguesia, preset, dados } of presets) for (const c of (dados && dados.categorias) || []) {
+    if (!c || !c.nome) continue; const k = nomeCategoria(c.nome);
+    if (!m.has(k)) m.set(k, { nome: c.nome, icone: c.icone || '', cor: c.cor || '', ocorrencias: [] });
+    m.get(k).ocorrencias.push({ freguesia, preset, membros: c.n != null ? c.n : (c.membros || []).length });
+  }
+  return [...m.values()].sort((a, b) => a.nome.localeCompare(b.nome, 'pt'));
+}
+export function pedidoFundir(b) { // valida o pedido de fundir categorias; null se não servir
+  const de = Array.isArray(b && b.de) ? b.de.filter(x => typeof x === 'string' && x.trim()).slice(0, 50) : [], para = typeof (b && b.para) === 'string' ? b.para.trim().slice(0, 80) : '';
+  return de.length && para ? { de, para, freguesia: typeof b.freguesia === 'string' ? b.freguesia : '', modelo: { icone: typeof b.icone === 'string' ? b.icone.slice(0, 8) : '', cor: typeof b.cor === 'string' ? b.cor.slice(0, 20) : '' } } : null;
+}
 export function criarContas({ armazem, iniciais = [], segredo = '', horas = 12, horasLembrar = 30 * 24 }) {
   const K = 'contas/contas.json', KS = 'contas/segredo.json';
   const lerJSON = async k => { const t = await armazem.ler(k); if (t == null) return null; try { return JSON.parse(t); } catch (err) { return null; } };

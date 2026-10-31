@@ -19,7 +19,8 @@ function armazemR2(r2) {
     // ler-mudar-gravar sem pisar outro envio ao mesmo tempo: só grava se o objeto não mudou entretanto (etag), senão repete
     async atualizar(chave, f) {
       for (let tentativa = 0; tentativa < 5; tentativa++) {
-        const o = await r2.get(chave), novo = f(o ? await o.text() : null);
+        const o = await r2.get(chave), atual = o ? await o.text() : null, novo = f(atual);
+        if (novo == null || novo === atual) return; // nada mudou: não se grava
         const cond = o ? { etagMatches: o.etag } : { etagDoesNotMatch: '*' }; // novo objeto: só se ainda não existir
         const r = await r2.put(chave, novo, { onlyIf: cond, httpMetadata: { contentType: 'application/json; charset=utf-8' } });
         if (r) return;

@@ -28,7 +28,7 @@ const armazem = {
   async escrever(chave, texto) { const f = caminho(chave); fs.mkdirSync(path.dirname(f), { recursive: true }); const tmp = f + '.tmp'; fs.writeFileSync(tmp, texto); fs.renameSync(tmp, f); }, // escrita atómica
   async apagar(chave) { try { fs.unlinkSync(caminho(chave)); } catch (err) { /* já não existe */ } },
   // ler-mudar-gravar sem esperas pelo meio: dois pedidos ao mesmo tempo não se pisam (o Node corre um de cada vez)
-  async atualizar(chave, f) { let t = null; try { t = fs.readFileSync(caminho(chave), 'utf8'); } catch (err) { t = null; } await armazem.escrever(chave, f(t)); },
+  async atualizar(chave, f) { let t = null; try { t = fs.readFileSync(caminho(chave), 'utf8'); } catch (err) { t = null; } const novo = f(t); if (novo != null && novo !== t) await armazem.escrever(chave, novo); },
   async listar(prefixo) {
     const out = [], base = prefixo ? caminho(prefixo.replace(/\/$/, '')) : DADOS;
     (function andar(dir) { let l = []; try { l = fs.readdirSync(dir, { withFileTypes: true }); } catch (err) { return; }

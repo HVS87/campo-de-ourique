@@ -944,7 +944,7 @@ window.CONTEUDOS = {
      ]
     ]
    ],
-   "texto": "<p>É necessário completar a requalificação da rua, nomeadamente nos quarteirões entre a Rua da Estrela e a Rua Dom João V e entre o Largo António Viana e a Rua Saraiva de Carvalho, incluindo a requalificação do Largo Duque de Wellington (toponímia informal).</p><p>É também necessário implementar medidas de acalmia da velocidade, porque os automóveis atingem velocidades elevadas nas horas de menor trânsito.</p><p>Propõe-se:</p><ul><li>instalar novas almofadas berlinenses nos troços a intervencionar;</li><li>fazer pinturas de segurança nas passadeiras;</li><li>instalar refletores de aproximação.</li></ul><p>Deve ter-se particular cuidado com o atravessamento em frente à Fundação Lar dos Cegos, por ser um equipamento usado por utentes seniores e invisuais.</p>",
+   "texto": "<p>É necessário completar a requalificação da rua, nomeadamente <span class=\"quarteiroes-auto\">nos quarteirões entre a Rua das Amoreiras e a Rua Dom João V e entre o Largo Doutor António Viana e a Rua Saraiva de Carvalho</span>, incluindo a requalificação do Largo Duque de Wellington (toponímia informal).</p><p>É também necessário implementar medidas de acalmia da velocidade, porque os automóveis atingem velocidades elevadas nas horas de menor trânsito.</p><p>Propõe-se:</p><ul><li>instalar novas almofadas berlinenses nos troços a intervencionar;</li><li>fazer pinturas de segurança nas passadeiras;</li><li>instalar refletores de aproximação.</li></ul><p>Deve ter-se particular cuidado com o atravessamento em frente à Fundação Lar dos Cegos, por ser um equipamento usado por utentes seniores e invisuais.</p>",
    "fotos": [
     {
      "src": "assets/fotos/exemplos/almofada-berlinense.jpg",
@@ -958,6 +958,227 @@ window.CONTEUDOS = {
      "src": "assets/fotos/exemplos/refletores-pavimento.jpg",
      "legenda": "Exemplo de refletores no pavimento (EUA). Foto: Shoecream, domínio público, Wikimedia Commons."
     }
+   ],
+   "quarteiroes": [
+    "rua-das-amoreiras-rua-maria-ulrich",
+    "rua-maria-ulrich-travessa-do-barbosa",
+    "travessa-do-barbosa-beco-do-casal",
+    "beco-do-casal-rua-dom-joao-v",
+    "largo-doutor-antonio-viana-rua-almeida-e-sou",
+    "rua-almeida-e-sousa-rua-coelho-da-rocha",
+    "rua-coelho-da-rocha-rua-saraiva-de-carvalho"
+   ],
+   "tracado": [
+    [
+     [
+      38.723462,
+      -9.159526
+     ],
+     [
+      38.723498,
+      -9.159592
+     ],
+     [
+      38.723513,
+      -9.159632
+     ],
+     [
+      38.72352,
+      -9.15966
+     ],
+     [
+      38.723514,
+      -9.159694
+     ],
+     [
+      38.723498,
+      -9.159727
+     ],
+     [
+      38.723438,
+      -9.159798
+     ],
+     [
+      38.723207,
+      -9.160069
+     ],
+     [
+      38.723166,
+      -9.160117
+     ],
+     [
+      38.723118,
+      -9.160164
+     ],
+     [
+      38.723053,
+      -9.160212
+     ],
+     [
+      38.722997,
+      -9.160242
+     ],
+     [
+      38.722913,
+      -9.160273
+     ],
+     [
+      38.722875,
+      -9.160286
+     ],
+     [
+      38.722836,
+      -9.160297
+     ],
+     [
+      38.7228,
+      -9.160308
+     ],
+     [
+      38.722714,
+      -9.160332
+     ],
+     [
+      38.722471,
+      -9.16039
+     ],
+     [
+      38.722141,
+      -9.160483
+     ],
+     [
+      38.721692,
+      -9.160662
+     ],
+     [
+      38.721434,
+      -9.160769
+     ],
+     [
+      38.721233,
+      -9.160849
+     ],
+     [
+      38.721065,
+      -9.160918
+     ],
+     [
+      38.720966,
+      -9.160959
+     ],
+     [
+      38.720947,
+      -9.160967
+     ],
+     [
+      38.720854,
+      -9.161005
+     ],
+     [
+      38.72077,
+      -9.161038
+     ],
+     [
+      38.720471,
+      -9.161157
+     ],
+     [
+      38.720256,
+      -9.161243
+     ],
+     [
+      38.720209,
+      -9.161264
+     ],
+     [
+      38.720166,
+      -9.161283
+     ],
+     [
+      38.7198,
+      -9.161446
+     ],
+     [
+      38.719762,
+      -9.161463
+     ],
+     [
+      38.719586,
+      -9.161677
+     ],
+     [
+      38.71956,
+      -9.161734
+     ],
+     [
+      38.719495,
+      -9.161794
+     ],
+     [
+      38.718934,
+      -9.16206
+     ],
+     [
+      38.71837,
+      -9.162281
+     ],
+     [
+      38.718159,
+      -9.162364
+     ],
+     [
+      38.718092,
+      -9.162384
+     ],
+     [
+      38.71799,
+      -9.162415
+     ],
+     [
+      38.717865,
+      -9.162447
+     ],
+     [
+      38.717588,
+      -9.162479
+     ],
+     [
+      38.717545,
+      -9.162479
+     ],
+     [
+      38.717475,
+      -9.162429
+     ],
+     [
+      38.717275,
+      -9.162286
+     ],
+     [
+      38.716793,
+      -9.16194
+     ],
+     [
+      38.716725,
+      -9.161893
+     ],
+     [
+      38.716653,
+      -9.16186
+     ],
+     [
+      38.716626,
+      -9.161845
+     ],
+     [
+      38.716601,
+      -9.161821
+     ],
+     [
+      38.716582,
+      -9.161798
+     ]
+    ]
    ]
   },
   {
@@ -1034,7 +1255,7 @@ window.CONTEUDOS = {
    "icone": "🚸",
    "prioridade": "importante",
    "rua": "Rua Saraiva de Carvalho",
-   "texto": "<p>É necessário completar a requalificação da rua, nomeadamente nos quarteirões entre a Rua Silva Carvalho e a Praça São João Bosco.</p><p>Devem ser revistas as condições de acessibilidade pedonal. Embora os passeios tenham uma largura adequada, o crescimento das raízes das árvores deformou-os, o que cria uma situação de perigo para seniores, para pessoas com mobilidade reduzida e para carrinhos de bebé.</p><p>Devem também ser implementadas medidas de acalmia da velocidade nesta rua, onde os automóveis atingem velocidades elevadas nas horas de menor trânsito, e que serve de acesso ao Colégio dos Salesianos.</p><p>Propõe-se:</p><ul><li>instalar almofadas berlinenses;</li><li>fazer pinturas de segurança nas passadeiras;</li><li>instalar refletores de aproximação;</li><li>pintar pictogramas na faixa de rodagem a assinalar a proximidade de um equipamento escolar.</li></ul>",
+   "texto": "<p>É necessário completar a requalificação da rua, nomeadamente <span class=\"quarteiroes-auto\">nos quarteirões entre a Praça São João Bosco e a Rua Silva Carvalho</span>.</p><p>Devem ser revistas as condições de acessibilidade pedonal. Embora os passeios tenham uma largura adequada, o crescimento das raízes das árvores deformou-os, o que cria uma situação de perigo para seniores, para pessoas com mobilidade reduzida e para carrinhos de bebé.</p><p>Devem também ser implementadas medidas de acalmia da velocidade nesta rua, onde os automóveis atingem velocidades elevadas nas horas de menor trânsito, e que serve de acesso ao Colégio dos Salesianos.</p><p>Propõe-se:</p><ul><li>instalar almofadas berlinenses;</li><li>fazer pinturas de segurança nas passadeiras;</li><li>instalar refletores de aproximação;</li><li>pintar pictogramas na faixa de rodagem a assinalar a proximidade de um equipamento escolar.</li></ul>",
    "fotos": [
     {
      "src": "assets/fotos/exemplos/almofada-berlinense.jpg",
@@ -1056,6 +1277,14 @@ window.CONTEUDOS = {
      "src": "assets/fotos/exemplos/pictograma-criancas.jpg",
      "legenda": "Exemplo de pictograma de crianças na faixa de rodagem junto a uma escola (Győr, Hungria). Foto: Globetrotter19, CC BY-SA 3.0, Wikimedia Commons."
     }
+   ],
+   "quarteiroes": [
+    "praca-sao-joao-bosco-rua-azedo-gneco",
+    "rua-azedo-gneco-rua-francisco-metrass",
+    "rua-francisco-metrass-rua-fernando-assis-pac",
+    "rua-fernando-assis-pacheco-rua-tomas-da-anun",
+    "rua-tomas-da-anunciacao-rua-ferreira-borges",
+    "rua-ferreira-borges-rua-silva-carvalho"
    ]
   },
   {
@@ -1065,7 +1294,7 @@ window.CONTEUDOS = {
    "icone": "🛠️",
    "prioridade": "preocupante",
    "rua": "Rua de Campo de Ourique",
-   "texto": "<p>É necessário completar a requalificação da rua, nomeadamente nos quarteirões entre a Rua Ferreira Borges e a Rua Maria Pia.</p><p>A rua tem uma inclinação acentuada, uma gritante falta de estacionamento para moradores e passeios estreitos e mal conservados.</p><p>Propõe-se:</p><ul><li>instalar almofadas berlinenses;</li><li>fazer pinturas de segurança nas passadeiras;</li><li>instalar refletores de aproximação.</li></ul>",
+   "texto": "<p>É necessário completar a requalificação da rua, nomeadamente <span class=\"quarteiroes-auto\">nos quarteirões entre a Rua Ferreira Borges e a Rua Maria Pia</span>.</p><p>A rua tem uma inclinação acentuada, uma gritante falta de estacionamento para moradores e passeios estreitos e mal conservados.</p><p>Propõe-se:</p><ul><li>instalar almofadas berlinenses;</li><li>fazer pinturas de segurança nas passadeiras;</li><li>instalar refletores de aproximação.</li></ul>",
    "fotos": [
     {
      "src": "assets/fotos/exemplos/almofada-berlinense.jpg",
@@ -1079,6 +1308,12 @@ window.CONTEUDOS = {
      "src": "assets/fotos/exemplos/refletores-pavimento.jpg",
      "legenda": "Exemplo de refletores no pavimento (EUA). Foto: Shoecream, domínio público, Wikimedia Commons."
     }
+   ],
+   "quarteiroes": [
+    "rua-ferreira-borges-rua-do-4-de-infantaria",
+    "rua-do-4-de-infantaria-rua-tomas-da-anunciac",
+    "rua-tomas-da-anunciacao-travessa-de-campo-de",
+    "travessa-de-campo-de-ourique-rua-maria-pia"
    ]
   },
   {

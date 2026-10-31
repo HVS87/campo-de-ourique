@@ -13,14 +13,14 @@
 // Quem pede: uma conta de utilizador (POST /sessao devolve um testemunho; cada conta só envia para as suas freguesias)
 // ou uma chave de acesso (para máquinas: leitor, contribuidor ou administração, criadas na página de consulta). Quem fez
 // o quê (o histórico, os autores) só a administração vê; os outros recebem os dados sem os nomes.
-import { criarContas, podeEditar, resumoAlteracoes } from './contas.mjs';
+import { criarContas, podeEditar, resumoAlteracoes, fundirCategorias, juntarCategorias, pedidoFundir } from './contas.mjs';
 import CONTAS_INICIAIS from './contas-iniciais.mjs';
 export const VERSAO_API = 1;
 const LIMITE = 40 * 1024 * 1024;
 const idValido = id => typeof id === 'string' && /^[a-z0-9][a-z0-9-]{0,60}$/.test(id);
 // objetos que se podem copiar e repor (cópia local, reposição); o segredo das sessões fica sempre no servidor
 const ID = '[a-z0-9][a-z0-9-]{0,60}';
-const CHAVE_OBJETO = new RegExp(`^(presets/${ID}/${ID}/(\\d+|atual|revisoes)\\.json|(indice|elementos)/${ID}\\.json|historico/\\d{4}-\\d{2}\\.json|chaves\\.json|contas/contas\\.json|evento/atual\\.json)$`);
+const CHAVE_OBJETO = new RegExp(`^(presets/${ID}/${ID}/(\\d+|atual|revisoes)\\.json|(indice|elementos)/${ID}\\.json|historico/\\d{4}-\\d{2}\\.json|chaves\\.json|contas/contas\\.json|evento/atual\\.json|categorias/fundidas\\.json)$`);
 export const PAPEIS = { leitor: ['ler'], contribuidor: ['ler', 'enviar'], admin: ['ler', 'enviar', 'admin'] };
 const AUTORIA = ['autor', 'contribuidor', 'utilizador'];
 const semAutoria = o => {
@@ -35,7 +35,7 @@ export function novaChave() { const b = new Uint8Array(24); crypto.getRandomValu
 const idAleatorio = () => { const b = new Uint8Array(4); crypto.getRandomValues(b); return hex(b); };
 
 // ---------- elementos «achatados» para consulta e exportação ----------
-const textoSimples = t => (Array.isArray(t) ? t.join('\n\n') : String(t || '')).replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/\s+\n/g, '\n').trim();
+const textoSimples = t => (Array.isArray(t) ? t.join('\n\n') : String(t || '')).replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/\s+\n/g, '\n').trim();
 const semAcentos = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 function geometria(e) {
   const ll = p => [p[1], p[0]]; // [lat, lon] → [lon, lat] do GeoJSON
@@ -59,7 +59,7 @@ function achatar(reg) { // calculado uma vez, ao receber (a consulta só junta l
     const contagens = registos && registos.reduce((m, d) => { m[d.c] = (m[d.c] || 0) + 1; return m; }, {});
     out.push({ freguesia: reg.freguesia, preset: reg.preset, presetTitulo: reg.dados.titulo || reg.preset, id: e.id, tipo: e.tipo, nome: e.nome, prioridade: e.prioridade || '', competencia: e.competencia || '',
       ...(e.evento ? { evento: String(e.evento), pontos: Array.isArray(e.pontos) ? e.pontos.length : 0, contagens, registos } : {}),
-      categorias: cats.filter(c => (c.membros || []).includes(e.id)).map(c => c.nome), dentroDe: pai ? pai.nome : '', texto: textoSimples(e.texto),
+      categorias: cats.filter(c => (c.membros || []).includes(e.id)).map(c => c.nome), dentroDe: pai ? pai.nome : '', texto: [textoSimples(e.texto), ...(e.tipo === 'grupo' && !e.evento && Array.isArray(e.detalhes) ? e.detalhes.filter(d => d && (d.nome || d.texto)).map(d => [d.nome, textoSimples(d.texto)].filter(Boolean).join(': ')) : [])].filter(Boolean).join('\n\n'),
       fotos: (e.fotos || []).map(f => f.src || f).filter(s => !String(s).startsWith('data:')), lat, lon, autor: reg.autor || '', utilizador: reg.utilizador || '', recebido: reg.recebido, revisao: reg.revisao, geometria: g });
     rec(e.filhos, e); } })(reg.dados.elementos, null);
   return out;
@@ -90,7 +90,7 @@ function soEventos(antes, d) {
   const eh = e => e && e.tipo === 'grupo' && e.evento, novos = (d.elementos || []).filter(eh), velhos = antes.elementos || [];
   return { ...antes, removidosEvento: d.removidosEvento, elementos: velhos.map(e => (eh(e) && novos.find(n => n.evento === e.evento)) || e).concat(novos.filter(n => !velhos.some(e => eh(e) && e.evento === n.evento))) };
 }
-const resumo = r => ({ freguesia: r.freguesia, preset: r.preset, titulo: r.dados.titulo || r.preset, subtitulo: r.dados.subtitulo || '', revisao: r.revisao, autor: r.autor, contribuidor: r.contribuidor, origem: r.origem, recebido: r.recebido, elementos: (r.dados.elementos || []).length });
+const resumo = r => ({ categorias: (r.dados.categorias || []).filter(c => c && c.nome).map(c => ({ nome: c.nome, icone: c.icone || '', cor: c.cor || '', n: (c.membros || []).length })), freguesia: r.freguesia, preset: r.preset, titulo: r.dados.titulo || r.preset, subtitulo: r.dados.subtitulo || '', revisao: r.revisao, autor: r.autor, contribuidor: r.contribuidor, origem: r.origem, recebido: r.recebido, elementos: (r.dados.elementos || []).length });
 function filtrar(lista, f) {
   const q = semAcentos(f.q || '');
   return lista.filter(e => (!f.freguesia || e.freguesia === f.freguesia) && (!f.prioridade || e.prioridade === (f.prioridade === 'sem' ? '' : f.prioridade)) && (!f.competencia || e.competencia === (f.competencia === 'sem' ? '' : f.competencia))
@@ -153,27 +153,49 @@ export function criarAPI({ armazem, nome = 'Servidor central das freguesias', or
     if (!d || typeof d !== 'object' || !Array.isArray(d.elementos)) return json(400, { erro: 'Esperava { dados: { …, elementos: [] } }' });
     if (d.freguesia && d.freguesia !== f) return json(409, { erro: `O preset é da freguesia «${d.freguesia}», não de «${f}»` });
     d.freguesia = f; d.preset = p;
+    const fundidas = (await lerJSON('categorias/fundidas.json')) || []; // o que a administração fundiu não volta com um envio de um ficheiro antigo
     let atual = null, reg = null;
     const juntar = t => { // corre outra vez se outro envio do mesmo preset gravar primeiro: ninguém pisa os registos de ninguém
       try { atual = t == null ? null : JSON.parse(t); } catch (err) { atual = null; }
       const novo = corpo.soEvento && atual ? soEventos(atual.dados, structuredClone(d)) : structuredClone(d);
       juntarEventos(atual && atual.dados, novo); reg = null;
+      for (const x of fundidas) fundirCategorias(novo, x.de, x.para, x.modelo);
       if (atual && JSON.stringify(atual.dados) === JSON.stringify(novo)) return t; // nada mudou
       const rev = (atual ? atual.revisao : 0) + 1, recebido = new Date().toISOString();
     // o autor é a conta que enviou (com uma chave de acesso, o nome que vem no pedido)
       reg = { freguesia: f, preset: p, revisao: rev, utilizador: c.utilizador || '', autor: c.conta ? c.nome : String(corpo.autor || '').slice(0, 120), contribuidor: c.nome, origem: String(corpo.origem || '').slice(0, 30), versao: String(corpo.versao || '').slice(0, 30), quando: Number(corpo.quando) || null, recebido, dados: novo };
       return JSON.stringify(reg);
     };
-    const kAtual = pasta(f, p) + 'atual.json';
-    if (armazem.atualizar) await armazem.atualizar(kAtual, juntar); else { const txt = juntar(await armazem.ler(kAtual)); if (reg) await armazem.escrever(kAtual, txt); }
+    await trocarAtual(f, p, juntar);
     if (!reg) return json(200, { ok: true, revisao: atual.revisao, igual: true });
+    await depoisDeGravar(c, f, p, reg, atual);
+    return json(201, { ok: true, revisao: reg.revisao });
+  }
+  const trocarAtual = async (f, p, mudar) => { const k = pasta(f, p) + 'atual.json'; if (armazem.atualizar) await armazem.atualizar(k, mudar); else { const t = await armazem.ler(k), novo = mudar(t); if (novo != null && novo !== t) await armazem.escrever(k, novo); } };
+  async function depoisDeGravar(c, f, p, reg, atual) { // a revisão, os índices e o histórico
     const rev = reg.revisao, r = resumo(reg);
     await armazem.escrever(pasta(f, p) + rev + '.json', JSON.stringify(reg));
-    await atualizarJSON(pasta(f, p) + 'revisoes.json', v => (v || []).concat(r));
+    await atualizarJSON(pasta(f, p) + 'revisoes.json', v => (v || []).concat({ ...r, categorias: undefined }));
     await atualizarJSON(`indice/${f}.json`, v => ({ ...(v || {}), [p]: r }));
     await atualizarJSON(`elementos/${f}.json`, v => ({ ...(v || {}), [p]: achatar(reg) }));
     await contas.registar({ conta: comoConta(c), acao: 'guardou', freguesia: f, preset: p, revisao: rev, resumo: resumoAlteracoes(atual && atual.dados, reg.dados), origem: reg.origem });
-    return json(201, { ok: true, revisao: rev });
+  }
+  // junta categorias em todos os presets: cada preset alterado ganha uma revisão, como num envio
+  async function fundirEmTodos(c, pedido) {
+    const alterados = [];
+    await atualizarJSON('categorias/fundidas.json', v => (v || []).concat({ de: pedido.de, para: pedido.para, modelo: pedido.modelo }).filter((x, i, l) => l.findIndex(y => JSON.stringify(y) === JSON.stringify(x)) === i));
+    for (const r0 of await resumos(idValido(pedido.freguesia) ? pedido.freguesia : undefined)) {
+      const { freguesia: f, preset: p } = r0; let atual = null, reg = null;
+      await trocarAtual(f, p, t => {
+        try { atual = t == null ? null : JSON.parse(t); } catch (err) { atual = null; }
+        reg = null; if (!atual) return t;
+        const novo = structuredClone(atual.dados); if (!fundirCategorias(novo, pedido.de, pedido.para, pedido.modelo)) return t;
+        reg = { ...atual, revisao: atual.revisao + 1, utilizador: c.utilizador || '', autor: c.nome, contribuidor: c.nome, origem: 'servidor central', quando: null, recebido: new Date().toISOString(), dados: novo };
+        return JSON.stringify(reg);
+      });
+      if (reg) { await depoisDeGravar(c, f, p, reg, atual); alterados.push({ freguesia: f, preset: p, revisao: reg.revisao }); }
+    }
+    return alterados;
   }
   // sessões e contas: entrar, mudar a própria palavra-passe; a administração lista as contas e repõe palavras-passe
   async function tratarContas(req, c, rec, alvo, acao) {
@@ -282,6 +304,13 @@ export function criarAPI({ armazem, nome = 'Servidor central das freguesias', or
         const r = await contas.definirEvento({ ...comoConta(c), papel: 'admin' }, b, { origem: 'servidor central' });
         return r.erro ? json(r.codigo, { erro: r.erro }) : json(200, r);
       }
+      if (rec === 'categorias' && f === 'fundir' && req.method === 'POST') {
+        if (!pode(c, 'admin')) return recusa(c);
+        let b; try { b = JSON.parse(await corpoTexto(req)) || {}; } catch (err) { return json(err.codigo || 400, { erro: err.codigo ? err.message : 'JSON inválido' }); }
+        const pedido = pedidoFundir(b); if (!pedido) return json(400, { erro: 'Esperava { de: [nomes], para }' });
+        const alterados = await fundirEmTodos(c, pedido); await contas.registar({ conta: comoConta(c), acao: 'fundiu categorias: ' + pedido.de.join(', ') + ' → ' + pedido.para, origem: 'servidor central' });
+        return json(200, { ok: true, alterados });
+      }
       if (rec === 'sessao' || rec === 'contas' || rec === 'historico') return await tratarContas(req, c, rec, f, p);
       if (rec === 'chaves') return await chaves(req, c, f, p);
       if (rec === 'copia' || rec === 'objeto') return await copia(req, c, rec === 'copia' ? {} : q);
@@ -289,6 +318,7 @@ export function criarAPI({ armazem, nome = 'Servidor central das freguesias', or
       if (req.method !== 'GET') return json(405, { erro: 'Método não suportado' });
       if (!pode(c, 'ler')) return recusa(c);
       if (rec === 'freguesias') { const m = {}; for (const r of await resumos()) { const x = m[r.freguesia] = m[r.freguesia] || { freguesia: r.freguesia, presets: 0, elementos: 0, ultimo: '' }; x.presets++; x.elementos += r.elementos; if (r.recebido > x.ultimo) x.ultimo = r.recebido; } return json(200, { freguesias: Object.values(m).sort((a, b) => a.freguesia.localeCompare(b.freguesia)) }); }
+      if (rec === 'categorias' && !f) { const l = await Promise.all((await resumos()).map(async r => { if (r.categorias) return { freguesia: r.freguesia, preset: r.preset, dados: { categorias: r.categorias } }; const a = await lerJSON(pasta(r.freguesia, r.preset) + 'atual.json'); return { freguesia: r.freguesia, preset: r.preset, dados: a && a.dados }; })); return json(200, { categorias: juntarCategorias(l) }); }
       if (rec === 'presets' && !f) { if (q.freguesia && !idValido(q.freguesia)) return json(400, { erro: 'Freguesia inválida' }); return json(200, { presets: autoria(c, (await resumos(q.freguesia)).sort((a, b) => b.recebido.localeCompare(a.recebido))) }); }
       if (rec === 'presets' && idValido(f) && idValido(p)) {
         if (extra === 'revisoes') return json(200, { revisoes: autoria(c, (await lerJSON(pasta(f, p) + 'revisoes.json')) || []) });

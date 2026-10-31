@@ -22,6 +22,8 @@
 //   POST /evento                → { id, nome, ativo } liga ou desliga o evento (só a administração)
 //   GET  /contas                → as contas, sem os verificadores (só a administração)
 //   POST /contas/<utilizador>/palavra-passe → { nova } repõe a palavra-passe de outra conta (só a administração)
+//   GET  /categorias            → as categorias de todas as freguesias e presets, e onde são usadas
+//   POST /categorias/fundir     → { de: [nomes], para, icone, cor } junta-as numa só em todo o lado (só a administração)
 //
 // Duas pastas: «raiz» (a apresentação: index.html, dados/, assets/…) e «gravavel» (onde se escreve). Na versão browser
 // são a mesma. Na aplicação de computador a raiz vem dentro do programa (só leitura) e a pasta gravável fica nos dados
@@ -29,7 +31,7 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
-import { criarContas, podeEditar, resumoAlteracoes } from '../servidor-central/contas.mjs';
+import { criarContas, podeEditar, resumoAlteracoes, fundirCategorias, juntarCategorias, pedidoFundir } from '../servidor-central/contas.mjs';
 import CONTAS_INICIAIS from '../servidor-central/contas-iniciais.mjs';
 
 const TYPES = {
@@ -247,6 +249,27 @@ export function criarServidor({ raiz, gravavel = raiz, app = false, versao = '',
     json(res, 200, { ok: true, caminho: 'assets/fotos/' + seguro });
     return seguro;
   }
+  function todasAsFreguesias() { // Campo de Ourique, em dados/, e as que tiverem pasta em dados/freguesias/
+    let ids = []; try { ids = fs.readdirSync(path.join(raiz, 'dados/freguesias'), { withFileTypes: true }).filter(d => d.isDirectory()).map(d => d.name); } catch (err) { /* só a principal */ }
+    return ['campo-de-ourique', ...ids].filter(idValido).map(id => freguesiaDe('/?freguesia=' + id)).filter(Boolean);
+  }
+  function lerAtivo(F) { try { return dadosDoFicheiro(fs.readFileSync(paraLer(F.rel + 'conteudos.js'), 'utf8')); } catch (err) { return null; } } // pode estar escrito como código
+  function todosOsPresets() {
+    const out = [];
+    for (const F of todasAsFreguesias()) {
+      const ids = idsDePresets(F); for (const id of ids) { try { out.push({ freguesia: F.id, preset: id, dados: lerPreset(F, id) }); } catch (err) { /* escrito como código */ } }
+      const a = lerAtivo(F); if (a && !ids.includes(a.preset)) out.push({ freguesia: F.id, preset: a.preset || F.id, dados: a });
+    }
+    return out;
+  }
+  function fundirEmTodos({ de, para, modelo }) { // nos ficheiros dos presets e na cópia ativa de cada freguesia
+    const alterados = [];
+    for (const F of todasAsFreguesias()) {
+      for (const id of idsDePresets(F)) { let d; try { d = lerPreset(F, id); } catch (err) { continue; } if (fundirCategorias(d, de, para, modelo)) { fs.writeFileSync(paraEscrever(presetRel(F, id)), ficheiroPreset(d)); alterados.push({ freguesia: F.id, preset: id }); } }
+      const a = lerAtivo(F); if (a && fundirCategorias(a, de, para, modelo)) { copiaAnterior(F); fs.writeFileSync(paraEscrever(F.rel + 'conteudos.js'), ficheiroConteudos(F, a)); if (!alterados.some(x => x.freguesia === F.id && x.preset === a.preset)) alterados.push({ freguesia: F.id, preset: a.preset || F.id }); }
+    }
+    return alterados;
+  }
   async function corpoJSON(req) { try { return JSON.parse((await lerCorpo(req)).toString('utf8')) || {}; } catch (err) { if (err.codigo) throw err; return {}; } }
   // sessões e contas (ver o início do ficheiro)
   async function tratarContas(req, res, rel, s) {
@@ -254,6 +277,7 @@ export function criarServidor({ raiz, gravavel = raiz, app = false, versao = '',
       if (!mesmaOrigem(req)) return json(res, 403, { erro: 'Só a partir da própria apresentação' });
       if (rel === '/sessao') return json(res, 200, { sessao: s });
       if (rel === '/evento') return json(res, 200, { evento: await contas.lerEvento() });
+      if (rel === '/categorias') return json(res, 200, { categorias: juntarCategorias(todosOsPresets()) });
       if (!s || s.papel !== 'admin') return json(res, s ? 403 : 401, { erro: 'Só a administração' });
       const q = Object.fromEntries(new URL(req.url, 'http://x').searchParams);
       if (rel === '/historico') return json(res, 200, { historico: await contas.historico(q) });
@@ -273,11 +297,18 @@ export function criarServidor({ raiz, gravavel = raiz, app = false, versao = '',
       const r = await contas.mudarPalavraPasse(s, b.atual, b.nova, { origem: origemConta });
       return r.erro ? json(res, r.codigo, { erro: r.erro }) : json(res, 200, { sessao: r.conta }, cookie(req, r.testemunho, duracao(r.lembrar)));
     }
+    if (rel === '/categorias/fundir') {
+      if (s.papel !== 'admin') return json(res, 403, { erro: 'Só a administração' });
+      const p = pedidoFundir(b); if (!p) return json(res, 400, { erro: 'Esperava { de: [nomes], para }' });
+      const alterados = fundirEmTodos(p); await contas.registar({ conta: s, acao: 'fundiu categorias: ' + p.de.join(', ') + ' → ' + p.para, origem: origemConta });
+      registo(`${s.utilizador} fundiu categorias em «${p.para}» (${alterados.length} presets)`);
+      return json(res, 200, { ok: true, alterados });
+    }
     const m = /^\/contas\/([^/]+)\/palavra-passe$/.exec(rel);
     if (m) { const r = await contas.reporPalavraPasse(s, m[1], b.nova, { origem: origemConta }); return r.erro ? json(res, r.codigo, { erro: r.erro }) : json(res, 200, { ok: true, conta: r.conta }); }
     return json(res, 404, { erro: 'Não encontrado' });
   }
-  const ROTAS_CONTAS = /^\/(sessao(\/terminar|\/palavra-passe)?|historico|evento|contas(\/[^/]+\/palavra-passe)?)$/;
+  const ROTAS_CONTAS = /^\/(sessao(\/terminar|\/palavra-passe)?|historico|evento|categorias(\/fundir)?|contas(\/[^/]+\/palavra-passe)?)$/;
 
   return http.createServer(async (req, res) => {
     let rel;
