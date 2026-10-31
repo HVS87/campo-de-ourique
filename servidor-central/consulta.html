@@ -261,6 +261,7 @@ async function carregarEvento() {
   const ativo = !!(eventoAtual && eventoAtual.ativo && eventoAtual.id === EVENTO_DEF.id);
   $('#ev-estado').innerHTML = `<b>${esc(EVENTO_DEF.icone)} ${esc(EVENTO_DEF.nome)}</b> · ${ativo ? '<b>ativo</b> desde ' + esc(data(eventoAtual.desde)) + (eventoAtual.por ? ', por ' + esc(eventoAtual.por) : '') : 'inativo'}`;
   $('#ev-ligar').textContent = ativo ? 'Desativar o evento' : 'Ativar o evento'; $('#ev-ligar').classList.toggle('on', !ativo);
+  const ag = EVENTO_DEF.agenda; if (ag) $('#ev-estado').insertAdjacentHTML('beforeend', ` · calendário: de ${esc(data(ag.inicio))} a ${esc(data(ag.fim))}`); $('#ev-ligar').hidden = !!ag; // com calendário, o controlo manual não se aplica
   $('#ev-resumo-caixa').hidden = false; // o resumo vê-se também depois de o evento acabar
   try {
     const r = await pedir('/evento/resumo?id=' + EVENTO_DEF.id), fregs = Object.keys(r.freguesias).sort((a, b) => nomeFreg(a).localeCompare(nomeFreg(b), 'pt'));

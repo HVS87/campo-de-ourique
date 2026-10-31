@@ -68,9 +68,16 @@
   .form-edicao .tipo-ponto input[name=tipo-nome] { width: auto; flex: 1; min-width: 0; margin: 0; }
   .form-edicao .tipo-ponto input[type=color] { width: 40px; height: 36px; flex: none; padding: 2px; margin: 0; cursor: pointer; }
   .tipo-ponto .fechar { position: static; flex: none; }
+  #dialogo .campo-dialogo.marca.interruptor { align-items: flex-start; gap: 12px; margin: 6px 0 14px; padding: 10px 12px; border-radius: 12px; background: rgb(var(--t) / .07); }
+  #dialogo .campo-dialogo.marca.interruptor b { display: block; font-size: 13.5px; font-weight: 600; } #dialogo .campo-dialogo.marca.interruptor small { display: block; margin-top: 2px; font-size: 12px; color: var(--ink-dim); line-height: 1.35; }
+  #dialogo .campo-dialogo.marca.interruptor input { appearance: none; -webkit-appearance: none; position: relative; width: 38px; height: 22px; margin: 1px 0 0; padding: 0; border: 0; border-radius: 11px; background: #7b838e; cursor: pointer; flex: none; transition: background .15s; }
+  #dialogo .campo-dialogo.marca.interruptor input::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform .15s; }
+  #dialogo .campo-dialogo.marca.interruptor input:checked { background: var(--accent-texto); } #dialogo .campo-dialogo.marca.interruptor input:checked::after { transform: translateX(16px); }
+  @media (prefers-reduced-motion: reduce) { #dialogo .campo-dialogo.marca.interruptor input, #dialogo .campo-dialogo.marca.interruptor input::after { transition: none; } }
   .acoes-evento { white-space: nowrap; text-align: right; } .acoes-evento .btn { margin-left: 4px; }
   @media (max-width: 640px) { .acoes-evento { white-space: normal; } .acoes-evento .btn { margin: 2px 0 2px 4px; } }
   .form-evento { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; } .form-evento .campo-dialogo:first-child { grid-column: 1 / -1; }
+  #dialogo .form-evento .campo-dialogo[hidden] { display: none; } .agenda-evento .campo-dialogo:first-child { grid-column: 1 / -1; }
   @media (max-width: 480px) { .form-evento { grid-template-columns: 1fr; } }
   .titulo-tipos { font-size: 13px; margin: 12px 0 6px; } .titulo-tipos small, .form-evento small { font-weight: 400; color: var(--ink-dim); }
   #dialogo .campo-dialogo.tipo-evento { display: flex; gap: 6px; align-items: center; margin: 0 0 6px; }
@@ -494,6 +501,7 @@
   /* ---- diálogo (guardar ou descartar, presets de outras freguesias) ---- */
   #dialogo { position: absolute; inset: 0; z-index: 1400; background: rgba(0,0,0,.55); display: none; place-items: center; grid-template-columns: minmax(0, 1fr); padding: 16px; }
   #dialogo.aberto { display: grid; }
+  @media (max-width: 1100px) { #dialogo { padding-top: 66px; } } /* num diálogo alto, o logótipo (sempre visível) não tapa o título */
   #dialogo .caixa { width: min(470px, 100%); border-radius: 16px; padding: 20px 22px 18px; animation: surgir .18s ease-out; }
   #dialogo h2 { margin: 0 0 10px; font-size: 18px; }
   #dialogo p { margin: 0 0 8px; font-size: 14px; line-height: 1.5; color: var(--ink-texto); }
@@ -696,6 +704,7 @@
   </header>
   <div class="acoes">
     <button class="btn" id="btn-visita" title="Como usar a apresentação, passo a passo">🎓 Visita guiada</button>
+    <button class="btn" id="btn-visita-evento" hidden title="Como registar neste evento, passo a passo"></button>
     <button class="btn" id="btn-guiao" title="Percorre os destaques desta freguesia, um a um">▶ Vista de Apresentação</button>
     <button class="btn" id="btn-repor">Vista geral</button>
     <button class="btn" id="btn-lisboa" title="Mapa de Lisboa com as 24 freguesias">🗺 Lisboa</button>
@@ -1636,7 +1645,7 @@ async function abrirCidade(ligar) {
     if (guiaoAberto()) ligarGuiao(false);
     limparSelecao(); limparRuaDestaque(); fecharCartao(); abrirPainel(false); recolherDesmat(); abrirCamadas(false);
     cidade = true; document.body.classList.add('cidade'); map.getContainer().classList.add('modo-cidade');
-    if (visitaAberta()) irPassoVisita(passosVisita().findIndex(p => p.id === 'cidade')); // saiu para Lisboa a meio da visita: continua pelo passo do mapa de Lisboa
+    if (visitaAberta()) irPassoVisita(passosAtuais().findIndex(p => p.so === 'cidade')); // saiu para Lisboa a meio da visita: continua pelo passo do mapa de Lisboa
     camadaCidade.limpar();
     document.title = NOME_FERRAMENTA; $('#marca-titulo').textContent = NOME_FERRAMENTA; $('#marca-sub').textContent = '24 freguesias';
     map.setMaxBounds(null); map.setMinZoom(10.5);
@@ -2346,10 +2355,12 @@ function passosVisita() {
     { id: 'lisboa', so: 'freguesia', alvo: '#btn-cidade', titulo: 'Voltar a Lisboa', texto: 'Este botão afasta o mapa até à cidade inteira, para escolheres outra freguesia.', dica: 'Também chegas lá a afastar o mapa, ou com «🗺 Lisboa» no índice.' },
     { id: 'desmat', so: 'freguesia', se: () => ELEMENTOS.some(e => e.tipo === 'desmaterializado'), alvo: '#desmat', titulo: 'Ideias sem lugar no mapa', texto: 'Os pontos desmaterializados são ideias ou problemas gerais, sem um sítio exato. Ficam empilhados aqui: clica (ou deixa o cursor 3 segundos em cima) para os abrir.' },
     { id: 'criar', so: 'freguesia', alvo: '#btn-criar', titulo: 'Acrescentar coisas', texto: 'O «+» é o atalho para criar um ponto, uma rua ou uma zona. Entra no modo de edição e abre a lista do que se pode criar; se ainda não tiveres sessão, pede primeiro a conta da tua freguesia.' },
+    { id: 'criar-simulado', so: 'freguesia', alvo: '.mk-levant', antes: () => simularPonto(limiteBounds.getCenter(), '#2a78d6', '📍', 'Exemplo: novo ponto'), depois: retirarSimulacao, titulo: 'Assim nasce um ponto', texto: 'Escolhes «Ponto», tocas no mapa e o ponto aparece nesse sítio, com o cartão aberto para lhe dares o nome, o texto e as fotos.', dica: 'Isto é uma simulação: não foi criado nenhum ponto.' },
     { id: 'editar', so: 'freguesia', alvo: '#btn-editar', titulo: 'O modo de edição', texto: 'O lápis liga o modo de edição, com uma conta. Cada freguesia edita só a sua; a Concelhia e a administração editam todas. O que fazes fica em rascunho neste dispositivo até guardares.', dica: 'Na primeira vez que entrares na edição, a visita continua com as ferramentas de edição.' },
     { ...daEdicao, id: 'ed-ferramentas', alvo: '#barra-edicao', antes: () => { if (barra.classList.contains('mais')) $('#btn-mais').click(); }, titulo: 'As ferramentas de edição', texto: '<b>Mover</b> seleciona e arrasta. <b>Ponto</b>, <b>Conjunto</b> (vários pontos num só cartão), <b>Zona</b> (vértice a vértice), <b>Zona livre</b> (pintada à mão), <b>Rua</b> (clica numa rua do mapa) e <b>Lote</b> (clica num lote do cadastro).', dica: 'Esc volta sempre a «Mover». Larga um ponto sobre uma zona para o meter lá dentro.' },
     { ...daEdicao, id: 'ed-cartao', se: () => todosElementos().length > 0, alvo: '#modal .cartao', antes: () => { const l = listaVisita(null); if (l[0]) selecionar(l[0], true); }, depois: () => desselecionar(), titulo: 'Editar um elemento', texto: 'Clica num elemento e o cartão abre em modo de formulário: nome, ícone, prioridade, competência, texto, fotos (arrasta-as para cá) e categorias. As alterações entram logo no mapa.' },
     { ...daEdicao, id: 'ed-criar', alvo: '#btn-criar', titulo: 'O «+»', texto: 'Em edição, o «+» abre a lista do que se pode criar, incluindo pontos desmaterializados (ideias sem lugar no mapa). Em telemóveis e tablets cria também na tua localização.' },
+    { ...daEdicao, id: 'ed-simulado', alvo: '.mk-levant', antes: () => simularPonto(limiteBounds.getCenter(), '#2a78d6', '📍', 'Exemplo: novo ponto'), depois: retirarSimulacao, titulo: 'Experimenta sem medo', texto: 'Com a ferramenta <b>Ponto</b>, cada toque no mapa cria um ponto, como este. Depois de saíres da visita, podes criar os teus.', dica: 'Durante a visita nada é criado: este ponto é só uma simulação.' },
     { ...daEdicao, id: 'ed-guardar', alvo: '#btn-guardar', titulo: 'Guardar e rascunhos', texto: '«Guardar» grava o preset no ficheiro da freguesia (e envia-o para o servidor central, se houver). Até lá, cada alteração fica em <b>rascunho</b> neste dispositivo, mesmo que feches a aplicação: volta quando a tua conta entrar outra vez na edição.', dica: 'O estado à direita da barra diz se há alterações por guardar.' },
     { ...daEdicao, id: 'ed-mais', alvo: '#barra-edicao', antes: () => { if (!barra.classList.contains('mais')) $('#btn-mais').click(); }, depois: () => { if (barra.classList.contains('mais')) $('#btn-mais').click(); }, titulo: 'Título, presets e servidor central', texto: '«⋯ Mais» mostra o título e o subtítulo da freguesia, os <b>presets</b> (versões alternativas dos conteúdos: criar, trocar, importar, exportar, repor) e o <b>☁ servidor central</b>, que junta os dados de todas as freguesias.' },
     { ...daEdicao, id: 'ed-conta', alvo: '#btn-sessao', titulo: 'A tua conta', texto: 'As iniciais da tua conta. Aqui mudas a palavra-passe e terminas a sessão (com alterações por guardar, pergunta o que lhes fazer). A administração vê também o histórico de quem fez o quê e gere as contas.' },
@@ -2357,7 +2368,34 @@ function passosVisita() {
     { id: 'fim', titulo: 'É tudo!', texto: 'Já sabes o essencial. Podes repetir esta visita quando quiseres em ☰ → 🎓 Visita guiada.', dica: 'Teclas úteis: «/» pesquisa · Esc fecha · ← → na Vista de Apresentação.', textoSeguinte: 'Terminar ✓' },
   ];
 }
-let visitaPassos = [], visitaI = -1, visitaTimer = null;
+// A visita própria de um evento (só para os que trazem «visita»): corre em vez da geral enquanto ele estiver ativo. É curta e, no fim, pergunta se se quer ver a geral.
+const eventoComVisita = () => { const ev = eventoAtivo(); return ev && ev.visita ? ev : null; };
+function passosEvento(ev) {
+  const T = termosDe(ev), grupo = () => ELEMENTOS.find(e => e.tipo === 'grupo' && e.evento === ev.id); let vistaAntes = null, exemplo = null;
+  return [
+    { id: 'ev-inicio', titulo: ev.icone + ' ' + ev.nome, texto: `Está a decorrer este levantamento, para ${esc(ev.visita.objetivo)}. Em poucos passos mostro-te como se regista.`, dica: 'Podes sair quando quiseres (✕ ou Esc) e repetir mais tarde em ☰ → Visita do evento.' },
+    { id: 'ev-cidade', so: 'cidade', alvo: '#cidade-barra', interativo: true, titulo: 'Escolhe a freguesia', texto: 'Cada registo fica na freguesia onde está. <b>Clica na tua freguesia</b> no mapa; no ecrã tátil, toca duas vezes.', dica: 'A visita continua lá. Ou carrega em «Abrir» para seguir com ' + esc(FREG.nome) + '.', seguinte: () => abrirCidade(false), textoSeguinte: 'Abrir ' + FREG.nome + ' ›' },
+    { id: 'ev-criar', so: 'freguesia', alvo: '#btn-criar', titulo: 'Começa no «+»', texto: `Carrega no «+». Se ainda não tiveres sessão, entra com a conta da tua freguesia. Depois escolhe <b>${esc(ev.nome)}</b>; a outra opção, «Outros Problemas», é para o que não faz parte do levantamento.` },
+    { id: 'ev-tipo', so: 'freguesia', se: () => ev.categorias.length > 0, titulo: 'O que encontraste?', texto: 'Escolhe o tipo:<br>' + ev.categorias.map(c => `<i class="amostra" style="--c:${esc(c.cor)}"></i>${esc(c.icone + ' ' + c.nome)}`).join('<br>'), dica: 'Cada registo tem sempre um tipo, com a sua cor no mapa.' },
+    { id: 'ev-local', so: 'freguesia', titulo: 'A localização', texto: `A seguir, procuro a tua localização pelo GPS. Se não der, ou se estiveres longe, toca no mapa no sítio exato d${esc(ev.visita.oQue)}.`, dica: 'Com o GPS, a localização é mais precisa ao ar livre.' },
+    { id: 'ev-confirmar', so: 'freguesia', alvo: '#levantamento', antes: () => { vistaAntes = { c: map.getCenter(), z: map.getZoom() }; abrirLevantamento(ev, ev.categorias[0] || { id: '', nome: ev.nome, icone: ev.icone, cor: '#9aa3ad' }, { ll: limiteBounds.getCenter(), precisao: null }); exemplo = { ll: limiteBounds.getCenter(), cat: levant.cat }; $('#aviso').classList.remove('aberto'); }, textoSeguinte: 'Simular o registo ›', depois: () => { if (exemplo) exemplo.morada = { rua: $('#lev-rua').value.trim(), numero: $('#lev-numero').value.trim() }; cancelarLevantamento(true); if (vistaAntes) map.setView(vistaAntes.c, vistaAntes.z, { animate: false }); }, titulo: 'Confirma e regista', texto: 'Sugiro a morada a partir do número de polícia mais próximo. Corrige-a se for preciso, arrasta o marcador para o sítio exato e carrega em <b>Confirmar registo</b>.', dica: 'Isto é só um exemplo: nada fica registado.' },
+    { id: 'ev-simulado', so: 'freguesia', alvo: '.mk-levant', antes: () => { const x = exemplo || { ll: limiteBounds.getCenter(), cat: ev.categorias[0] || { cor: '#9aa3ad', icone: ev.icone } }; simularPonto(x.ll, x.cat.cor, x.cat.icone, x.morada && x.morada.rua ? 'Exemplo: ' + moradaTexto(x.morada) : 'Exemplo de registo'); }, depois: retirarSimulacao, titulo: 'Assim fica o registo', texto: `Num registo verdadeiro, o ponto aparece no mapa com a cor do tipo e entra na lista desta freguesia.`, dica: 'Isto foi uma simulação: não foi criado nenhum ponto.' },
+    { id: 'ev-cartao', so: 'freguesia', alvo: grupo() ? '#modal .cartao' : '', antes: () => { const g = grupo(); if (g) selecionar(g, true); }, depois: () => { if (grupo()) desselecionar(); }, titulo: 'Fotos e notas', texto: `Cada freguesia junta os seus registos no mesmo conjunto. Toca num ponto, em modo de edição, para abrir o seu cartão: acrescenta fotos e notas, muda o tipo ou corrige a morada.`, dica: 'Lembra-te de guardar no fim: até lá, fica em rascunho neste dispositivo.' },
+    { id: 'ev-resumo', so: 'ver', alvo: cidade ? '#btn-evento-cidade' : '#btn-cidade', titulo: 'O resumo da cidade', texto: `No mapa de Lisboa, <b>Resumo da cidade</b> mostra o total de ${esc(T.varios)} em cada freguesia, por tipo.` },
+    { id: 'ev-fim', titulo: 'Pronto!', texto: `Já sabes registar ${esc(T.varios)}. Podes repetir esta visita em ☰ → Visita do evento.`, textoSeguinte: 'Terminar ✓' },
+  ];
+}
+// As visitas guiadas só simulam: o ponto de exemplo é um marcador solto no mapa, fora dos dados, e com uma visita aberta nada se cria nem se regista.
+const visitaSoSimula = () => { if (!visitaAberta()) return false; aviso('Durante a visita guiada nada é criado: isto é só uma simulação.', 3500); return true; };
+let pontoSimulado = null;
+function simularPonto(ll, cor, icone, texto) {
+  retirarSimulacao();
+  pontoSimulado = L.marker(ll, { interactive: false, keyboard: false, zIndexOffset: 1000, icon: L.divIcon({ className: 'mk-levant', html: `<div class="levant-ico" style="--c:${esc(cor)}">${esc(icone)}</div>`, iconSize: [36, 36], iconAnchor: [18, 32] }) }).addTo(map);
+  pontoSimulado.bindTooltip(esc(texto), { permanent: true, direction: 'top', offset: [0, -36], className: 'rotulo', opacity: 1 }).openTooltip();
+}
+function retirarSimulacao() { if (pontoSimulado) { map.removeLayer(pontoSimulado); pontoSimulado = null; } }
+let visitaPassos = [], visitaI = -1, visitaTimer = null, visitaEvento = null; // visitaEvento: a correr a visita deste evento
+const passosAtuais = () => visitaEvento ? passosEvento(visitaEvento) : passosVisita();
 // «so»: em que modo o passo se aplica (ver = fora da edição; cidade; freguesia; edicao; nada = sempre); «se»: condição de conteúdo
 const passoAplica = p => (!p.so || (p.so === 'ver' && !edicao) || (p.so === 'cidade' && cidade && !edicao) || (p.so === 'freguesia' && !cidade && !edicao) || (p.so === 'edicao' && edicao)) && (!p.se || p.se());
 // o contador conta os passos do capítulo em curso (visualização ou edição) que têm conteúdo; o da cidade só se estamos lá
@@ -2390,36 +2428,45 @@ function mostrarPassoVisita() {
   const primeiro = capitulo.indexOf(p) <= 0;
   $('#visita-prev').hidden = primeiro; $('#visita-next').textContent = p.textoSeguinte || (pos === n ? 'Terminar ✓' : 'Seguinte ›');
   $('#visita-inicio').hidden = primeiro; $('#visita-barra').style.width = (pos / n * 100) + '%';
-  gravarEstadoVisita({ passo: p.id, aberta: true });
+  gravarEstadoVisita(visitaEvento ? { passoEvento: p.id, abertaEvento: true } : { passo: p.id, aberta: true });
   clearTimeout(visitaTimer); const t0 = performance.now(); // o alvo pode estar a abrir-se (painel, cartão): acompanha-o durante uns instantes
   (function acompanhar() { posicionarVisita(); if (performance.now() - t0 < 800) visitaTimer = setTimeout(acompanhar, 60); })();
   $('#visita-next').focus({ preventScroll: true });
 }
 function irPassoVisita(i, sentido = 1) { // salta os passos que não se aplicam agora
-  const anterior = visitaPassos[visitaI], lista = passosVisita(); // as condições avaliam-se no momento
+  const anterior = visitaPassos[visitaI], lista = passosAtuais(); // as condições avaliam-se no momento
   while (i >= 0 && i < lista.length && !passoAplica(lista[i])) i += sentido;
   if (i < 0) { if (visitaI >= 0) return; i = 0; } // já é o primeiro passo deste capítulo
   if (anterior && anterior.depois) try { anterior.depois(); } catch (err) { /* o ecrã já mudou */ }
   visitaPassos = lista;
   if (i >= lista.length) { terminarVisita(); return; }
-  if (lista[i].so === 'freguesia') gravarEstadoVisita({ viuFreguesia: true });
+  if (lista[i].so === 'freguesia' && !visitaEvento) gravarEstadoVisita({ viuFreguesia: true });
   visitaI = i; const p = visitaPassos[i]; if (p.antes) try { p.antes(); } catch (err) { /* segue sem a preparação */ }
   mostrarPassoVisita();
 }
-function iniciarVisita(idPasso) {
+function iniciarVisita(idPasso, ev) {
+  visitaEvento = ev || null;
   if (cartaoAberto() && !idPasso) fecharCartao();
   visitaEl.hidden = false; visitaI = -1; $('#convite-instalar').hidden = true;
-  const lista = passosVisita(); let i = idPasso ? lista.findIndex(p => p.id === idPasso) : 0;
-  if (cidade && lista[i] && lista[i].so === 'freguesia') i = lista.findIndex(p => p.id === 'cidade'); // reaberta no mapa de Lisboa a meio da visita
+  const lista = passosAtuais(); let i = idPasso ? lista.findIndex(p => p.id === idPasso) : 0;
+  if (cidade && lista[i] && lista[i].so === 'freguesia') i = lista.findIndex(p => p.so === 'cidade'); // reaberta no mapa de Lisboa a meio da visita
   irPassoVisita(i >= 0 ? i : 0);
 }
 function seguinteVisita() { const p = visitaPassos[visitaI]; if (p && p.seguinte) try { p.seguinte(); } catch (err) { /* segue */ } irPassoVisita(visitaI + 1, 1); }
-function fecharVisita() { const p = visitaPassos[visitaI]; if (p && p.depois) try { p.depois(); } catch (err) { /* o ecrã já mudou */ } clearTimeout(visitaTimer); visitaEl.hidden = true; visitaI = -1; atualizarBotaoVisita(); atualizarInstalar(); }
+function fecharVisita() { const p = visitaPassos[visitaI]; if (p && p.depois) try { p.depois(); } catch (err) { /* o ecrã já mudou */ } clearTimeout(visitaTimer); visitaEl.hidden = true; visitaI = -1; visitaEvento = null; atualizarBotaoVisita(); atualizarInstalar(); }
+const marcarVisitaEvento = (ev, m) => gravarEstadoVisita({ abertaEvento: false, passoEvento: null, eventos: { ...(lerEstadoVisita().eventos || {}), [ev.id]: m } });
 function sairVisita() { // sai a meio: fica o ponto onde se ia, para retomar
+  if (visitaEvento) { marcarVisitaEvento(visitaEvento, 'saida'); fecharVisita(); aviso('Visita interrompida. Repete-a em ☰ → Visita do evento.', 4000); return; }
   const p = visitaPassos[visitaI]; gravarEstadoVisita({ aberta: false, saida: true, ...(p && p.so === 'edicao' ? { edicaoSaida: true } : {}) });
   fecharVisita(); aviso('Visita guiada interrompida. Retoma-a em ☰ → 🎓 Visita guiada.', 4000);
 }
-function terminarVisita() {
+async function terminarVisita() {
+  if (visitaEvento) { // no fim da visita do evento, a geral fica à escolha
+    marcarVisitaEvento(visitaEvento, 'feita'); fecharVisita();
+    const r = await dialogo({ titulo: 'Queres ver a visita geral?', texto: 'Explica o resto da plataforma: o mapa, a pesquisa, o índice, as camadas e o modo de edição.', botoes: [{ id: 'nao', texto: 'Agora não' }, { id: 'sim', texto: 'Ver a visita geral', classe: 'on' }] });
+    if (r === 'sim') iniciarVisita(); else { gravarEstadoVisita({ saida: true }); aviso('A visita geral fica em ☰ → 🎓 Visita guiada.', 4000); }
+    return;
+  }
   // só fica feita se chegou a ver os passos da freguesia (no mapa de Lisboa a maior parte salta-se)
   gravarEstadoVisita({ aberta: false, passo: null, ...(edicao ? { edicaoFeita: true } : lerEstadoVisita().viuFreguesia ? { feita: true } : {}) });
   fecharVisita();
@@ -2427,6 +2474,7 @@ function terminarVisita() {
 function atualizarBotaoVisita() { const e = lerEstadoVisita(); $('#btn-visita').textContent = e.passo && !e.feita ? '🎓 Retomar a visita guiada' : '🎓 Visita guiada'; }
 // o botão do índice retoma onde se ia (ou recomeça); em edição mostra a parte da edição
 $('#btn-visita').addEventListener('click', () => { const e = lerEstadoVisita(); abrirPainel(false); setTimeout(() => iniciarVisita(edicao ? (e.passo && e.passo.startsWith('ed-') ? e.passo : 'ed-ferramentas') : (e.passo && !e.feita && !e.passo.startsWith('ed-') ? e.passo : null)), 280); });
+$('#btn-visita-evento').addEventListener('click', () => { const ev = eventoComVisita(); if (!ev) return; if (edicao) { aviso('Sai do modo de edição para ver a visita do evento.', 3000); return; } abrirPainel(false); setTimeout(() => iniciarVisita(null, ev), 280); });
 $('#visita-sair').addEventListener('click', sairVisita);
 $('#visita-prev').addEventListener('click', () => irPassoVisita(visitaI - 1, -1));
 $('#visita-next').addEventListener('click', seguinteVisita);
@@ -2443,15 +2491,20 @@ document.addEventListener('keydown', e => { // antes de tudo o resto (captura): 
 // ao entrar e sair da edição: a visita passa para a parte da edição (na primeira vez, sozinha) ou fecha-se
 function visitaAoMudarEdicao() {
   const e = lerEstadoVisita();
-  if (edicao) { if (visitaAberta()) irPassoVisita(passosVisita().findIndex(p => p.so === 'edicao')); else if (!e.edicaoFeita && !e.edicaoSaida && !EDITOR && visitaInicialLigada()) setTimeout(() => { if (edicao && !visitaAberta() && !dialogoEl.classList.contains('aberto')) iniciarVisita('ed-ferramentas'); }, 700); }
+  if (visitaEvento) return; // a visita do evento não tem capítulo de edição
+  if (edicao) { if (visitaAberta()) irPassoVisita(passosVisita().findIndex(p => p.so === 'edicao')); else if (!e.edicaoFeita && !e.edicaoSaida && !EDITOR && visitaInicialLigada() && !eventoComVisita()) setTimeout(() => { if (edicao && !visitaAberta() && !dialogoEl.classList.contains('aberto')) iniciarVisita('ed-ferramentas'); }, 700); }
   else if (visitaAberta() && visitaPassos[visitaI] && visitaPassos[visitaI].so === 'edicao') fecharVisita();
 }
 // a primeira visita arranca sozinha; uma visita interrompida por uma mudança de freguesia continua onde ia
 function arrancarVisitaGuiada() {
   const e = lerEstadoVisita();
   if (edicao || EDITOR || dialogoEl.classList.contains('aberto')) return;
-  if (e.aberta && e.passo && !e.passo.startsWith('ed-')) iniciarVisita(e.passo); // interrompida por uma mudança de freguesia: continua
-  else if (!e.feita && !e.saida && visitaInicialLigada()) iniciarVisita(); // a primeira visita arranca sozinha, se a administração não a desligou
+  const ev = eventoComVisita();
+  if (e.abertaEvento && e.passoEvento) { if (ev) iniciarVisita(e.passoEvento, ev); else gravarEstadoVisita({ abertaEvento: false, passoEvento: null }); return; } // interrompida por uma mudança de freguesia: continua
+  if (e.aberta && e.passo && !e.passo.startsWith('ed-')) { iniciarVisita(e.passo); return; } // idem
+  if (!visitaInicialLigada()) return; // a administração decide se abre sozinha
+  if (ev) { if (!(e.eventos || {})[ev.id]) iniciarVisita(null, ev); } // com o evento ativo, é a visita dele que corre
+  else if (!e.feita && !e.saida) iniciarVisita();
 }
 atualizarBotaoVisita();
 
@@ -3242,7 +3295,7 @@ async function menuConta() {
   if (!SESSAO) return;
   const admin = SESSAO.papel === 'admin', sc = lerSessaoCentral();
   const r = await dialogo({ titulo: 'Conta ' + SESSAO.utilizador,
-    corpo: admin ? `<label class="campo-dialogo marca" data-r="visita-inicial" title="Continua sempre disponível no índice"><input type="checkbox"${visitaInicialLigada() ? ' checked' : ''}>Abrir a Visita Guiada a quem entra pela primeira vez</label>` : '',
+    corpo: admin ? htmlInterruptorVisita() : '',
     texto: `${esc(SESSAO.nome)} · ${esc(PAPEL_CONTA[SESSAO.papel] || SESSAO.papel)} · edita ${esc(nomesFreguesias(SESSAO))}.${urlCentral() ? '<br>Servidor central: ' + (sc ? 'sessão aberta até ' + esc(dataHora(sc.expira)) : 'sem sessão (os envios esperam na fila)') + '.' : ''}`,
     botoes: [{ id: 'cancelar', texto: 'Fechar' }, ...(admin ? [{ id: 'historico', texto: 'Histórico de alterações' }, { id: 'contas', texto: 'Contas' }, { id: 'categorias', texto: 'Categorias' }, { id: 'evento', texto: (eventoAtivo() ? '🟢 ' : '') + 'Eventos' }] : []), { id: 'palavra', texto: 'Mudar a palavra-passe' },
       ...(urlCentral() && !sc ? [{ id: 'central', texto: 'Entrar no servidor central' }] : []), { id: 'sair', texto: 'Terminar a sessão', classe: 'perigo' }] });
@@ -3363,7 +3416,7 @@ async function gerirContas() {
 // e a morada confirmadas, num conjunto por freguesia) ou uma ocorrência normal. A visita guiada não arranca sozinha.
 // Cada evento traz o nome, o ícone, os tipos de registo e os termos («falha»/«falhas»): nada mais na página depende do tema.
 const EVENTOS = {
-  iluminacao: { id: 'iluminacao', nome: 'Levantamento Iluminação Pública', icone: '💡', origem: true, competenciaFixa: true, termos: { um: 'falha', varios: 'falhas' }, descricao: 'Candeeiros apagados ou fundidos e zonas sem iluminação, registados pelas equipas no terreno com a localização e a morada de cada um.',
+  iluminacao: { id: 'iluminacao', nome: 'Levantamento Iluminação Pública', icone: '💡', origem: true, competenciaFixa: true, visita: { objetivo: 'assinalar, freguesia a freguesia, os candeeiros apagados ou fundidos e os que faltam', oQue: 'o candeeiro' }, termos: { um: 'falha', varios: 'falhas' }, descricao: 'Candeeiros apagados ou fundidos e zonas sem iluminação, registados pelas equipas no terreno com a localização e a morada de cada um.',
     conjunto: { id: 'levantamento-iluminacao-publica', nome: 'Levantamento Iluminação Pública', icone: '💡', prioridade: 'importante', competencia: 'camara', texto: 'Candeeiros apagados ou fundidos e zonas sem iluminação, registados pelas equipas no terreno com a localização e a morada de cada um.' },
     categorias: [{ id: 'fundido', nome: 'Candeeiro apagado/fundido', icone: '💡', cor: '#fdd835' }, { id: 'falta', nome: 'Candeeiro em falta/zona escura', icone: '🌑', cor: '#5c6bc0' }] },
 };
@@ -3391,7 +3444,12 @@ let DEFINICOES = { visitaInicial: true };
 try { Object.assign(DEFINICOES, JSON.parse(localStorage.getItem(CHAVE_DEFINICOES) || '{}')); } catch (err) { /* sem armazenamento local */ }
 const visitaInicialLigada = () => DEFINICOES.visitaInicial !== false;
 let EVENTO = null; // o que o servidor diz: { id, nome, ativo, desde, por } (em cache neste browser, para abrir sem rede)
-const eventoAtivo = () => EVENTO && EVENTO.ativo && EVENTOS[EVENTO.id] ? EVENTOS[EVENTO.id] : null;
+const agendaDecorre = (e, t = Date.now()) => !!(e && e.agenda) && Date.parse(e.agenda.inicio) <= t && t < Date.parse(e.agenda.fim);
+const eventoAtivo = () => { // como o servidor: um calendário a decorrer passa à frente. Faz as contas aqui para mudar à hora certa, mesmo sem rede
+  const c = Object.values(EVENTOS).find(e => agendaDecorre(e)); if (c) return c;
+  const e = EVENTO && EVENTO.ativo && EVENTOS[EVENTO.id]; if (!e || e.agenda) return null;
+  return EVENTO.calendarizado && !(Date.now() < Date.parse(EVENTO.ate)) ? null : e;
+};
 const detalheDe = (el, i) => el.tipo === 'grupo' && Array.isArray(el.detalhes) ? el.detalhes[i || 0] || null : null;
 const tiposDe = el => el.evento && EVENTOS[el.evento] ? EVENTOS[el.evento].categorias : (el.tiposPonto || []);
 const tipoDoPonto = (el, d) => (d && d.c && tiposDe(el).find(c => c.id === d.c)) || null;
@@ -3439,11 +3497,18 @@ async function lerEventoServidor() { // o servidor central, senão o local; a ú
   if (def && def.definicoes) { DEFINICOES = { ...DEFINICOES, ...def.definicoes }; try { localStorage.setItem(CHAVE_DEFINICOES, JSON.stringify(DEFINICOES)); } catch (err) { /* sem armazenamento local */ } }
   if (cat) { try { localStorage.setItem(CHAVE_CATALOGO, JSON.stringify(cat.eventos || [])); } catch (err) { /* sem armazenamento local */ } if (aplicarCatalogo(cat.eventos) && ELEMENTOS.some(e => e.evento)) { alinharConjuntos(); construir(); construirIndice(); construirPesquisa(); } }
   if (j) { EVENTO = j.evento || null; try { localStorage.setItem(CHAVE_EVENTO, JSON.stringify(EVENTO)); } catch (err) { /* sem armazenamento local */ } aplicarEvento(); }
+  aplicarEvento();
   return EVENTO;
 }
+document.addEventListener('visibilitychange', () => { if (!document.hidden) aplicarEvento(); }); // um telemóvel adormecido não dá horas aos temporizadores
+let timerAgenda = null;
 function aplicarEvento() {
   const ev = eventoAtivo();
+  // à hora de início ou de fim do próximo calendário, volta a ver
+  const agora = Date.now(), proxima = Object.values(EVENTOS).flatMap(e => e.agenda ? [Date.parse(e.agenda.inicio), Date.parse(e.agenda.fim)] : []).filter(t => t > agora).sort((a, b) => a - b)[0];
+  clearTimeout(timerAgenda); if (proxima) timerAgenda = setTimeout(() => { aplicarEvento(); lerEventoServidor(); }, Math.min(proxima - agora + 500, 2147483000));
   document.body.classList.toggle('com-evento', !!ev);
+  const be = $('#btn-visita-evento'); be.hidden = !(ev && ev.visita); if (ev) be.textContent = ev.icone + ' Visita do evento';
   const bc = $('#btn-evento-cidade'); bc.hidden = !ev; if (ev) bc.textContent = ev.icone + ' Resumo da cidade';
   $('#btn-criar').title = ev ? ev.nome + ' ou registar uma ocorrência' : edicao ? 'Criar ponto, rua ou zona' : 'Criar ponto, rua ou zona (entra no modo de edição)';
 }
@@ -3458,6 +3523,7 @@ async function fontesParaMudar(motivo) {
   return fontes;
 }
 // a Visita Guiada abre sozinha a quem nunca a viu? Não depende dos eventos, e continua sempre no índice (☰ → 🎓 Visita guiada)
+const htmlInterruptorVisita = () => `<label class="campo-dialogo marca interruptor" data-r="visita-inicial"><input type="checkbox" role="switch"${visitaInicialLigada() ? ' checked' : ''}><span><b>Visita Guiada automática: ${visitaInicialLigada() ? 'ligada' : 'desligada'}</b><small>Para todos, na primeira visita. Com um evento ativo que tenha visita própria, corre essa. Continua sempre disponível no índice ☰.</small></span></label>`;
 async function alternarVisitaInicial() {
   const fontes = await fontesParaMudar('Esta definição muda-se no servidor central: entra lá com a conta da administração.'); if (!fontes) return;
   const ligar = !visitaInicialLigada(), { feito, falhas } = await paraTodasAsFontes(fontes, '/definicoes', { visitaInicial: ligar });
@@ -3469,17 +3535,28 @@ async function gerirEvento() {
   const fontes = await fontesParaMudar('O evento liga-se no servidor central: entra lá com a conta da administração.'); if (!fontes) return;
   for (;;) {
     await lerEventoServidor();
-    const lista = Object.values(EVENTOS), atual = EVENTO, ativoEste = e => !!(atual && atual.ativo && atual.id === e.id);
+    const lista = Object.values(EVENTOS), atual = EVENTO, ativoEste = e => !e.agenda && !!atual && !!atual.ativo && !atual.calendarizado && atual.id === e.id;
+    const calendarioEmCurso = lista.find(e => agendaDecorre(e));
+    const estadoEvento = e => {
+      if (e.agenda) { const de = esc(dataHora(e.agenda.inicio)), a = esc(dataHora(e.agenda.fim)); return agendaDecorre(e) ? `<b>a decorrer</b>, pelo calendário, até ${a}` : Date.now() < Date.parse(e.agenda.inicio) ? `calendarizado: de ${de} a ${a}` : `terminou a ${a} (calendário)`; }
+      return ativoEste(e) ? `<b>ativo</b> desde ${esc(dataHora(atual.desde))}${atual.por ? ', por ' + esc(atual.por) : ''}` : 'inativo';
+    };
     const r = await dialogo({ titulo: 'Eventos', largo: true,
-      texto: 'Com um evento ativo, ao entrar no modo de edição e ao carregar no «+» pergunta-se se é um registo do evento ou uma ocorrência normal. Cada registo leva a localização e a morada confirmadas, num conjunto por freguesia; o mapa de Lisboa mostra o resumo da cidade. Só há um evento ativo de cada vez, e o relatório exporta-se mesmo depois de ele acabar.',
-      corpo: `<div class="tabela-dialogo"><table><thead><tr><th>Evento</th><th>Estado</th><th></th></tr></thead><tbody>${lista.map((e, i) => `<tr><td>${esc(e.icone)} ${esc(e.nome)}</td><td>${ativoEste(e) ? `<b>ativo</b> desde ${esc(dataHora(atual.desde))}${atual.por ? ', por ' + esc(atual.por) : ''}` : 'inativo'}</td><td class="acoes-evento"><button type="button" class="btn" data-r="pdf:${i}">Exportar PDF</button><button type="button" class="btn" data-r="editar:${i}">Editar</button><button type="button" class="btn ${ativoEste(e) ? 'perigo' : ''}" data-r="${ativoEste(e) ? 'desativar' : 'ativar'}:${i}">${ativoEste(e) ? 'Desativar' : 'Ativar'}</button></td></tr>`).join('')}</tbody></table></div>`,
+      texto: 'Com um evento ativo, ao entrar no modo de edição e ao carregar no «+» pergunta-se se é um registo do evento ou uma ocorrência normal. Cada registo leva a localização e a morada confirmadas, num conjunto por freguesia; o mapa de Lisboa mostra o resumo da cidade. Cada evento controla-se à mão ou pelo calendário, em «Editar». Só há um evento ativo de cada vez, e o relatório exporta-se mesmo depois de ele acabar.',
+      corpo: htmlInterruptorVisita() + `<div class="tabela-dialogo"><table><thead><tr><th>Evento</th><th>Estado</th><th></th></tr></thead><tbody>${lista.map((e, i) => `<tr><td>${esc(e.icone)} ${esc(e.nome)}</td><td>${estadoEvento(e)}</td><td class="acoes-evento"><button type="button" class="btn" data-r="pdf:${i}">Exportar PDF</button><button type="button" class="btn" data-r="editar:${i}">Editar</button>${e.agenda ? (agendaDecorre(e) ? `<button type="button" class="btn perigo" data-r="terminar:${i}">Terminar agora</button>` : '') : `<button type="button" class="btn ${ativoEste(e) ? 'perigo' : ''}" data-r="${ativoEste(e) ? 'desativar' : 'ativar'}:${i}"${!ativoEste(e) && calendarioEmCurso ? ` disabled title="Está a decorrer «${esc(calendarioEmCurso.nome)}», pelo calendário"` : ''}>${ativoEste(e) ? 'Desativar' : 'Ativar'}</button>`}</td></tr>`).join('')}</tbody></table></div>`,
       alerta: fontes.length > 1 ? '' : 'As mudanças ficam só ' + fontes[0].em + '.',
       botoes: [{ id: 'cancelar', texto: 'Fechar' }, { id: 'novo', texto: '+ Novo evento', classe: 'on' }] });
     if (r === 'novo') { await editarEvento(null, fontes); continue; }
+    if (r === 'visita-inicial') { await alternarVisitaInicial(); continue; }
     const [acao, n] = String(r).split(':'), ev = lista[+n];
     if (!ev) return;
     if (acao === 'pdf') await exportarRelatorio(ev);
     else if (acao === 'editar') await editarEvento(ev, fontes);
+    else if (acao === 'terminar') {
+      if (!(await confirmar('Terminar o evento', `Terminar «${esc(ev.nome)}» agora? Os registos ficam guardados e o relatório continua disponível.`, 'Terminar', true))) continue;
+      const { feito, falhas } = await paraTodasAsFontes(fontes, '/eventos', { ...definicaoEvento(ev), agenda: { inicio: ev.agenda.inicio, fim: new Date().toISOString() } });
+      aviso((feito.length ? 'Evento terminado ' + feito.join(' e ') + '.' : '') + (falhas.length ? ' Não mudou ' + falhas.join('; ') + '.' : ''), 6000);
+    }
     else if (acao === 'ativar' || acao === 'desativar') {
       if (acao === 'ativar' && eventoAtivo() && !(await confirmar('Mudar de evento', `Ao ativar «${esc(ev.nome)}», «${esc(eventoAtivo().nome)}» deixa de estar ativo. Os registos ficam guardados.`, 'Ativar'))) continue;
       const { feito, falhas } = await paraTodasAsFontes(fontes, '/evento', { id: ev.id, nome: ev.nome, ativo: acao === 'ativar' });
@@ -3492,21 +3569,29 @@ async function paraTodasAsFontes(fontes, caminho, corpo) {
   for (const fo of fontes) { try { await pedirAdmin(fo.valor, caminho, corpo); feito.push(fo.em); } catch (err) { falhas.push(fo.em + ': ' + err.message); } }
   return { feito, falhas };
 }
+const definicaoEvento = ev => ({ id: ev.id, nome: ev.nome, icone: ev.icone, descricao: ev.descricao || '', competencia: (ev.conjunto && ev.conjunto.competencia) || '', termos: termosDe(ev), categorias: ev.categorias, ...(ev.agenda ? { agenda: ev.agenda } : {}) });
+const paraCampoData = iso => { const d = new Date(iso); return isNaN(d) ? '' : new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); }; // o formato de datetime-local, na hora deste aparelho
 const CORES_TIPOS = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6']; // pela ordem: cada tipo novo fica com a seguinte
 async function editarEvento(ev, fontes) {
-  const v = { nome: ev ? ev.nome : '', icone: ev ? ev.icone : '📍', descricao: ev ? ev.descricao || '' : '', um: termosDe(ev).um, varios: termosDe(ev).varios, competencia: ev ? (ev.conjunto && ev.conjunto.competencia) || '' : 'camara' };
+  const v = { nome: ev ? ev.nome : '', icone: ev ? ev.icone : '📍', descricao: ev ? ev.descricao || '' : '', um: termosDe(ev).um, varios: termosDe(ev).varios, competencia: ev ? (ev.conjunto && ev.conjunto.competencia) || '' : 'camara', modo: ev && ev.agenda ? 'agenda' : 'manual', inicio: ev && ev.agenda ? paraCampoData(ev.agenda.inicio) : '', termino: ev && ev.agenda ? paraCampoData(ev.agenda.fim) : '' };
   let tipos = ev ? ev.categorias.map(c => ({ ...c })) : [{ id: '', nome: '', icone: '', cor: CORES_TIPOS[0] }], erro = '';
   const campo = (n, rotulo, ajuda) => `<label class="campo-dialogo">${esc(rotulo)}${ajuda ? ` <small>${esc(ajuda)}</small>` : ''}<input name="${n}" value="${esc(v[n])}" autocomplete="off"></label>`;
   for (;;) {
-    const { r, valores: x } = await dialogo({ titulo: ev ? 'Editar evento' : 'Novo evento', largo: true, foco: 'nome', campos: [], alerta: erro,
+    const aberto = dialogo({ titulo: ev ? 'Editar evento' : 'Novo evento', largo: true, foco: 'nome', campos: [], alerta: erro,
       corpo: `<div class="form-evento">${campo('nome', 'Nome')}${campo('icone', 'Ícone')}${campo('descricao', 'Descrição', 'aparece no cartão e no relatório')}${campo('um', 'Um registo chama-se', 'por exemplo: falha, passeio, ocorrência')}${campo('varios', 'Vários registos chamam-se')}
         <label class="campo-dialogo">Competência <small>${ev && ev.competenciaFixa ? 'fixa neste evento' : 'quem tem de resolver'}</small><select class="seletor" name="competencia"${ev && ev.competenciaFixa ? ' disabled' : ''}><option value="">Por definir</option>${COMPETENCIAS.map(c => `<option value="${c.id}"${v.competencia === c.id ? ' selected' : ''}>${esc(c.nome)}</option>`).join('')}</select></label></div>
+        <h3 class="titulo-tipos">Duração <small>à mão, com Ativar e Desativar, ou sozinho, às horas marcadas</small></h3>
+        <div class="form-evento agenda-evento"><label class="campo-dialogo">Controlo<select class="seletor" name="modo"><option value="manual"${v.modo === 'manual' ? ' selected' : ''}>À mão</option><option value="agenda"${v.modo === 'agenda' ? ' selected' : ''}>Pelo calendário</option></select></label>
+        <label class="campo-dialogo datas-agenda">Início<input type="datetime-local" name="inicio" value="${esc(v.inicio)}"></label><label class="campo-dialogo datas-agenda">Fim<input type="datetime-local" name="termino" value="${esc(v.termino)}"></label></div>
         <h3 class="titulo-tipos">Tipos de registo <small>opcional: com tipos, cada registo escolhe um, com a sua cor no mapa</small></h3>
         ${tipos.map((t, i) => `<div class="campo-dialogo tipo-evento"><input name="t-icone-${i}" value="${esc(t.icone)}" placeholder="Ícone" aria-label="Ícone do tipo"><input name="t-nome-${i}" value="${esc(t.nome)}" placeholder="Nome do tipo" aria-label="Nome do tipo"><input type="color" name="t-cor-${i}" value="${esc(t.cor)}" aria-label="Cor do tipo"><button type="button" class="btn" data-r="tirar:${i}" aria-label="Tirar este tipo">✕</button></div>`).join('')}
         <button type="button" class="btn" data-r="mais">+ Acrescentar tipo</button>`,
       botoes: [...(ev && !ev.origem ? [{ id: 'apagar', texto: 'Apagar evento', classe: 'perigo' }] : []), { id: 'cancelar', texto: 'Cancelar' }, { id: 'guardar', texto: 'Guardar', classe: 'on' }] });
+    const modo = dialogoEl.querySelector('[name=modo]'), verDatas = () => dialogoEl.querySelectorAll('.datas-agenda').forEach(c => { c.hidden = modo.value !== 'agenda'; });
+    modo.addEventListener('change', verDatas); verDatas();
+    const { r, valores: x } = await aberto;
     if (r === 'cancelar') return;
-    Object.assign(v, Object.fromEntries(['nome', 'icone', 'descricao', 'um', 'varios', 'competencia'].map(k => [k, x[k]])));
+    Object.assign(v, Object.fromEntries(['nome', 'icone', 'descricao', 'um', 'varios', 'competencia', 'modo', 'inicio'].map(k => [k, x[k]]).concat([['termino', x.termino]])));
     tipos = tipos.map((t, i) => ({ ...t, icone: x['t-icone-' + i], nome: x['t-nome-' + i], cor: x['t-cor-' + i] }));
     erro = '';
     if (r === 'mais' && tipos.length >= 12) { erro = 'Um evento tem no máximo 12 tipos.'; continue; }
@@ -3521,6 +3606,8 @@ async function editarEvento(ev, fontes) {
       const { feito, falhas } = await paraTodasAsFontes(fontes, '/eventos', { id: ev.id, apagar: true }); aviso((feito.length ? 'Evento apagado ' + feito.join(' e ') + '.' : '') + (falhas.length ? ' Não mudou ' + falhas.join('; ') + '.' : ''), 6000); return;
     }
     const nome = v.nome.trim(); if (!nome) { erro = 'O evento precisa de um nome.'; continue; }
+    const inicio = Date.parse(v.inicio), termino = Date.parse(v.termino), comAgenda = v.modo === 'agenda'; // as datas do formulário estão na hora deste aparelho
+    if (comAgenda && !(inicio < termino)) { erro = 'O calendário precisa de um início e de um fim depois dele.'; continue; }
     const id = ev ? ev.id : (() => { const b = idDe(nome).slice(0, 36).replace(/-$/, ''); let k = b; for (let i = 2; EVENTOS[k]; i++) k = b + '-' + i; return k; })();
     const usados = new Set(['sem', ...tipos.map(t => t.id).filter(Boolean)]), categorias = tipos.filter(t => t.nome.trim()).map(t => { if (!t.id) { const b = idDe(t.nome).slice(0, 36).replace(/-$/, ''); let k = b; for (let i = 2; usados.has(k); i++) k = b + '-' + i; t.id = k; usados.add(k); } return { id: t.id, nome: t.nome.trim(), icone: t.icone.trim(), cor: t.cor }; });
     const tirados = ev ? ev.categorias.filter(c => !categorias.some(x => x.id === c.id)) : [];
@@ -3529,9 +3616,9 @@ async function editarEvento(ev, fontes) {
       const { freguesias, certo } = await recolherRegistos(ev); $('#aviso').classList.remove('aberto');
       if (!certo) { erro = 'Não consegui ler todos os registos: sem essa certeza, o tipo não se tira. Volta a tentar quando houver ligação.'; tipos = [...tipos, ...tirados.map(c => ({ ...c }))]; continue; }
       const presos = tirados.filter(c => freguesias.some(f => f.registos.some(r => r.c === c.id)));
-      if (presos.length) { erro = esc(`Não se pode tirar «${presos.map(c => c.nome).join('», «')}»: há ${termosDe(ev).varios} desse tipo, e cada um tem de ter um tipo. Muda-lhe o nome, se for preciso.`); tipos = [...tipos, ...presos.map(c => ({ ...c }))]; continue; }
+      if (presos.length) { erro = esc(`Não se pode tirar «${presos.map(c => c.nome).join('», «')}»: há ${termosDe(ev).varios} desse tipo, e todos os registos têm de ter um tipo. Muda-lhe o nome, se for preciso.`); tipos = [...tipos, ...presos.map(c => ({ ...c }))]; continue; }
     }
-    const { feito, falhas } = await paraTodasAsFontes(fontes, '/eventos', { id, nome, icone: v.icone.trim(), descricao: v.descricao.trim(), competencia: v.competencia, termos: { um: v.um.trim(), varios: v.varios.trim() }, categorias });
+    const { feito, falhas } = await paraTodasAsFontes(fontes, '/eventos', { id, nome, icone: v.icone.trim(), descricao: v.descricao.trim(), competencia: v.competencia, termos: { um: v.um.trim(), varios: v.varios.trim() }, categorias, ...(comAgenda ? { agenda: { inicio: new Date(inicio).toISOString(), fim: new Date(termino).toISOString() } } : {}) });
     if (!feito.length) { erro = esc('Não foi guardado: ' + falhas.join('; ')); continue; }
     aviso('Evento guardado ' + feito.join(' e ') + '.' + (falhas.length ? ' Não mudou ' + falhas.join('; ') + '.' : ''), 6000); return;
   }
@@ -3583,7 +3670,7 @@ async function exportarRelatorio(ev) {
   const tipos = [...ev.categorias, ...(todos.some(r => !ev.categorias.some(c => c.id === r.c)) ? [{ id: 'sem', nome: 'Sem tipo' }] : [])], conta = t => todos.filter(r => t.id === 'sem' ? !ev.categorias.some(c => c.id === r.c) : r.c === t.id).length;
   const nFotos = todos.reduce((s, r) => s + (r.fotos || []).length, 0), comRegistos = freguesias.filter(f => f.registos.length).length;
   const { r, valores } = await dialogo({ titulo: 'Relatório · ' + ev.nome, texto: `<b>${todos.length}</b> ${esc(todos.length === 1 ? T.um : T.varios)} em ${comRegistos} freguesia${comRegistos === 1 ? '' : 's'}, com ${nFotos} foto${nFotos === 1 ? '' : 's'} (fonte: ${esc(fonte)}). O PDF começa pelo resumo da cidade e segue por freguesia, com o mapa e a ficha de cada registo.`,
-    alerta: [tipos.some(t => t.id === 'sem') && ev.categorias.length ? `Há ${conta({ id: 'sem' })} ${esc(T.varios)} antigos sem tipo: aparecem à parte. Para os corrigir, escolhe o tipo no cartão de cada um.` : '', excluidos ? `${excluidos} ${esc(excluidos === 1 ? T.um : T.varios)} sem localização válida ${excluidos === 1 ? 'fica' : 'ficam'} de fora.` : '', urlCentral() && !central ? 'Sem acesso ao servidor central: estes são só os dados deste aparelho.' : '', semAcesso.length ? `Não consegui ler ${esc(semAcesso.join(', '))}: o relatório sai sem essas freguesias.` : '', naFila ? `Há ${naFila} envio${naFila === 1 ? '' : 's'} à espera na fila deste aparelho, que ainda não entram.` : ''].filter(Boolean).join('<br>'),
+    alerta: [tipos.some(t => t.id === 'sem') && ev.categorias.length ? `Registos sem tipo, de antes desta regra: ${conta({ id: 'sem' })}. Aparecem à parte; para os corrigir, escolhe o tipo no cartão de cada um.` : '', excluidos ? `${excluidos} ${esc(excluidos === 1 ? T.um : T.varios)} sem localização válida ${excluidos === 1 ? 'fica' : 'ficam'} de fora.` : '', urlCentral() && !central ? 'Sem acesso ao servidor central: estes são só os dados deste aparelho.' : '', semAcesso.length ? `Não consegui ler ${esc(semAcesso.join(', '))}: o relatório sai sem essas freguesias.` : '', naFila ? `Há ${naFila} envio${naFila === 1 ? '' : 's'} à espera na fila deste aparelho, que ainda não entram.` : ''].filter(Boolean).join('<br>'),
     campos: [...(tipos.length > 1 ? tipos.map(t => ({ tipo: 'checkbox', nome: 'tipo:' + t.id, rotulo: `${t.nome} (${conta(t)})`, valor: true })) : []), { tipo: 'checkbox', nome: 'fotos', rotulo: 'Incluir as fotos', valor: true }],
     botoes: [{ id: 'cancelar', texto: 'Cancelar' }, { id: 'exportar', texto: 'Exportar PDF', classe: 'on' }] });
   if (r !== 'exportar') return;
@@ -3689,7 +3776,7 @@ function cancelarLevantamento(silencioso) {
   levant = null; $('#levantamento').classList.remove('aberto'); document.body.classList.remove('a-levantar');
   if (!silencioso) aviso('Registo cancelado.', 2000);
 }
-async function confirmarLevantamento() {
+async function confirmarLevantamento() { if (visitaSoSimula()) return;
   if (!levant || !SESSAO || !edicao) return;
   const rua = $('#lev-rua').value.trim(), numero = $('#lev-numero').value.trim();
   if (!rua) { aviso('Falta a rua.', 3000); $('#lev-rua').focus(); return; }
@@ -3704,7 +3791,7 @@ async function confirmarLevantamento() {
   const total = g.pontos.length, r = await guardar({ semTransferir: true, soEvento });
   aviso(`${cat.icone} Registado: ${moradaTexto(d)} · ${total} registo${total === 1 ? '' : 's'} em ${FREG.nome}${r === 'servidor' ? ' (guardado)' : r === 'central' ? ' (a enviar)' : r === 'recusado' ? ' (por guardar)' : ''}.`, 6000);
 }
-function registarNoConjunto(ev, pos, d) { // o conjunto do evento nesta freguesia (criado no primeiro registo)
+function registarNoConjunto(ev, pos, d) { if (visitaSoSimula()) return; // o conjunto do evento nesta freguesia (criado no primeiro registo)
   let g = ev.grupo && POR_ID[ev.grupo.id] === ev.grupo ? ev.grupo : ELEMENTOS.find(e => e.tipo === 'grupo' && e.evento === ev.id);
   if (g) {
     if (!Array.isArray(g.detalhes)) g.detalhes = []; while (g.detalhes.length < g.pontos.length) g.detalhes.push({});
@@ -3820,21 +3907,21 @@ function acrescentar(el, pai) {
   setTimeout(() => { const i = modalConteudo.querySelector('input[name=nome]'); if (i) { i.focus(); i.select(); } }, 60);
   return p;
 }
-function novoPonto(ll) { criados++; const z = zonaEm(ll, null), p = acrescentar({ tipo: 'ponto', nome: 'Novo ponto ' + criados, icone: '📍', pos: arredLL(ll) }, z && !z.oculto ? z : null); verificarDuplicado(p); return p; }
-function terminarZona(pts) {
+function novoPonto(ll) { if (visitaSoSimula()) return; criados++; const z = zonaEm(ll, null), p = acrescentar({ tipo: 'ponto', nome: 'Novo ponto ' + criados, icone: '📍', pos: arredLL(ll) }, z && !z.oculto ? z : null); verificarDuplicado(p); return p; }
+function terminarZona(pts) { if (visitaSoSimula()) return;
   cancelarDesenho();
   if (pts.length < 3) return;
   criados++;
   acrescentar({ tipo: 'zona', nome: 'Nova zona ' + criados, icone: '⬠', poligono: pts.map(arredLL) }, null);
   porFerramenta('mover');
 }
-function criarRua(r) {
+function criarRua(r) { if (visitaSoSimula()) return;
   const ja = ELEMENTOS.find(e => e.tipo === 'rua' && normalizar(e.nome) === normalizar(r.rua.nome));
   if (ja) { aviso('Essa rua já é um elemento.', 2500); selecionar(ja, false); porFerramenta('mover'); return; }
   acrescentar({ tipo: 'rua', nome: r.rua.nome, icone: '🛣️', rua: r.rua.nome }, null);
   porFerramenta('mover');
 }
-function criarDeLote(l) {
+function criarDeLote(l) { if (visitaSoSimula()) return;
   criados++;
   acrescentar({ tipo: 'zona', nome: l.m || 'Lote ' + criados, icone: '🏠', poligono: l.p.map(p => p.slice()), lote: l.c || '' }, null);
   porFerramenta('mover');
@@ -3846,7 +3933,7 @@ function novoDetalhe(pos) { // o que fica registado de cada ponto: quando, quem 
   if (!ED.numeros.length) carregarCamadas().then(() => { if (d.editado || d.moradaManual) return; const x = moradaSugerida(pos); d.rua = x.rua || ''; d.numero = x.numero || ''; }); // o edificado ainda não tinha chegado
   return d;
 }
-function pontoDeGrupo(ll) {
+function pontoDeGrupo(ll) { if (visitaSoSimula()) return;
   if (grupoEmCurso && POR_ID[grupoEmCurso.id] === grupoEmCurso) {
     grupoEmCurso.pontos.push(arredLL(ll)); subPonto(grupoEmCurso, 0); grupoEmCurso.detalhes[grupoEmCurso.pontos.length - 1] = novoDetalhe(arredLL(ll)); construir(); marcarAlterado(); selecionar(grupoEmCurso, false);
     aviso(`«${grupoEmCurso.nome}»: ${grupoEmCurso.pontos.length} pontos.`, 1800); return;
@@ -3862,7 +3949,7 @@ function emConjunto(el) { // um ponto passa a conjunto (com esse ponto como prim
   porFerramenta('grupo', el); selecionar(el, false);
 }
 // pontos desmaterializados: sem lugar no mapa (aparecem no canto superior direito)
-function novoDesmaterializado() {
+function novoDesmaterializado() { if (visitaSoSimula()) return;
   criados++; porFerramenta('mover');
   acrescentar({ tipo: 'desmaterializado', nome: 'Novo ponto desmaterializado ' + criados, icone: '💬' }, null);
   aviso('Os pontos desmaterializados não têm lugar no mapa: aparecem no canto superior direito.', 4500);
@@ -4245,7 +4332,7 @@ if (EDITOR || idInicial) semFreguesia = false; // ?editor e #id abrem logo a fre
 if (window.ENTRA_NA_CIDADE) map.whenReady(() => abrirCidade(true)); else quandoLivre(() => carregarCamadas());
 if (EDITOR) pedirEdicao({ criar: PARAMS.has('criar') }); // ?editor abre logo em modo de edição (depois de iniciar sessão); ?criar abre também o «+»
 sessaoPronta.then(lerEventoServidor).finally(() => map.whenReady(() => setTimeout(arrancarVisitaGuiada, 1400))); // depois de o mapa se acomodar (o voo até Lisboa dura 1,1 s)
-window.__mapa = { get RUAS_CIDADE() { return window.RUAS_CIDADE; }, alternarVisitaInicial, visitaInicialLigada, menuConta, recolherRegistos, exportarRelatorio, EVENTOS, carregarIndiceCidade, procurar, irParaLugar, fonteRegisto, resumoConjuntos, juntarLinhasConjuntos, sincronizarConjuntos, tiposDe, aplicarTema, temaAtual, abrirSub, subPonto, agregarPonto, desagregarPonto, get subAtual() { return subAtual; }, quarteiroesDe, alternarQuarteirao, frasePedacos, paresDuplicados, perguntarDuplicado, consolidar, reverterConsolidacao, verConsolidacoes, get consolidacoes() { return consolidacoes; }, semelhancaNomes, novaCategoria, criarCategoria, gerirCategorias, categoriasConhecidas, map, C, FREG, ELEMENTOS, POR_ID, RUAS_VISTA, atualizarInstalar, instalarApp, podeInstalar, get satVisivel() { return satVisivel; }, EVENTOS, get EVENTO() { return EVENTO; }, get levant() { return levant; }, lerEventoServidor, aplicarEvento, gerirEvento, escolherRegisto, levantamento, abrirLevantamento, mostrarLevantamento, confirmarLevantamento, cancelarLevantamento, moradaSugerida, registarNoConjunto, resumoCidadeEvento, localizarPrecisa, iniciarVisita, sairVisita, terminarVisita, irPassoVisita, seguinteVisita, visitaAberta, lerEstadoVisita, get visitaPasso() { return visitaPassos[visitaI] && visitaPassos[visitaI].id; }, get visitaPassos() { return visitaPassos; }, pedirEdicao, entrarConta, lerSessao, terminarSessao, menuConta, verHistorico, gerirContas, mudarPalavraPasse, dialogoEntrar, get SESSAO() { return SESSAO; }, lerSessaoCentral, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, ligarVerdes, ligarMapa, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva, entrarEdicao, porFerramenta, serializar, guardar, carregar, lerPreset, novoPreset, apagarPreset, mudarPreset, PRESETS, importarPreset, reporDoFicheiro, largarPonto, novoPonto, criarRua, criarDeLote, painelCentral, abrirDoCentral, enviarFilaCentral, copiarCentral, estadoCopia, filaCentral, lerCentral, gravarCentral, get AMBIENTE() { return AMBIENTE; }, confirmar, perguntarTexto, abrirCidade, irParaFreguesia, sairEdicao, descartarAlteracoes, dialogo, construirDesmat, expandirDesmat, pontoDeGrupo, emConjunto, novoDesmaterializado, desmaterializar, colocarNoMapa, criarAqui, ruaMaisProxima, abrirCriar, acrescentarPresetImportado, PRESETS_LOCAIS, get cidade() { return cidade; }, get alterado() { return alterado; }, novaCategoria, definirMembro, alternarCategoria, editarVisita, mostrarCategoria, categoriasAtivas, get edicao() { return edicao; }, get ferramenta() { return ferramenta; }, get passos() { return passos; } };
+window.__mapa = { get RUAS_CIDADE() { return window.RUAS_CIDADE; }, get alteradoAgora() { return alterado; }, alternarVisitaInicial, visitaInicialLigada, menuConta, eventoComVisita, recolherRegistos, exportarRelatorio, EVENTOS, carregarIndiceCidade, procurar, irParaLugar, fonteRegisto, resumoConjuntos, juntarLinhasConjuntos, sincronizarConjuntos, tiposDe, aplicarTema, temaAtual, abrirSub, subPonto, agregarPonto, desagregarPonto, get subAtual() { return subAtual; }, quarteiroesDe, alternarQuarteirao, frasePedacos, paresDuplicados, perguntarDuplicado, consolidar, reverterConsolidacao, verConsolidacoes, get consolidacoes() { return consolidacoes; }, semelhancaNomes, novaCategoria, criarCategoria, gerirCategorias, categoriasConhecidas, map, C, FREG, ELEMENTOS, POR_ID, RUAS_VISTA, atualizarInstalar, instalarApp, podeInstalar, get satVisivel() { return satVisivel; }, EVENTOS, get EVENTO() { return EVENTO; }, get levant() { return levant; }, lerEventoServidor, aplicarEvento, gerirEvento, escolherRegisto, levantamento, abrirLevantamento, mostrarLevantamento, confirmarLevantamento, cancelarLevantamento, moradaSugerida, registarNoConjunto, resumoCidadeEvento, localizarPrecisa, iniciarVisita, sairVisita, terminarVisita, irPassoVisita, seguinteVisita, visitaAberta, lerEstadoVisita, get visitaPasso() { return visitaPassos[visitaI] && visitaPassos[visitaI].id; }, get visitaPassos() { return visitaPassos; }, pedirEdicao, entrarConta, lerSessao, terminarSessao, menuConta, verHistorico, gerirContas, mudarPalavraPasse, dialogoEntrar, get SESSAO() { return SESSAO; }, lerSessaoCentral, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, ligarVerdes, ligarMapa, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva, entrarEdicao, porFerramenta, serializar, guardar, carregar, lerPreset, novoPreset, apagarPreset, mudarPreset, PRESETS, importarPreset, reporDoFicheiro, largarPonto, novoPonto, criarRua, criarDeLote, painelCentral, abrirDoCentral, enviarFilaCentral, copiarCentral, estadoCopia, filaCentral, lerCentral, gravarCentral, get AMBIENTE() { return AMBIENTE; }, confirmar, perguntarTexto, abrirCidade, irParaFreguesia, sairEdicao, descartarAlteracoes, dialogo, construirDesmat, expandirDesmat, pontoDeGrupo, emConjunto, novoDesmaterializado, desmaterializar, colocarNoMapa, criarAqui, ruaMaisProxima, abrirCriar, acrescentarPresetImportado, PRESETS_LOCAIS, get cidade() { return cidade; }, get alterado() { return alterado; }, novaCategoria, definirMembro, alternarCategoria, editarVisita, mostrarCategoria, categoriasAtivas, get edicao() { return edicao; }, get ferramenta() { return ferramenta; }, get passos() { return passos; } };
 });
 </script>
 </body>

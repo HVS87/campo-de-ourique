@@ -159,6 +159,25 @@ async function cenario(nome, raiz, gravavel) {
       assert.equal((await (await get('/evento')).json()).evento.ativo, false);
       const { historico } = await (await get('/historico', 'Admin.Teste')).json(); assert.ok(historico.some(x => x.acao === 'ativou o evento' && x.utilizador === 'Admin.Teste')); assert.ok(historico.some(x => x.acao === 'desativou o evento'));
     },
+    'eventos: o calendário liga e desliga sozinho, e substitui o controlo manual': async () => {
+      const h = Date.now(), iso = m => new Date(h + m * 60000).toISOString(), ev = (id, inicio, fim) => JSON.stringify({ id, nome: id, agenda: { inicio: iso(inicio), fim: iso(fim) } }), admin = { quem: 'Admin.Teste' };
+      assert.equal((await post('/eventos', ev('agora', 5, -5), admin)).status, 400, 'o fim antes do início');
+      assert.equal((await post('/eventos', JSON.stringify({ id: 'agora', nome: 'agora', agenda: { inicio: 'x', fim: 'y' } }), admin)).status, 400);
+      assert.equal((await post('/eventos', ev('agora', -5, 60), admin)).status, 200);
+      let e = (await (await get('/evento')).json()).evento; assert.equal(e.id, 'agora'); assert.equal(e.ativo, true); assert.equal(e.calendarizado, true); assert.ok(e.ate);
+      assert.equal((await post('/eventos', ev('outro', 30, 90), admin)).status, 409, 'sobreposto');
+      assert.equal((await post('/eventos', ev('outro', 120, 180), admin)).status, 200);
+      assert.equal((await post('/evento', JSON.stringify({ id: 'iluminacao', ativo: true }), admin)).status, 409, 'há um a decorrer');
+      assert.equal((await post('/evento', JSON.stringify({ id: 'agora', ativo: false }), admin)).status, 409, 'termina-se no calendário');
+      assert.equal((await post('/evento', JSON.stringify({ id: 'outro', ativo: true }), admin)).status, 409, 'tem calendário');
+      assert.equal((await post('/eventos', JSON.stringify({ id: 'agora', apagar: true }), admin)).status, 409, 'a decorrer não se apaga');
+      assert.equal((await post('/eventos', ev('agora', -5, -1), admin)).status, 200, 'terminar agora');
+      e = (await (await get('/evento')).json()).evento; assert.ok(!e || !e.calendarizado); assert.ok(!e || e.id !== 'agora');
+      assert.equal((await post('/evento', JSON.stringify({ id: 'iluminacao', ativo: true }), admin)).status, 200);
+      assert.equal((await post('/eventos', JSON.stringify({ id: 'iluminacao', nome: 'Luz', agenda: { inicio: iso(300), fim: iso(360) } }), admin)).status, 200);
+      assert.equal((await (await get('/evento')).json()).evento.ativo, false, 'passou a calendário: desliga-se o manual');
+      for (const id of ['agora', 'outro', 'iluminacao']) assert.equal((await post('/eventos', JSON.stringify({ id, apagar: true }), admin)).status, 200);
+    },
     'definições: a Visita Guiada inicial liga e desliga, sem depender dos eventos': async () => {
       assert.equal((await (await get('/definicoes')).json()).definicoes.visitaInicial, true);
       assert.equal((await post('/definicoes', JSON.stringify({ visitaInicial: false }), { quem: 'Alcantara' })).status, 403);

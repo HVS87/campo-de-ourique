@@ -173,6 +173,15 @@ async function bateria(tipo) {
       assert.equal((await enviar(c.chave, 'ajuda', 'k', { ...preset('K', 1), freguesia: 'ajuda' })).status, 201);
       assert.equal((await enviar(c.chave, 'belem', 'k', { ...preset('K', 1), freguesia: 'belem' })).status, 403);
     },
+    'eventos: o calendário no servidor central': async () => {
+      const iso = m => new Date(Date.now() + m * 60000).toISOString(), post = o => pedir(sessoes.Admin, '/eventos', { method: 'POST', body: JSON.stringify(o) });
+      assert.equal((await post({ id: 'agenda', nome: 'Agenda', agenda: { inicio: iso(-5), fim: iso(60) } })).status, 200);
+      const e = (await (await pedir(null, '/evento')).json()).evento; assert.equal(e.id, 'agenda'); assert.equal(e.calendarizado, true);
+      assert.equal((await post({ id: 'agenda2', nome: 'Agenda 2', agenda: { inicio: iso(10), fim: iso(20) } })).status, 409);
+      assert.equal((await post({ id: 'agenda', nome: 'Agenda', agenda: { inicio: iso(-5), fim: iso(-1) } })).status, 200);
+      assert.ok(!(await (await pedir(null, '/evento')).json()).evento);
+      assert.equal((await post({ id: 'agenda', apagar: true })).status, 200);
+    },
     'definições: a Visita Guiada inicial no servidor central': async () => {
       assert.equal((await (await pedir(null, '/definicoes')).json()).definicoes.visitaInicial, true);
       assert.equal((await pedir(contribuidor, '/definicoes', { method: 'POST', body: JSON.stringify({ visitaInicial: false }) })).status, 403);

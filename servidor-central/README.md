@@ -177,14 +177,14 @@ Os pedidos levam `Authorization: Bearer <testemunho da sessão ou chave de acess
 | `GET /api/v1/elementos?freguesia=&prioridade=&competencia=&tipo=&categoria=&q=` | leitor | todos os elementos, um por linha, com o centro (`lat`, `lon`); `prioridade=sem` e `competencia=sem` dão os que não têm |
 | `GET /api/v1/exportar.csv?…` e `GET /api/v1/exportar.geojson?…` | leitor | o mesmo, para transferir |
 | `GET /api/v1/historico?freguesia=&utilizador=&limite=&meses=` | admin | quem fez o quê, do mais recente para o mais antigo |
-| `GET /api/v1/evento` | todos | o evento em curso: `{ evento: { id, nome, ativo, desde, por } | null }` |
-| `POST /api/v1/evento` | admin | recebe `{ id, nome, ativo }` e liga ou desliga o evento |
+| `GET /api/v1/evento` | todos | o evento em curso: `{ evento: { id, nome, ativo, desde, por } | null }`; se for pelo calendário, leva também `ate` e `calendarizado` |
+| `POST /api/v1/evento` | admin | recebe `{ id, nome, ativo }` e liga ou desliga o evento à mão; recusa (409) enquanto decorre um calendário e para um evento com calendário |
 | `GET /api/v1/categorias` | leitor | as categorias de todos os presets e onde são usadas |
 | `POST /api/v1/categorias/fundir` | administração | `{ de: [nomes], para, icone, cor }` junta-as numa só em todo o lado (cada preset alterado ganha uma revisão) |
 | `GET /api/v1/definicoes` | todos | as opções gerais: `{ definicoes: { visitaInicial } }` |
 | `POST /api/v1/definicoes` | admin | recebe `{ visitaInicial }`: a Visita Guiada abre ou não sozinha a quem nunca a viu |
 | `GET /api/v1/eventos` | todos | os eventos criados pela administração: `{ eventos: [{ id, nome, icone, descricao, competencia, termos, categorias }] }` |
-| `POST /api/v1/eventos` | admin | cria ou altera um evento; com `{ id, apagar: true }` apaga-o (recusa se estiver ativo) |
+| `POST /api/v1/eventos` | admin | cria ou altera um evento, com o calendário opcional em `agenda: { inicio, fim }`, que não se pode sobrepor ao de outro; com `{ id, apagar: true }` apaga-o (recusa se estiver ativo) |
 | `GET /api/v1/evento/resumo?id=` | leitor | por freguesia, quantos registos de cada categoria tem o evento, somando os presets, e o total da cidade |
 | `GET /api/v1/contas` | admin | as contas, sem os verificadores, com a última entrada e o bloqueio |
 | `POST /api/v1/contas/<utilizador>/palavra-passe` | admin | recebe `{ nova }` (chave de entrada) e repõe a palavra-passe |

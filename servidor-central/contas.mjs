@@ -14,8 +14,8 @@
 // Armazém (o mesmo do núcleo): ler(chave) · escrever(chave, texto) · listar(prefixo) · atualizar?(chave, f)
 //   contas/contas.json (as contas, com os verificadores) · contas/segredo.json (assina as sessões; nunca sai do servidor)
 //   historico/<AAAA-MM>.json (quem fez o quê, só para a administração)
-//   evento/atual.json (o evento em curso: { id, nome, ativo, desde, por }; a administração ativa-o e desativa-o)
-//   evento/catalogo.json (os eventos criados pela administração: nome, ícone, termos e tipos de registo)
+//   evento/atual.json (o evento ligado à mão: { id, nome, ativo, desde, por }; a administração ativa-o e desativa-o)
+//   evento/catalogo.json (os eventos criados pela administração: nome, ícone, termos, tipos de registo e o calendário: agenda { inicio, fim })
 //   definicoes/geral.json (as opções da plataforma que a administração escolhe: { visitaInicial })
 export const ITERACOES = 100000;
 export const PAPEIS_CONTA = { freguesia: 'Freguesia', cidade: 'Cidade', admin: 'Administração' };
@@ -201,11 +201,21 @@ export function criarContas({ armazem, iniciais = [], segredo = '', horas = 12, 
   }
   // ---- evento: um levantamento no terreno (por exemplo da iluminação pública) que a administração liga e desliga ----
   const KE = 'evento/atual.json';
-  async function lerEvento() { const e = await lerJSON(KE); return e && e.id ? e : null; }
+  async function lerManual() { const e = await lerJSON(KE); return e && e.id ? e : null; }
+  const decorre = (a, t = Date.now()) => !!a && Date.parse(a.inicio) <= t && t < Date.parse(a.fim);
+  // o evento em curso: um calendário a decorrer passa à frente do que foi ligado à mão (basta ler: não é preciso nada a correr à hora marcada)
+  async function lerEvento() {
+    const c = (await lerCatalogo()).find(e => decorre(e.agenda));
+    return c ? { id: c.id, nome: c.nome, ativo: true, desde: c.agenda.inicio, ate: c.agenda.fim, calendarizado: true } : lerManual();
+  }
   async function definirEvento(admin, { id, nome, ativo }, contexto = {}) {
     if (!admin || admin.papel !== 'admin') return { erro: 'Só a administração liga e desliga eventos', codigo: 403 };
     if (!/^[a-z0-9][a-z0-9-]{0,40}$/.test(String(id || ''))) return { erro: 'Evento inválido', codigo: 400 };
-    const atual = await lerEvento(), evento = { id, nome: String(nome || (atual && atual.nome) || id).slice(0, 80), ativo: !!ativo, desde: new Date().toISOString(), por: admin.utilizador };
+    const lista = await lerCatalogo(), emCurso = lista.find(e => decorre(e.agenda)), este = lista.find(e => e.id === id);
+    if (emCurso && emCurso.id === id) return { erro: 'Este evento está a decorrer pelo calendário: termina-o ou muda o calendário no painel dos eventos', codigo: 409 };
+    if (ativo && emCurso) return { erro: `Está a decorrer «${emCurso.nome}», pelo calendário: só depois se pode ligar outro evento`, codigo: 409 };
+    if (ativo && este && este.agenda) return { erro: 'Este evento tem calendário: tira-o para o controlar à mão', codigo: 409 };
+    const atual = await lerManual(), evento = { id, nome: String(nome || (atual && atual.nome) || id).slice(0, 80), ativo: !!ativo, desde: new Date().toISOString(), por: admin.utilizador };
     await armazem.escrever(KE, JSON.stringify(evento, null, 1));
     await registar({ conta: admin, acao: (ativo ? 'ativou' : 'desativou') + ' o evento', alvo: evento.nome, origem: contexto.origem });
     return { evento };
@@ -218,7 +228,7 @@ export function criarContas({ armazem, iniciais = [], segredo = '', horas = 12, 
     const categorias = (Array.isArray(e.categorias) ? e.categorias : []).slice(0, 12).map(c => ({ id: texto(c && c.id, 41), nome: texto(c && c.nome, 60), icone: texto(c && c.icone, 8), cor: /^#[0-9a-f]{6}$/i.test(c && c.cor) ? c.cor : '#9aa3ad' }));
     if (categorias.some(c => !ID_EVENTO.test(c.id) || !c.nome) || new Set(categorias.map(c => c.id)).size !== categorias.length) return null;
     const termos = e.termos || {};
-    return { id: e.id, nome: texto(e.nome, 80), icone: texto(e.icone, 8) || '📍', descricao: texto(e.descricao, 500), competencia: ['governo', 'camara', 'junta'].includes(e.competencia) ? e.competencia : '', termos: { um: texto(termos.um, 30) || 'registo', varios: texto(termos.varios, 30) || 'registos' }, categorias };
+    return { id: e.id, nome: texto(e.nome, 80), icone: texto(e.icone, 8) || '📍', descricao: texto(e.descricao, 500), competencia: ['governo', 'camara', 'junta'].includes(e.competencia) ? e.competencia : '', termos: { um: texto(termos.um, 30) || 'registo', varios: texto(termos.varios, 30) || 'registos' }, categorias, ...(e.agenda ? { agenda: { inicio: new Date(e.agenda.inicio).toISOString(), fim: new Date(e.agenda.fim).toISOString() } } : {}) };
   }
   async function guardarEvento(admin, b, contexto = {}) {
     if (!admin || admin.papel !== 'admin') return { erro: 'Só a administração cria e altera eventos', codigo: 403 };
@@ -232,9 +242,12 @@ export function criarContas({ armazem, iniciais = [], segredo = '', horas = 12, 
       return { eventos: lista };
     }
     if (Array.isArray(b.categorias) && b.categorias.length > 12) return { erro: 'Um evento tem no máximo 12 tipos', codigo: 400 };
+    if (b.agenda && !(Date.parse(b.agenda.inicio) < Date.parse(b.agenda.fim))) return { erro: 'O calendário precisa de um início e de um fim depois dele', codigo: 400 };
+    if (b.agenda) { const a = Date.parse(b.agenda.inicio), z = Date.parse(b.agenda.fim), outro = lista.find(o => o.id !== b.id && o.agenda && a < Date.parse(o.agenda.fim) && Date.parse(o.agenda.inicio) < z); if (outro) return { erro: `Esse calendário sobrepõe-se ao de «${outro.nome}»: só há um evento ativo de cada vez`, codigo: 409 }; }
     const e = eventoLimpo(b); if (!e || !e.nome) return { erro: 'O evento precisa de um nome, e cada tipo de um nome diferente', codigo: 400 };
     if (i >= 0) lista[i] = e; else lista.push(e);
     await armazem.escrever(KC, JSON.stringify(lista, null, 1));
+    if (e.agenda) { const m = await lerManual(); if (m && m.id === e.id && m.ativo) await armazem.escrever(KE, JSON.stringify({ ...m, ativo: false }, null, 1)); } // passou a calendário: deixa de estar ligado à mão
     await registar({ conta: admin, acao: (i >= 0 ? 'alterou' : 'criou') + ' o evento', alvo: e.nome, origem: contexto.origem });
     return { eventos: lista };
   }

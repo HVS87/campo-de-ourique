@@ -35,9 +35,15 @@ os dedos (pinça) na vista geral da freguesia também abre o mapa de Lisboa.
 
 ### Visita guiada
 
-A abertura automática é um interruptor próprio do `System.Admin`, no menu da conta («Abrir a Visita Guiada a quem entra pela
-primeira vez»): não depende de haver um evento ativo, e fica no servidor central e no local. Desligada, a visita continua
-no índice (☰ → 🎓 Visita guiada).
+A abertura automática é um interruptor do `System.Admin`, no menu da conta e no painel dos Eventos («Visita Guiada automática»):
+vale para todos, na primeira visita, e fica no servidor central e no local. Desligada, nenhuma visita abre sozinha, e continuam
+no índice (☰).
+
+Com um evento ativo que tenha visita própria (hoje, o Levantamento Iluminação Pública, com o campo `visita`), é essa mini visita
+que corre em vez da geral: explica só como registar, mostra o painel de registo como exemplo, sem gravar nada, e no fim pergunta
+se se quer ver a visita geral. Fica também em ☰ → Visita do evento.
+
+As visitas só simulam: o ponto de exemplo é um marcador solto, fora dos dados, e com uma visita aberta nada se cria nem se regista.
 
 Na primeira vez que se abre a apresentação, uma visita guiada explica a interface passo a passo: cada passo realça
 um elemento do ecrã (a escurecer o resto) e explica-o num cartão, com «Seguinte», «Anterior» e uma barra de
@@ -225,6 +231,7 @@ Em menu da conta → **Eventos**, o `System.Admin` vê todos os eventos e pode:
   se fizer falta, os tipos de registo, cada um com a sua cor. O evento fica em `evento/catalogo.json`, no servidor central e no
   local, e a página junta-o aos que traz de origem. Nenhum outro código depende do tema do evento.
 - **Competência:** a do Levantamento Iluminação Pública é sempre a Câmara Municipal e não se muda nem no evento nem no conjunto.
+- **Calendário, em alternativa ao controlo manual:** ao editar o evento, escolhe-se «Pelo calendário», com o início e o fim. O evento liga-se e desliga-se sozinho a essas horas, mesmo com a página aberta ou sem rede, e o painel deixa de oferecer «Ativar»; «Terminar agora» encurta-o. Os calendários não se podem sobrepor. Enquanto um decorre, passa à frente do que estiver ligado à mão e não se liga outro.
 - **Ativar ou desativar:** só há um ativo de cada vez. Os registos ficam guardados ao mudar de evento.
 - **Exportar PDF:** funciona também com o evento inativo. Escolhem-se os tipos a incluir e se levam fotos. O relatório
   (`relatorios/evento.js`, com a biblioteca `vendor/jspdf`) começa pelo resumo da cidade: totais, tipos, mapa e tabela por
