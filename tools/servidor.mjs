@@ -38,6 +38,7 @@ const TYPES = {
   '.js': 'text/javascript; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
+  '.webmanifest': 'application/manifest+json; charset=utf-8',
   '.geojson': 'application/geo+json; charset=utf-8',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
@@ -311,11 +312,15 @@ export function criarServidor({ raiz, gravavel = raiz, app = false, versao = '',
         return;
       }
       if (rel === '/ambiente.json') return json(res, 200, { app, versao, dados: sobreposta ? gravavel : null, copia: path.join(gravavel, 'copia-central'), contas: true });
-      // a cópia do servidor central tem o histórico e as contas: só para este computador (com HOST=0.0.0.0 a rede vê o resto)
-      if (/^[\\/]copia-central([\\/]|$)/i.test(rel) && !local(req)) { res.writeHead(403).end('Proibido'); return; }
     } catch (err) { registo(err.message); if (!res.headersSent) return json(res, err.codigo || 500, { erro: err.message }); return; }
     if (rel.endsWith('/')) rel += 'index.html';
     const relLimpo = path.normalize(rel).replace(/^[\\/]+/, '');
+    // a cópia do servidor central tem o histórico e as contas: só neste computador (com HOST=0.0.0.0 a rede vê o resto) e só
+    // para a administração; a lista das versões é o que a página precisa para saber o que falta copiar
+    if (/^copia-central([\\/]|$)/i.test(relLimpo)) {
+      if (!local(req)) { res.writeHead(403).end('Proibido'); return; }
+      if (!/^copia-central[\\/]versoes\.json$/i.test(relLimpo)) { let s = null; try { s = await sessaoDe(req); } catch (err) { registo(err.message); } if (!s || s.papel !== 'admin') { res.writeHead(403).end('Proibido'); return; } }
+    }
     const file = paraLer(relLimpo);
     if (!dentro(raiz, file) && !dentro(gravavel, file)) { res.writeHead(403).end('Proibido'); return; }
     try { fs.stat(file, (errStat, st) => {

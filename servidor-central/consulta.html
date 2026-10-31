@@ -154,7 +154,7 @@ const gravar = (k, v, lembrar = true) => { try { sessionStorage.removeItem(k); l
 
 // ---- credencial: a sessão de uma conta (testemunho) ou uma chave de acesso ----
 // A palavra-passe não sai do browser: deriva-se dela a chave de entrada (o mesmo cálculo de servidor-central/contas.mjs).
-const normalizar = u => String(u || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[\s'’-]+/g, '').slice(0, 80);
+const normalizar = u => { const n = String(u || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[\s'’-]+/g, '').slice(0, 80); return { systemadmin: 'system.admin', concelhialisboa: 'concelhia.lisboa' }[n] || n; }; // como em contas.mjs
 async function chaveDeEntrada(utilizador, palavraPasse) {
   const semAcentos = String(palavraPasse).normalize('NFD').replace(/[̀-ͯ]/g, ''); // acentos e cedilhas não contam (as maiúsculas sim)
   const enc = new TextEncoder(), base = await crypto.subtle.importKey('raw', enc.encode(semAcentos), 'PBKDF2', false, ['deriveBits']);

@@ -88,6 +88,7 @@ estão no armazém dele (`contas/contas.json`), e as palavras-passe mudam-se na 
   até 15 minutos. Repor a palavra-passe desbloqueia.
 - **Autores:** o autor de cada envio é a conta que o enviou. Só a administração vê os autores e o histórico; para os
   outros, as listas, os elementos e as exportações vêm sem os nomes.
+- **Registos de um evento:** cada envio leva o preset inteiro de um dispositivo, mas os registos de um conjunto de evento juntam-se aos que já lá estão (por id); os tirados ficam em `removidosEvento` e não voltam. Um registo de levantamento segue com `soEvento: true`: o servidor só muda os conjuntos do evento e deixa o resto do preset como está. A posição é a do último arrasto (`movido`), e o `autor` de cada registo só chega à administração.
 - **Evento:** o levantamento em curso (ver o README principal) fica em `evento/atual.json`; só a administração o liga e desliga, e isso fica no histórico. A página de consulta mostra o estado, o botão para o ligar e o resumo por freguesia.
 - **Histórico:** fica um registo por mês (`historico/AAAA-MM.json`) com as entradas, as entradas recusadas, os
   bloqueios, as mudanças e reposições de palavras-passe e cada envio, com o que mudou: elementos acrescentados,
@@ -176,7 +177,7 @@ Os pedidos levam `Authorization: Bearer <testemunho da sessão ou chave de acess
 | `GET /api/v1/historico?freguesia=&utilizador=&limite=&meses=` | admin | quem fez o quê, do mais recente para o mais antigo |
 | `GET /api/v1/evento` | todos | o evento em curso: `{ evento: { id, nome, ativo, desde, por } | null }` |
 | `POST /api/v1/evento` | admin | recebe `{ id, nome, ativo }` e liga ou desliga o evento |
-| `GET /api/v1/evento/resumo?id=` | leitor | por freguesia, quantos pontos de cada categoria tem o conjunto do evento (do preset recebido mais recentemente que o tenha) e o total da cidade |
+| `GET /api/v1/evento/resumo?id=` | leitor | por freguesia, quantos registos de cada categoria tem o evento, somando os presets, e o total da cidade |
 | `GET /api/v1/contas` | admin | as contas, sem os verificadores, com a última entrada e o bloqueio |
 | `POST /api/v1/contas/<utilizador>/palavra-passe` | admin | recebe `{ nova }` (chave de entrada) e repõe a palavra-passe |
 | `GET /api/v1/copia` e `GET /api/v1/objeto?chave=` | admin | a lista dos objetos (com `versao`) e cada objeto, para a cópia local |

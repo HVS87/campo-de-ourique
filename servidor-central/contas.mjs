@@ -27,9 +27,11 @@ const CHAVE_VALIDA = /^[0-9a-f]{64}$/;
 const horaLisboa = ms => new Date(ms).toLocaleTimeString('pt-PT', { timeZone: 'Europe/Lisbon', hour: '2-digit', minute: '2-digit' });
 
 // «Campo de Ourique», «campodeourique» e «CampoDeOurique» são o mesmo utilizador (sem acentos, espaços nem maiúsculas)
-export const normalizarUtilizador = u => String(u || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[\s'’-]+/g, '').slice(0, 80);
+// «System Admin» e «Concelhia Lisboa», sem o ponto, também valem (o resultado entra no sal da chave de entrada: não pode mudar)
+const ALIASES = { systemadmin: 'system.admin', concelhialisboa: 'concelhia.lisboa' };
+export const normalizarUtilizador = u => { const n = String(u || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[\s'’-]+/g, '').slice(0, 80); return ALIASES[n] || n; };
 // a chave de entrada (o browser faz o mesmo cálculo: index.html e consulta.html)
-// na palavra-passe, os acentos e as cedilhas não contam («Março» e «Marco» são a mesma; «ç» e «c» também), para
+// na palavra-passe, os acentos e as cedilhas não contam («Março» e «Marco» são a mesma; «á» e «a» também), para
 // evitar equívocos; as maiúsculas contam
 export const normalizarPalavraPasse = p => String(p == null ? '' : p).normalize('NFD').replace(/[̀-ͯ]/g, '');
 export async function derivarChave(utilizador, palavraPasse) {

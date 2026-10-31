@@ -9,7 +9,7 @@ A licença MIT do ficheiro [LICENSE](LICENSE) cobre o código deste projeto (HTM
 | Electron 44 (inclui o Chromium e o Node.js), © OpenJS Foundation e colaboradores | dentro da aplicação de computador | MIT (o Chromium e o Node.js trazem as suas licenças, no ficheiro LICENSES.chromium.html da aplicação) |
 | electron-updater, © Loopline Systems e colaboradores do electron-builder | dentro da aplicação de computador (atualizações) | MIT |
 | Leaflet 1.9.4 por CDN (cdnjs) | página de consulta do servidor central (`servidor-central/consulta.html`) | BSD 2-Clause |
-| Ortoimagens DGT OrtoSat 2023 | `assets/satelite-dgt-2023.jpg`, `dados/freguesias/*/satelite.jpg` e camada em direto | CC BY 4.0 |
+| Ortoimagens DGT OrtoSat 2023 | `assets/satelite-dgt-2023.jpg`, `assets/lisboa-dgt-2023.jpg`, `assets/lisboa-dgt-2023-alto.jpg`, `dados/freguesias/*/satelite.jpg` e camada em direto | CC BY 4.0 |
 | Limite da freguesia, ruas e geometrias derivadas do OpenStreetMap | `dados/geo.js`, `dados/ruas.js`, `dados/campo-de-ourique.geojson`, geometrias em `dados/presets/` | © colaboradores do OpenStreetMap, ODbL 1.0 |
 | Edificado e números de polícia | `dados/edificado.js`, `dados/freguesias/*/edificado.js` | Câmara Municipal de Lisboa, dados abertos (serviço «Edificado e Vias») |
 | Limites das freguesias e ruas (exceto Campo de Ourique) | `dados/freguesias/index.js`, `dados/freguesias/limites.js`, `dados/freguesias/*/geo.js`, `dados/freguesias/*/ruas.js` | Câmara Municipal de Lisboa, dados abertos («Base_Freguesias», «Edificado e Vias») |

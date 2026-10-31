@@ -23,7 +23,11 @@ const ID = '[a-z0-9][a-z0-9-]{0,60}';
 const CHAVE_OBJETO = new RegExp(`^(presets/${ID}/${ID}/(\\d+|atual|revisoes)\\.json|(indice|elementos)/${ID}\\.json|historico/\\d{4}-\\d{2}\\.json|chaves\\.json|contas/contas\\.json|evento/atual\\.json)$`);
 export const PAPEIS = { leitor: ['ler'], contribuidor: ['ler', 'enviar'], admin: ['ler', 'enviar', 'admin'] };
 const AUTORIA = ['autor', 'contribuidor', 'utilizador'];
-const semAutoria = o => { if (!o || typeof o !== 'object') return o; const x = { ...o }; for (const k of AUTORIA) delete x[k]; return x; };
+const semAutoria = o => {
+  if (!o || typeof o !== 'object') return o; const x = { ...o }; for (const k of AUTORIA) delete x[k];
+  if (x.dados && Array.isArray(x.dados.elementos)) x.dados = { ...x.dados, elementos: x.dados.elementos.map(e => e && Array.isArray(e.detalhes) ? { ...e, detalhes: e.detalhes.map(semAutoria) } : e) }; // quem fez cada registo de um evento
+  return x;
+};
 const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
 export async function resumoDe(chave) { return hex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(chave))); } // só se guarda o resumo das chaves
 const iguais = (a, b) => { if (a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; }; // tempo constante
@@ -51,13 +55,40 @@ function achatar(reg) { // calculado uma vez, ao receber (a consulta só junta l
   (function rec(lista, pai) { for (const e of lista || []) {
     const g = geometria(e), [lat, lon] = centro(g);
     // um conjunto de um evento (levantamento) leva também quantos pontos tem de cada categoria
-    const contagens = e.evento && Array.isArray(e.detalhes) ? e.detalhes.reduce((m, d) => { const c = d && d.c ? String(d.c) : 'sem'; m[c] = (m[c] || 0) + 1; return m; }, {}) : null;
+    const registos = e.evento && Array.isArray(e.detalhes) ? e.detalhes.map(d => ({ i: d && d.i ? String(d.i) : '', c: d && d.c ? String(d.c) : 'sem' })) : null;
+    const contagens = registos && registos.reduce((m, d) => { m[d.c] = (m[d.c] || 0) + 1; return m; }, {});
     out.push({ freguesia: reg.freguesia, preset: reg.preset, presetTitulo: reg.dados.titulo || reg.preset, id: e.id, tipo: e.tipo, nome: e.nome, prioridade: e.prioridade || '', competencia: e.competencia || '',
-      ...(e.evento ? { evento: String(e.evento), pontos: Array.isArray(e.pontos) ? e.pontos.length : 0, contagens } : {}),
+      ...(e.evento ? { evento: String(e.evento), pontos: Array.isArray(e.pontos) ? e.pontos.length : 0, contagens, registos } : {}),
       categorias: cats.filter(c => (c.membros || []).includes(e.id)).map(c => c.nome), dentroDe: pai ? pai.nome : '', texto: textoSimples(e.texto),
       fotos: (e.fotos || []).map(f => f.src || f).filter(s => !String(s).startsWith('data:')), lat, lon, autor: reg.autor || '', utilizador: reg.utilizador || '', recebido: reg.recebido, revisao: reg.revisao, geometria: g });
     rec(e.filhos, e); } })(reg.dados.elementos, null);
   return out;
+}
+// Registos de um evento: cada envio leva o preset inteiro do dispositivo que o fez, por isso os registos juntam-se aos que
+// já cá estão (duas equipas com a mesma conta não apagam os registos uma da outra). Cada registo tem um id («i»); um
+// registo tirado fica em dados.removidosEvento = { <evento>: [ids] } e não volta. Ordem por data, para o mesmo conteúdo dar o mesmo texto.
+function juntarEventos(antes, d) {
+  if (!antes) return;
+  const removidos = {};
+  for (const fonte of [antes.removidosEvento, d.removidosEvento]) for (const [ev, ids] of Object.entries(fonte || {})) removidos[ev] = [...new Set([...(removidos[ev] || []), ...(Array.isArray(ids) ? ids : [])])];
+  if (Object.keys(removidos).length) d.removidosEvento = removidos;
+  const grupos = x => (x.elementos || []).filter(e => e && e.tipo === 'grupo' && e.evento && Array.isArray(e.detalhes));
+  for (const ev of new Set([...grupos(antes), ...grupos(d)].map(e => e.evento))) {
+    const a = grupos(antes).find(e => e.evento === ev), g = grupos(d).find(e => e.evento === ev), fora = new Set(removidos[ev] || []), juntos = new Map();
+    for (const e of [a, g]) if (e) e.detalhes.forEach((x, i) => {
+      const id = (x && x.i) || [x && x.quando, x && x.rua, x && x.numero, e.pontos[i]].join('|'); if (fora.has(id)) return; // registos de antes dos ids: pelo conteúdo
+      const ja = juntos.get(id), novo = !ja || String((x && x.movido) || '') >= String(ja.x.movido || ''); // a posição é a do último arrasto; o autor não se perde num envio de quem não o vê
+      juntos.set(id, { p: novo ? e.pontos[i] : ja.p, x: { ...(ja && ja.x), ...(x || {}), ...(novo ? {} : { movido: ja.x.movido }) } });
+    });
+    const lista = [...juntos.values()].sort((p, q) => String(p.x.quando || '').localeCompare(String(q.x.quando || '')) || String(p.x.i || '').localeCompare(String(q.x.i || '')));
+    if (!lista.length) { if (g) d.elementos.splice(d.elementos.indexOf(g), 1); continue; }
+    const alvo = g || { ...a }; alvo.pontos = lista.map(l => l.p); alvo.detalhes = lista.map(l => l.x); if (!g) d.elementos.push(alvo);
+  }
+}
+// um registo de levantamento só mexe nos conjuntos dos eventos: o resto do preset fica como está no servidor, mesmo que o dispositivo não o tenha atualizado
+function soEventos(antes, d) {
+  const eh = e => e && e.tipo === 'grupo' && e.evento, novos = (d.elementos || []).filter(eh), velhos = antes.elementos || [];
+  return { ...antes, removidosEvento: d.removidosEvento, elementos: velhos.map(e => (eh(e) && novos.find(n => n.evento === e.evento)) || e).concat(novos.filter(n => !velhos.some(e => eh(e) && e.evento === n.evento))) };
 }
 const resumo = r => ({ freguesia: r.freguesia, preset: r.preset, titulo: r.dados.titulo || r.preset, subtitulo: r.dados.subtitulo || '', revisao: r.revisao, autor: r.autor, contribuidor: r.contribuidor, origem: r.origem, recebido: r.recebido, elementos: (r.dados.elementos || []).length });
 function filtrar(lista, f) {
@@ -122,18 +153,26 @@ export function criarAPI({ armazem, nome = 'Servidor central das freguesias', or
     if (!d || typeof d !== 'object' || !Array.isArray(d.elementos)) return json(400, { erro: 'Esperava { dados: { …, elementos: [] } }' });
     if (d.freguesia && d.freguesia !== f) return json(409, { erro: `O preset é da freguesia «${d.freguesia}», não de «${f}»` });
     d.freguesia = f; d.preset = p;
-    const atual = await lerJSON(pasta(f, p) + 'atual.json');
-    if (atual && JSON.stringify(atual.dados) === JSON.stringify(d)) return json(200, { ok: true, revisao: atual.revisao, igual: true }); // nada mudou
-    const rev = (atual ? atual.revisao : 0) + 1, recebido = new Date().toISOString();
+    let atual = null, reg = null;
+    const juntar = t => { // corre outra vez se outro envio do mesmo preset gravar primeiro: ninguém pisa os registos de ninguém
+      try { atual = t == null ? null : JSON.parse(t); } catch (err) { atual = null; }
+      const novo = corpo.soEvento && atual ? soEventos(atual.dados, structuredClone(d)) : structuredClone(d);
+      juntarEventos(atual && atual.dados, novo); reg = null;
+      if (atual && JSON.stringify(atual.dados) === JSON.stringify(novo)) return t; // nada mudou
+      const rev = (atual ? atual.revisao : 0) + 1, recebido = new Date().toISOString();
     // o autor é a conta que enviou (com uma chave de acesso, o nome que vem no pedido)
-    const reg = { freguesia: f, preset: p, revisao: rev, utilizador: c.utilizador || '', autor: c.conta ? c.nome : String(corpo.autor || '').slice(0, 120), contribuidor: c.nome, origem: String(corpo.origem || '').slice(0, 30), versao: String(corpo.versao || '').slice(0, 30), quando: Number(corpo.quando) || null, recebido, dados: d };
-    const txt = JSON.stringify(reg), r = resumo(reg);
-    await armazem.escrever(pasta(f, p) + rev + '.json', txt);
-    await armazem.escrever(pasta(f, p) + 'atual.json', txt);
+      reg = { freguesia: f, preset: p, revisao: rev, utilizador: c.utilizador || '', autor: c.conta ? c.nome : String(corpo.autor || '').slice(0, 120), contribuidor: c.nome, origem: String(corpo.origem || '').slice(0, 30), versao: String(corpo.versao || '').slice(0, 30), quando: Number(corpo.quando) || null, recebido, dados: novo };
+      return JSON.stringify(reg);
+    };
+    const kAtual = pasta(f, p) + 'atual.json';
+    if (armazem.atualizar) await armazem.atualizar(kAtual, juntar); else { const txt = juntar(await armazem.ler(kAtual)); if (reg) await armazem.escrever(kAtual, txt); }
+    if (!reg) return json(200, { ok: true, revisao: atual.revisao, igual: true });
+    const rev = reg.revisao, r = resumo(reg);
+    await armazem.escrever(pasta(f, p) + rev + '.json', JSON.stringify(reg));
     await atualizarJSON(pasta(f, p) + 'revisoes.json', v => (v || []).concat(r));
     await atualizarJSON(`indice/${f}.json`, v => ({ ...(v || {}), [p]: r }));
     await atualizarJSON(`elementos/${f}.json`, v => ({ ...(v || {}), [p]: achatar(reg) }));
-    await contas.registar({ conta: comoConta(c), acao: 'guardou', freguesia: f, preset: p, revisao: rev, resumo: resumoAlteracoes(atual && atual.dados, d), origem: reg.origem });
+    await contas.registar({ conta: comoConta(c), acao: 'guardou', freguesia: f, preset: p, revisao: rev, resumo: resumoAlteracoes(atual && atual.dados, reg.dados), origem: reg.origem });
     return json(201, { ok: true, revisao: rev });
   }
   // sessões e contas: entrar, mudar a própria palavra-passe; a administração lista as contas e repõe palavras-passe
@@ -162,17 +201,21 @@ export function criarAPI({ armazem, nome = 'Servidor central das freguesias', or
     }
     return json(404, { erro: 'Não encontrado' });
   }
-  // resumo de um evento: por freguesia, quantos pontos de cada categoria (do preset recebido mais recentemente que o tenha)
+  // resumo de um evento: por freguesia, quantos registos de cada categoria, somando os presets (um registo copiado para outro preset conta uma vez)
   async function resumoEvento(id) {
     const porF = {}; let total = 0;
     for (const o of await armazem.listar('elementos/')) {
       const f = /^elementos\/(.+)\.json$/.exec(o.chave); if (!f || !idValido(f[1])) continue;
       const presets = (await lerJSON(o.chave)) || {};
-      let melhor = null;
-      for (const linhas of Object.values(presets)) for (const l of linhas) if (l.evento === id && (!melhor || l.recebido > melhor.recebido)) melhor = l;
-      if (!melhor) continue;
-      porF[f[1]] = { total: melhor.pontos || 0, contagens: melhor.contagens || {}, preset: melhor.preset, recebido: melhor.recebido };
-      total += melhor.pontos || 0;
+      const vistos = new Map(); let recebido = '';
+      for (const [pid, linhas] of Object.entries(presets)) for (const l of linhas) if (l.evento === id) {
+        (l.registos || []).forEach((x, k) => vistos.set(x.i || pid + '#' + k, x.c));
+        if (l.recebido > recebido) recebido = l.recebido;
+      }
+      if (!vistos.size) continue;
+      const contagens = {}; for (const c of vistos.values()) contagens[c] = (contagens[c] || 0) + 1;
+      porF[f[1]] = { total: vistos.size, contagens, recebido };
+      total += vistos.size;
     }
     return { evento: id, total, freguesias: porF };
   }

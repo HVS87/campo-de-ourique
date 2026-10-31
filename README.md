@@ -24,7 +24,8 @@ Cada freguesia tem os seus presets, os seus rascunhos e o seu `conteudos.js`.
 
 O botão do mapa por cima do zoom (canto inferior esquerdo), «🗺 Lisboa» no índice ou «Ver todas no mapa de
 Lisboa» na lista das freguesias afastam o mapa até à cidade inteira, dividida pelas 24 freguesias, com o nome de
-cada uma. Também se chega lá ao continuar a afastar (roda do rato ou «−») depois da vista geral da freguesia.
+cada uma. Também se chega lá ao continuar a afastar (roda do rato ou «−») depois da vista geral da freguesia, ou
+com um clique fora do limite da freguesia, sem nada selecionado (com um cartão aberto, o primeiro clique só o fecha).
 Ao passar o cursor, a freguesia pulsa e a barra de baixo mostra o nome e a área; um clique abre-a. No ecrã tátil,
 o primeiro toque realça a freguesia e o segundo (ou «Abrir …» na barra) abre-a. «← Voltar» (ou Esc) regressa à
 freguesia aberta, e a pesquisa encontra também as freguesias. É aqui que a apresentação abre, quando o endereço não
@@ -35,7 +36,7 @@ os dedos (pinça) na vista geral da freguesia também abre o mapa de Lisboa.
 ### Visita guiada
 
 Na primeira vez que se abre a apresentação, uma visita guiada explica a interface passo a passo: cada passo realça
-um elemento do ecrã (escurecendo o resto) e explica-o num cartão, com «Seguinte», «Anterior» e uma barra de
+um elemento do ecrã (a escurecer o resto) e explica-o num cartão, com «Seguinte», «Anterior» e uma barra de
 progresso. Nos passos do mapa pode-se experimentar ao mesmo tempo; os outros preparam o ecrã sozinhos (abrem o
 índice, a legenda, as camadas ou um cartão) e arrumam-no ao sair do passo.
 
@@ -79,6 +80,16 @@ Transfere-se em [Releases](https://github.com/HVS87/campo-de-ourique/releases):
   (Gatekeeper) avisam: no Windows escolhe-se «Mais informações → Executar mesmo assim»; no macOS, botão direito
   → «Abrir».
 - **Localização:** «Ponto onde estou» depende de o sistema dar a localização à aplicação.
+
+### Instalar como app no telemóvel ou no tablet
+
+A apresentação alojada em `https` instala-se como aplicação, sem loja nem instalador. No Android aparece um convite no
+topo (e o botão «📲 Instalar» no índice ☰); no iPhone e no iPad, esse botão explica o caminho: Safari → Partilhar →
+Adicionar ao ecrã principal. Abre em ecrã inteiro, com ícone próprio.
+
+O service worker (`sw.js`) guarda o que já se abriu, para abrir depressa e sem internet: as imagens e as bibliotecas vêm
+logo do guardado, os dados vêm da rede, com o guardado como reserva. Contas, sessões e evento nunca se guardam. A
+aplicação de computador não precisa disto.
 
 ### Versão browser
 
@@ -146,14 +157,14 @@ cidade toda:
   verificadores, em `servidor-central/contas-iniciais.mjs`). Muda-as logo: são fáceis de adivinhar.
 - **Outra freguesia:** uma conta de freguesia vê as outras, mas não as edita. O lápis diz de quem é a freguesia e
   oferece abrir a sua.
-- **Lembrar-me:** no login, «Lembrar-me neste dispositivo» mantém a sessão durante 30 dias neste browser ou nesta
+- **Lembrar-me:** ao iniciar sessão, «Lembrar-me neste dispositivo» mantém a sessão durante 30 dias neste browser ou nesta
   aplicação, mesmo depois de os fechar. Sem isso, a sessão acaba ao fechar (e, no máximo, ao fim de 12 horas).
 - **O botão da conta** (as iniciais, ao lado do lápis, sempre que há sessão):
   - todas as contas mudam a sua palavra-passe e **terminam a sessão**. Com alterações por guardar, pergunta antes:
     «Guardar e terminar», «Manter em rascunho e terminar», «Descartar e terminar» ou «Continuar a editar»;
   - a administração vê também o **histórico de alterações** (quem entrou, guardou, ativou ou apagou presets e
     fotos, com o que mudou em cada gravação: elementos acrescentados, mudados e tirados), que exporta em CSV;
-  - e gere as **contas**: vê a última entrada de cada uma e repõe palavras-passe (gera uma, se quiseres), o que também
+  - e gere as **contas**: vê a última entrada de cada uma e repõe palavras-passe (pode gerar uma), o que também
     desbloqueia a conta.
 - **Proteção:** a verificação é feita pelo servidor, não pela página. Cada gravação sem sessão, ou numa freguesia que
   não é da conta, é recusada. Cinco palavras-passe erradas seguidas bloqueiam a conta por um minuto, e o bloqueio
@@ -177,7 +188,7 @@ servidor local; a apresentação lembra-o neste browser para abrir sem rede.
 
 Com o evento ativo:
 
-- **Ao entrar no modo de edição e no «+»** (também na vista normal, depois do login), pergunta-se o que se quer
+- **Ao entrar no modo de edição e no «+»** (também na vista normal, depois de iniciar sessão), pergunta-se o que se quer
   registar: **Levantamento Iluminação Pública** ou **Registar Ocorrência**, que leva ao menu habitual.
 - **O levantamento:**
   1. escolhe-se o tipo: 💡 Candeeiro apagado/fundido ou 🌑 Candeeiro em falta/zona escura (o último fica lembrado);
@@ -185,7 +196,9 @@ Com o evento ativo:
      marcador no mapa, ampliado ao máximo; sem GPS (no computador, ou sem autorização), pede um toque no mapa;
   3. sugere a **morada** (rua e número de porta) a partir dos números de polícia da CML (`edificado.js`) e das ruas, sem
      precisar de internet; arrastar o marcador atualiza a sugestão, e os campos podem corrigir-se à mão;
-  4. **Confirmar registo** acrescenta o ponto ao conjunto do evento da freguesia (criado no primeiro registo) e grava.
+  4. **Confirmar registo** acrescenta o ponto ao conjunto do evento da freguesia (criado no primeiro registo) e grava;
+     o mapa fica livre para o registo seguinte. Sem servidor local, o registo segue só para o servidor central, sem
+     transferir ficheiros.
 - **O conjunto por freguesia** («Levantamento Iluminação Pública», prioridade importante, competência Câmara) tem no
   cartão uma tabela com o total de falhas registadas e o número de cada tipo, e a lista dos registos com morada e
   data (clicar num leva ao sítio no mapa). Os marcadores têm a cor do tipo. Em edição, cada registo pode tirar-se.
@@ -195,7 +208,10 @@ Com o evento ativo:
 - **A visita guiada não arranca sozinha** na primeira abertura enquanto o evento durar; continua no índice (☰ → 🎓 Visita guiada).
 
 No modelo de dados, o conjunto leva `evento: "iluminacao"` e `detalhes`, uma entrada por ponto:
-`{ c: "fundido" | "falta", rua, numero, quando, autor, precisao? }`.
+`{ i, c: "fundido" | "falta", rua, numero, quando, autor, precisao? }`; `i` identifica o registo. Várias equipas podem
+registar na mesma freguesia: o servidor central junta os registos de todos os dispositivos, em vez de os substituir, e
+cada dispositivo traz os dos outros ao entrar na edição e depois de enviar. Um registo tirado fica em
+`removidosEvento` e não volta. O resumo da cidade soma os presets de cada freguesia, sem contar duas vezes o mesmo registo.
 
 ## Modo de edição
 
@@ -207,8 +223,8 @@ mostra só as ferramentas; «⋯ Mais» abre o título, o subtítulo e os preset
   zona pisca, a indicar que vai «mergulhar»); arrastar um ponto para fora da zona tira-o de lá. Numa zona
   selecionada aparecem os vértices: arrastam-se, os pontos médios criam vértices novos e um duplo clique num
   vértice apaga-o.
-- **Botão «+»** (canto inferior direito): abre a lista do que se pode criar. Fora da edição é um atalho: pede o
-  login, se ainda não houver sessão, entra no modo de edição e abre a lista. O que se pode criar: ponto, conjunto de
+- **Botão «+»** (canto inferior direito): abre a lista do que se pode criar. Fora da edição é um atalho: pede para
+  iniciar sessão, se ainda não houver sessão, entra no modo de edição e abre a lista. O que se pode criar: ponto, conjunto de
   pontos, ponto desmaterializado, rua, zona, zona livre e lote. Em telemóveis e tablets tem também «Ponto onde
   estou» e «Rua onde estou», que usam a localização do aparelho (a rua é a mais próxima, até 60 m; fora da
   freguesia, pergunta antes). O browser só dá a localização a páginas em https ou abertas no próprio aparelho.
@@ -302,7 +318,8 @@ mostra só as ferramentas; «⋯ Mais» abre o título, o subtítulo e os preset
   se o servidor da DGT falhar ou não houver rede); exterior da freguesia escurecido a 72 %. Os pontos de
   interesse são círculos com a cor da prioridade, que pulsam ao passar o cursor, tal como as ruas destacadas
   e as zonas, de onde saem ondas da mesma cor; a informação abre num cartão
-  central (no telemóvel, em baixo; com o telemóvel deitado, à direita). À esquerda, um painel colapsável
+  central (no telemóvel, em baixo; com o telemóvel deitado, à direita); no cartão de um ponto dentro de uma zona, a
+  seta ‹ ao lado do ✕ volta ao cartão da zona. À esquerda, um painel colapsável
   (fechado ao arrancar, botão ☰) com as categorias (etiquetas que
   filtram o mapa e o índice; combinam-se; ▶ apresenta a categoria; «Mostrar tudo» limpa), o índice por tipo,
   o botão «🎓 Visita guiada» (explica a interface, ver acima), o botão «▶ Vista de Apresentação» (percorre os
@@ -363,6 +380,10 @@ mostra só as ferramentas; «⋯ Mais» abre o título, o subtítulo e os preset
   sessão, a gravação dos presets (`dados/presets/`, cópia ativa em `dados/conteudos.js`) e das fotos em
   `assets/fotos/` (só a partir desta máquina e da própria página).
 - `tools/ruas-osm.mjs` — regenera `dados/ruas.js` a partir do OpenStreetMap (precisa de internet).
+- `manifest.webmanifest`, `sw.js` e `assets/icones/` — instalar como app e abrir sem internet.
+- `assets/lisboa-dgt-2023.jpg` e `assets/lisboa-dgt-2023-alto.jpg` — a imagem de Lisboa que aparece logo ao abrir (deitada e
+  ao alto, conforme o ecrã), gerada por `node tools/imagem-lisboa.mjs`. O satélite em direto carrega por trás e só entra,
+  numa transição, quando o primeiro ecrã estiver completo. Sem internet, é o fundo do mapa de Lisboa.
 - `tools/freguesias.mjs` — gera `dados/freguesias/` (lista, limites do mapa de Lisboa e dados de cada freguesia) e
   `dados/verdes.js`; não apaga presets que já existam. `node tools/freguesias.mjs ajuda belem` refaz só essas;
   `--so-limites` escreve só a lista e `dados/freguesias/limites.js`.

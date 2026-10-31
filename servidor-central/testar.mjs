@@ -188,6 +188,44 @@ async function bateria(tipo) {
       assert.equal((await (await pedir(null, '/evento')).json()).evento.ativo, false);
       assert.ok((await (await pedir(sessoes.Admin, '/copia')).json()).objetos.some(o => o.chave === 'evento/atual.json'));
     },
+    'evento: um registo não pisa o resto do preset, envios simultâneos não se perdem, sem id não duplica': async () => {
+      const R = (i, q, extra = {}) => ({ i, c: 'fundido', rua: 'Rua W', numero: '1', quando: '2026-11-02T10:00:0' + q + '.000Z', autor: 'Equipa', ...extra });
+      const grupo = (lista, pontos) => ({ id: 'lev', tipo: 'grupo', nome: 'Lev', evento: 'iluminacao', texto: '', fotos: [], pontos: pontos || lista.map((_, n) => [38.7, -9.2 + n / 1000]), detalhes: lista });
+      const base = els => ({ preset: 'so', freguesia: 'graca', titulo: 'T', elementos: els }), zona = { id: 'z', tipo: 'ponto', nome: 'Z', texto: '', fotos: [], pos: [38.7, -9.2] };
+      const ler = async (c = ADMIN) => (await (await pedir(c, '/presets/graca/so')).json()).dados, lev = d => d.elementos.find(e => e.evento === 'iluminacao');
+      await enviar(contribuidor, 'graca', 'so', base([zona, grupo([R('a', 1)])]));
+      assert.equal((await enviar(contribuidor, 'graca', 'so', { ...base([grupo([R('b', 2)])]), titulo: 'Velho' }, { soEvento: true })).status, 201);
+      let d = await ler(); assert.ok(d.elementos.some(e => e.id === 'z'), 'o registo apagou o que o outro dispositivo tinha'); assert.equal(d.titulo, 'T'); assert.deepEqual(lev(d).detalhes.map(x => x.i), ['a', 'b']);
+      const rs = await Promise.all(['c', 'd', 'e', 'f'].map((i, n) => enviar(contribuidor, 'graca', 'so', base([grupo([R(i, n + 3)])]), { soEvento: true })));
+      assert.ok(rs.every(r => r.status === 201), 'envio recusado: ' + rs.map(r => r.status));
+      d = await ler(); assert.equal(lev(d).detalhes.length, 6, 'um envio simultâneo pisou outro');
+      const { revisoes } = await (await pedir(ADMIN, '/presets/graca/so/revisoes')).json(); assert.equal(new Set(revisoes.map(r => r.revisao)).size, revisoes.length, 'revisões repetidas');
+      assert.ok(!JSON.stringify(await ler(contribuidor)).includes('Equipa'), 'o nome de quem registou chega a quem não é da administração');
+      const semNome = lev(await ler(contribuidor)).detalhes; await enviar(contribuidor, 'graca', 'so', base([grupo(semNome, lev(d).pontos)]), { soEvento: true });
+      d = await ler(); assert.equal(lev(d).detalhes[0].autor, 'Equipa', 'um envio de quem não vê o autor apagou-o');
+      const pts = lev(d).pontos.map(p => p.slice()), mov = lev(d).detalhes.map(x => ({ ...x })); pts[0] = [38.71, -9.21]; mov[0].movido = '2026-11-02T11:00:00.000Z';
+      await enviar(contribuidor, 'graca', 'so', base([grupo(mov, pts)]), { soEvento: true });
+      await enviar(contribuidor, 'graca', 'so', base([grupo(lev(d).detalhes, lev(d).pontos)]), { soEvento: true }); // outro dispositivo, com a posição velha
+      assert.deepEqual(lev(await ler()).pontos[0], [38.71, -9.21], 'a posição velha ganhou ao último arrasto');
+      const velho = { c: 'falta', rua: 'Rua V', numero: '9', quando: '2026-01-01T00:00:00.000Z' };
+      for (let n = 0; n < 2; n++) await enviar(contribuidor, 'graca', 'antigos', { ...base([grupo([velho], [[38.7, -9.2]])]), preset: 'antigos' });
+      assert.equal((await (await pedir(ADMIN, '/presets/graca/antigos')).json()).dados.elementos[0].detalhes.length, 1, 'registos sem id duplicaram');
+    },
+    'evento: os registos de dois dispositivos juntam-se e os tirados não voltam': async () => {
+      const R = (i, c, q) => ({ i, c, rua: 'Rua Y', numero: i, quando: '2026-11-01T10:00:0' + q + '.000Z' });
+      const g = (lista, extra = {}) => ({ preset: 'disp', freguesia: 'ajuda', titulo: 'Disp', elementos: [{ id: 'lev', tipo: 'grupo', nome: 'Lev', evento: 'iluminacao', texto: '', fotos: [], pontos: lista.map((x, n) => [38.7, -9.2 + n / 1000]), detalhes: lista }], ...extra });
+      const atual = async () => (await (await pedir(ADMIN, '/presets/ajuda/disp')).json()).dados.elementos.find(e => e.evento === 'iluminacao');
+      assert.equal((await enviar(contribuidor, 'ajuda', 'disp', g([R('a1', 'fundido', 1), R('a2', 'falta', 2)]))).status, 201);
+      assert.equal((await enviar(contribuidor, 'ajuda', 'disp', g([R('b1', 'fundido', 3)]))).status, 201);
+      let e = await atual(); assert.deepEqual(e.detalhes.map(d => d.i), ['a1', 'a2', 'b1'], 'um dispositivo apagou os registos do outro'); assert.equal(e.pontos.length, 3);
+      assert.equal((await (await enviar(contribuidor, 'ajuda', 'disp', g([R('b1', 'fundido', 3)]))).json()).igual, true, 'reenviar o mesmo não cria revisão');
+      assert.equal((await enviar(contribuidor, 'ajuda', 'disp', g([R('a1', 'fundido', 1), R('b1', 'fundido', 3)], { removidosEvento: { iluminacao: ['a2'] } }))).status, 201);
+      e = await atual(); assert.deepEqual(e.detalhes.map(d => d.i), ['a1', 'b1'], 'o registo tirado voltou');
+      assert.equal((await enviar(contribuidor, 'ajuda', 'disp', { preset: 'disp', freguesia: 'ajuda', titulo: 'Sem conjunto', elementos: [] })).status, 201);
+      e = await atual(); assert.equal(e.detalhes.length, 2, 'um preset sem o conjunto apagou os registos');
+      await enviar(contribuidor, 'ajuda', 'copia', { ...g([R('a1', 'fundido', 1), R('c1', 'falta', 4)]), preset: 'copia' });
+      const r = await (await pedir(contribuidor, '/evento/resumo?id=iluminacao')).json(); assert.equal(r.freguesias.ajuda.total, 3, 'o resumo devia somar os presets sem contar duas vezes'); assert.deepEqual(r.freguesias.ajuda.contagens, { fundido: 2, falta: 1 });
+    },
     'página de consulta': async () => { const r = await fetch(s.base + '/'); assert.equal(r.status, 200); assert.ok((await r.text()).includes('Consulta dos dados')); },
   };
   console.log(`\n${tipo === 'node' ? 'Servidor Node' : 'Worker do Cloudflare (local)'}:`);

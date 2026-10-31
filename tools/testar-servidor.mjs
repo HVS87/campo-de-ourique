@@ -64,6 +64,7 @@ async function cenario(nome, raiz, gravavel) {
       assert.doesNotMatch(c, /Max-Age/, 'sem «lembrar-me» o cookie devia acabar ao fechar o browser'); assert.equal(j.sessao.lembrar, false);
       assert.equal((await entrar('Alcantara', 'tésté-alcântara', 'acentos')).r.status, 200, 'a palavra-passe com acentos devia valer (os acentos não contam)');
       assert.equal((await entrar('Alcantara', 'Teste-alcantara', 'maiuscula')).r.status, 401, 'as maiúsculas contam');
+      assert.equal((await entrar('Admin Teste', PALAVRAS['Admin.Teste'], 'semponto')).r.status, 401, 'só System.Admin e Concelhia.Lisboa aceitam não ter o ponto');
       assert.equal((await (await get('/sessao', 'Alcantara')).json()).sessao.utilizador, 'Alcantara');
       assert.equal((await (await post('/guardar', '{"sonda":true}', { quem: 'Alcantara' })).json()).sessao.utilizador, 'Alcantara');
     },
@@ -160,7 +161,10 @@ async function cenario(nome, raiz, gravavel) {
     },
     'cópia do servidor central': async () => {
       const r = await fetch(base + '/copia-central?chave=' + encodeURIComponent('presets/belem/x/1.json') + '&versao=10-a', { method: 'POST', headers: { Origin: base }, body: '{"revisao":1}' }); assert.equal(r.status, 200);
-      assert.equal((await (await fetch(base + '/copia-central/presets/belem/x/1.json')).json()).revisao, 1);
+      assert.equal((await fetch(base + '/copia-central/presets/belem/x/1.json')).status, 403, 'a cópia só para a administração');
+      assert.equal((await get('/copia-central/presets/belem/x/1.json', 'Cidade.Teste')).status, 403);
+      assert.equal((await fetch(base + '/a%2F..%2Fcopia-central/presets/belem/x/1.json')).status, 403, 'caminho disfarçado');
+      assert.equal((await (await get('/copia-central/presets/belem/x/1.json', 'Admin.Teste')).json()).revisao, 1);
       assert.equal((await (await fetch(base + '/copia-central/versoes.json')).json())['presets/belem/x/1.json'], '10-a');
       assert.ok(fs.existsSync(path.join(gravavel, 'copia-central', 'presets', 'belem', 'x', '1.json')), 'não ficou na pasta gravável');
       assert.equal((await fetch(base + '/copia-central?chave=' + encodeURIComponent('historico/2026-10.json'), { method: 'POST', headers: { Origin: base }, body: '[]' })).status, 200);

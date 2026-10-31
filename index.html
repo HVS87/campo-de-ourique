@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Campo de Ourique</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0f1216">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Freguesias">
+<link rel="apple-touch-icon" href="assets/icones/icone-apple-180.png">
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <script src="vendor/leaflet/leaflet.js"></script>
 <script src="dados/freguesias/index.js"></script>
@@ -24,6 +31,7 @@
   var carregados = ficheiros.map(function (f) { // descarregam em paralelo e executam por ordem (async = false)
     return new Promise(function (ok) { var s = document.createElement('script'); s.src = base + f; s.async = false; s.onload = ok; s.onerror = function () { console.warn('Não foi possível carregar ' + base + f); ok(); }; document.head.appendChild(s); });
   });
+  window.FREGUESIA.ficheiros = ficheiros;
   window.__dados = Promise.all(carregados).then(function () { return new Promise(function (ok) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ok); else ok(); }); });
 })();
 </script>
@@ -38,6 +46,8 @@
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; height: 100dvh; background: var(--bg); color: var(--ink); font-family: var(--font); overflow: hidden; }
   #map { position: absolute; inset: 0; background: #0b0d10; }
+  #fundo-inicial { position: absolute; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; } /* acima do fundo do mapa, abaixo de tudo o resto */
+  #fundo-inicial img { position: absolute; max-width: none; }
   button { font: inherit; }
   .vidro { background: var(--panel); border: 1px solid var(--panel-border); box-shadow: 0 10px 30px rgba(0,0,0,.45); } /* sem backdrop-filter: com fundo a 94 % não se via e custava imagens por segundo ao mover o mapa */
   .redondo { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; color: var(--ink); cursor: pointer; font-size: 18px; padding: 0; }
@@ -215,6 +225,8 @@
   @keyframes surgir { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
   .fechar { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.06); border: 0; color: var(--ink-dim); font-size: 16px; cursor: pointer; }
   .fechar:hover { background: rgba(255,255,255,.14); color: var(--ink); }
+  .fechar.voltar { right: 54px; font-size: 24px; line-height: 1; padding-bottom: 3px; } /* nos pontos dentro de zonas: volta ao cartão da zona */
+  .fechar.voltar[hidden] { display: none; }
   .info h2 { margin: 0 36px 4px 0; font-size: 23px; line-height: 1.2; display: flex; gap: 10px; align-items: center; }
   .info h2 .pinta { width: 12px; height: 12px; }
   .info .tipo { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: var(--ink-dim); margin: 0 0 14px 22px; }
@@ -347,6 +359,30 @@
   #dialogo .tabela-dialogo td.num, #dialogo .tabela-dialogo th.num { text-align: right; font-variant-numeric: tabular-nums; }
   #btn-evento-cidade[hidden] { display: none; }
 
+  /* em ecrãs pequenos não cabe tudo aberto: o que está aberto tem prioridade */
+  body:has(#menu-criar.aberto) #desmat { visibility: hidden; }
+  @media (max-width: 900px), (max-height: 520px) {
+    body.a-levantar #criar, body.a-levantar #legenda, body.a-levantar #camadas, body.a-levantar #btn-cidade, body.a-levantar .leaflet-control-zoom { visibility: hidden; } /* o painel do registo ocupa este lugar */
+    body:has(#lista-camadas.aberto) #legenda, body:has(#lista-legenda.aberto) #desmat { visibility: hidden; }
+  }
+  @media (max-height: 720px) { /* a barra toda aberta chega cá abaixo */
+    body:has(#barra-edicao.mais) #criar, body:has(#barra-edicao.mais) #legenda, body:has(#barra-edicao.mais) #desmat { visibility: hidden; }
+  }
+  @media (max-height: 520px) {
+    body:has(#lista-legenda.aberto) #criar { visibility: hidden; }
+    /* telemóvel deitado: o registo fica à direita, com o mapa livre à esquerda */
+    #levantamento { left: auto; right: 8px; top: 8px; bottom: 8px; transform: none; width: min(380px, 48vw); overflow-y: auto; }
+    body.a-levantar #barra-edicao, body:has(#menu-criar.aberto) #barra-edicao { visibility: hidden; }
+  }
+
+  /* ---- convite para instalar como app (telemóvel) ---- */
+  #convite-instalar { position: absolute; left: 50%; top: 66px; transform: translateX(-50%); z-index: 1100; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; width: min(420px, calc(100vw - 16px)); border-radius: 14px; padding: 8px 10px; font-size: 13.5px; }
+  #convite-instalar[hidden], body.edicao #convite-instalar, body.cartao-aberto #convite-instalar, body:has(#sugestoes.aberto) #convite-instalar, body:has(#painel.aberto) #convite-instalar { display: none; }
+  #sem-dados { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 3000; width: min(420px, calc(100vw - 32px)); padding: 18px; border-radius: var(--radius); color: var(--ink); text-align: center; background: var(--panel); }
+  #sem-dados p { margin: 0 0 14px; line-height: 1.45; }
+  #sem-dados a { display: inline-block; text-decoration: none; }
+  #convite-instalar span { flex: 1 1 180px; }
+
   /* ---- avisos ---- */
   #aviso { position: absolute; left: 50%; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 1250; color: var(--ink); padding: 8px 14px; border-radius: 999px; font-size: 12.5px; display: none; max-width: 90vw; text-align: center; }
   #aviso.aberto { display: block; }
@@ -381,6 +417,7 @@
   #map.desenhar { cursor: crosshair; }
   /* com uma ferramenta de criar, as zonas e as ruas destacadas deixam passar o clique para o mapa (pontos dentro de zonas, ruas e lotes por baixo) */
   #map.desenhar .leaflet-zonas-pane path, #map.desenhar .leaflet-ruas-pane path { pointer-events: none; }
+  #map.marcar .rua-hit, #map.marcar .leaflet-marker-icon { pointer-events: none; }
   body.edicao .mk { cursor: grab; }
   body.edicao .leaflet-drag-target { cursor: grabbing; }
   /* o ponto «mergulha» na zona sobre a qual está a ser arrastado */
@@ -562,10 +599,36 @@
     .vertice::before { content: ""; position: absolute; inset: -12px; border-radius: 50%; }
     .visita-ed li button, #pesquisa-limpar, .fechar, #guiao .sair, .chip-acao, .foto-ed .fechar, .membro .fechar { min-width: 40px; min-height: 40px; }
     .btn, .camada, .chip { min-height: 40px; }
+    #visita .sair, #btn-legenda, #btn-camadas, .seletor, #indice button, .filhos button, .evento-lista button, #barra-edicao input, #modal input:not([type=checkbox]):not([type=color]), #modal select { min-height: 40px; }
+    #visita .sair { min-width: 40px; }
+    #dialogo .campo-dialogo input:not([type=checkbox]) { min-height: 40px; }
+    /* abaixo de 16 px o iPhone aproxima a página ao tocar num campo e não volta atrás */
+    input:not([type=checkbox]):not([type=color]):not([type=file]), select, textarea { font-size: 16px !important; }
   }
 </style>
 </head>
 <body>
+<div id="fundo-inicial" aria-hidden="true"><img id="fundo-img" alt=""></div>
+<script>
+// Fundo imediato: enquanto os dados da freguesia e o satélite em direto carregam, mostra já a imagem de Lisboa, na mesma
+// posição exata em que o mapa a vai pôr (as contas são as do fitBounds do Leaflet). Fica por baixo do mapa, que a cobre quando estiver pronto.
+(function () {
+  var alto = innerHeight > innerWidth;
+  window.FUNDO_LISBOA = alto ? { src: 'assets/lisboa-dgt-2023-alto.jpg', bounds: [[38.593663, -9.236838], [38.89422, -9.082697]] } : { src: 'assets/lisboa-dgt-2023.jpg', bounds: [[38.672942, -9.360381], [38.815186, -8.959154]] };
+  var q = new URLSearchParams(location.search), lista = window.FREGUESIAS || [];
+  window.ENTRA_NA_CIDADE = (q.has('cidade') || (!q.has('freguesia') && !location.hash)) && !q.has('editor');
+  var bb = window.ENTRA_NA_CIDADE ? [[Math.min.apply(null, lista.map(function (f) { return f.bbox[0][0]; })), Math.min.apply(null, lista.map(function (f) { return f.bbox[0][1]; }))], [Math.max.apply(null, lista.map(function (f) { return f.bbox[1][0]; })), Math.max.apply(null, lista.map(function (f) { return f.bbox[1][1]; }))]] : window.FREGUESIA.bbox;
+  var img = document.getElementById('fundo-img'), crs = L.CRS.EPSG3857; img.src = window.FUNDO_LISBOA.src;
+  if (!bb) return;
+  var margem = window.ENTRA_NA_CIDADE ? [16, 70, 16, 70] : [innerWidth <= 640 ? 16 : 40, 70, innerWidth <= 640 ? 16 : 40, 40]; // esq., topo, dir., baixo: as do mapa
+  var a = crs.latLngToPoint(L.latLng(bb[1][0], bb[0][1]), 0), b = crs.latLngToPoint(L.latLng(bb[0][0], bb[1][1]), 0);
+  var z = Math.log2(Math.min((innerWidth - margem[0] - margem[2]) / (b.x - a.x), (innerHeight - margem[1] - margem[3]) / (b.y - a.y))); z = Math.floor(z / .25) * .25; // os pontos a e b estão no zoom 0
+  var pa = crs.latLngToPoint(L.latLng(bb[1][0], bb[0][1]), z), pb = crs.latLngToPoint(L.latLng(bb[0][0], bb[1][1]), z);
+  var cx = (pa.x + pb.x) / 2 + (margem[2] - margem[0]) / 2, cy = (pa.y + pb.y) / 2 + (margem[3] - margem[1]) / 2;
+  var f = window.FUNDO_LISBOA.bounds, n = crs.latLngToPoint(L.latLng(f[1][0], f[0][1]), z), s = crs.latLngToPoint(L.latLng(f[0][0], f[1][1]), z);
+  img.style.left = (innerWidth / 2 + n.x - cx) + 'px'; img.style.top = (innerHeight / 2 + n.y - cy) + 'px'; img.style.width = (s.x - n.x) + 'px'; img.style.height = (s.y - n.y) + 'px';
+})();
+</script>
 <div id="map"></div>
 
 <button id="btn-painel" class="vidro redondo" aria-label="Abrir índice" aria-expanded="false">☰</button>
@@ -592,13 +655,14 @@
     <button class="btn" id="btn-guiao" title="Percorre os destaques desta freguesia, um a um">▶ Vista de Apresentação</button>
     <button class="btn" id="btn-repor">Vista geral</button>
     <button class="btn" id="btn-lisboa" title="Mapa de Lisboa com as 24 freguesias">🗺 Lisboa</button>
+    <button class="btn" id="btn-instalar" hidden title="Põe a apresentação no ecrã do telemóvel, como uma aplicação">📲 Instalar</button>
   </div>
   <nav id="indice" aria-label="Índice"></nav>
   <div class="preset-vista" id="preset-vista" hidden><label>Preset <select id="sel-preset-vista" class="seletor" aria-label="Preset"></select></label></div>
   <div class="rodape" id="rodape"></div>
 </aside>
 
-<div id="modal"><div class="cartao vidro"><button class="fechar" id="btn-fechar" aria-label="Fechar">✕</button><div id="modal-conteudo"></div></div></div>
+<div id="modal"><div class="cartao vidro"><button class="fechar voltar" id="btn-voltar" aria-label="Voltar à zona" hidden>‹</button><button class="fechar" id="btn-fechar" aria-label="Fechar">✕</button><div id="modal-conteudo"></div></div></div>
 
 <div id="guiao" class="vidro"><button class="seta" id="g-prev" aria-label="Anterior">‹</button><span class="texto" id="g-texto"></span><button class="seta" id="g-next" aria-label="Seguinte">›</button><select id="g-sel" class="seletor" aria-label="Visita"></select><button class="sair" id="g-sair" aria-label="Sair da apresentação">✕</button></div>
 
@@ -607,6 +671,7 @@
     <h2 id="visita-titulo"></h2><p class="texto" id="visita-texto"></p><p class="dica" id="visita-dica"></p>
     <div class="botoes"><button type="button" class="btn ligacao" id="visita-inicio" hidden>↺ Do início</button><span class="esp"></span><button type="button" class="btn" id="visita-prev">‹ Anterior</button><button type="button" class="btn on" id="visita-next">Seguinte ›</button></div>
     <div class="barra" aria-hidden="true"><i id="visita-barra"></i></div></div></div>
+<div id="convite-instalar" class="vidro" hidden><span>📲 Instalar como aplicação neste telemóvel?</span><button type="button" class="btn" id="convite-nao">Agora não</button><button type="button" class="btn on" id="convite-sim">Instalar</button></div>
 <div id="aviso" class="vidro"></div>
 <div id="dialogo" role="dialog" aria-modal="true" aria-labelledby="dialogo-titulo"><div class="caixa vidro"></div></div>
 <div id="cidade-barra" class="vidro"><span id="cidade-txt"></span><button class="btn" id="btn-evento-cidade" type="button" hidden title="Quantos registos há em cada freguesia"></button><button class="btn on" id="btn-cidade-voltar" type="button"></button></div>
@@ -660,6 +725,13 @@
 <script>
 window.__dados.then(function () {
 'use strict';
+if (!window.MAPA_DADOS) { // sem rede, numa freguesia que este aparelho ainda não guardou: não fica presa nela ao reabrir
+  try { localStorage.removeItem('co-freguesia'); } catch (err) { /* sem armazenamento local */ }
+  const m = document.createElement('div'); m.id = 'sem-dados'; m.className = 'vidro'; m.setAttribute('role', 'alert');
+  m.innerHTML = '<p>Sem ligação à internet, e estes dados ainda não estão guardados neste aparelho.</p><a class="btn on" href="?cidade">Voltar ao mapa de Lisboa</a>';
+  document.body.appendChild(m); window.addEventListener('online', () => location.reload());
+  return;
+}
 const FREG = window.FREGUESIA || { id: 'campo-de-ourique', nome: 'Campo de Ourique', base: 'dados/' }; // freguesia carregada
 const BASE = FREG.base, CO = FREG.id === 'campo-de-ourique';
 const D = window.MAPA_DADOS;
@@ -706,6 +778,7 @@ function preparar(el, pai) {
   if (POR_ID[el.id]) console.warn('Id repetido:', el.id);
   if (pai && el.tipo !== 'ponto') { console.warn('Só pontos podem ser filhos de uma zona:', el.id); return null; }
   el.pai = pai || null;
+  if (el.evento && Array.isArray(el.detalhes)) el.detalhes.forEach((d, i) => { if (d && !d.i && el.pontos[i]) d.i = [d.quando, d.rua, d.numero, el.pontos[i]].join('|'); }); // registos de antes dos ids: o mesmo que o servidor central usa
   // geometrias vindas de geo.js / ruas.js são copiadas, para a edição não alterar os dados partilhados
   if (el.tipo === 'rua' && !el.linhas) {
     let linhas = D.ruas[el.rua || el.nome];
@@ -728,6 +801,16 @@ for (const e of C.elementos || []) { const p = preparar(e, null); if (p) ELEMENT
 
 // ---------- mapa ----------
 const map = L.map('map', { zoomControl: false, attributionControl: false, maxZoom: 20, minZoom: 10, zoomSnap: .25, zoomDelta: 1 });
+// num mapa mais pequeno do que as margens pedidas (janela minúscula, ou escondida a arrancar), o Leaflet calculava um zoom NaN e
+// lançava um erro a cada imagem da animação: nesse caso vai sem margens e sem animação, ou espera por ter tamanho
+const vooOriginal = map.flyToBounds.bind(map);
+map.flyToBounds = (limites, opcoes = {}) => {
+  const s = map.getSize(), a = L.point(opcoes.paddingTopLeft || opcoes.padding || [0, 0]), b = L.point(opcoes.paddingBottomRight || opcoes.padding || [0, 0]);
+  if (s.x - a.x - b.x > 40 && s.y - a.y - b.y > 40) return vooOriginal(limites, opcoes);
+  if (s.x > 40 && s.y > 40) return map.fitBounds(limites, { maxZoom: opcoes.maxZoom, animate: false });
+  map.once('resize', () => map.flyToBounds(limites, opcoes));
+  return map;
+};
 L.control.zoom({ position: 'bottomleft', zoomInTitle: 'Aproximar', zoomOutTitle: 'Afastar' }).addTo(map);
 // botão do mapa geral de Lisboa (logo acima do zoom)
 const CtrlCidade = L.Control.extend({ onAdd() {
@@ -741,8 +824,9 @@ const CtrlCidade = L.Control.extend({ onAdd() {
 new CtrlCidade({ position: 'bottomleft' }).addTo(map);
 L.control.attribution({ position: 'bottomright', prefix: false }).addAttribution(CO ? '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>' : 'Limites, ruas e edificado © <a href="https://geodados-cml.hub.arcgis.com/" target="_blank" rel="noopener">Câmara Municipal de Lisboa</a>').addTo(map);
 map.createPane('edificado').style.zIndex = 393; // camadas opcionais: lotes do cadastro e espaços verdes (um só canvas, para ambas responderem ao cursor)
-map.createPane('satBase').style.zIndex = 190;   // imagem fixa (reserva e fundo imediato)
-map.createPane('sat').style.zIndex = 200;       // satélite em direto
+map.createPane('satCidade').style.zIndex = 180; // imagem de Lisboa (fundo imediato e, sem internet, o que há fora da freguesia)
+map.createPane('satBase').style.zIndex = 190;   // imagem fixa da freguesia (reserva e fundo imediato)
+const paneSat = map.createPane('sat'); paneSat.style.zIndex = 200; // satélite em direto
 map.createPane('mascara').style.zIndex = 390;
 map.createPane('ruasTodas').style.zIndex = 395; // camada opcional com todas as ruas
 map.createPane('numeros').style.zIndex = 396;   // camada opcional: números de polícia
@@ -759,8 +843,19 @@ map.setMinZoom(MIN_ZOOM);
 // até onde se pode arrastar o mapa: folgado, para o voo poder pôr uma zona da orla acima do cartão num telemóvel ao alto
 const LIMITE_MOVER = 3;
 map.setMaxBounds(limiteBounds.pad(LIMITE_MOVER));
+// a abrir no mapa de Lisboa, o mapa nasce logo lá (sem voo nem pedidos de satélite para a freguesia que está por trás)
+const CIDADE_INICIAL = L.latLngBounds((window.FREGUESIAS || []).flatMap(f => f.bbox));
+if (window.ENTRA_NA_CIDADE) { map.setMaxBounds(null); map.setMinZoom(10.5); map.fitBounds(CIDADE_INICIAL, { padding: [16, 70], animate: false }); }
 
-// Satélite: imagem fixa por baixo (aparece logo e serve de reserva) e DGT em direto por cima.
+// Imagens guardadas por baixo (aparecem logo e servem de reserva) e DGT em direto por cima. O satélite em direto fica invisível
+// até o primeiro ecrã estar todo carregado, e só então entra, numa transição suave sobre a mesma imagem.
+const fixaCidade = L.imageOverlay(window.FUNDO_LISBOA.src, window.FUNDO_LISBOA.bounds, { pane: 'satCidade' }).addTo(map);
+fixaCidade.once('load', () => setTimeout(() => { const f = $('#fundo-inicial'); if (f) f.remove(); }, 60)); // já está no mapa, no mesmo sítio
+setTimeout(() => { const f = $('#fundo-inicial'); if (f) f.remove(); }, 15000);
+paneSat.style.opacity = 0;
+let satVisivel = false;
+function revelarSat() { if (satVisivel) return; satVisivel = true; paneSat.style.transition = 'opacity .7s ease'; paneSat.style.opacity = 1; setTimeout(() => { paneSat.style.transition = ''; paneSat.style.opacity = ''; }, 800); }
+setTimeout(revelarSat, 10000); // um mosaico muito lento não fica a prender o resto
 const fixa = L.imageOverlay(D.imagem.ficheiro, D.imagem.bounds, { pane: 'satBase', attribution: D.imagem.fonte }).addTo(map);
 const DGT_URL = 'https://ortos.dgterritorio.gov.pt/wms/ortosat2023';
 const dgt = L.tileLayer.wms(DGT_URL, { pane: 'sat', layers: 'ortoSat2023-CorVerdadeira', format: 'image/jpeg', version: '1.3.0', crs: L.CRS.EPSG3857, maxZoom: 20, tileSize: 512, attribution: 'Ortoimagens © <a href="https://www.dgterritorio.gov.pt" target="_blank" rel="noopener">DGT</a> 2023' });
@@ -774,6 +869,7 @@ function reserva(motivo) {
 }
 if (navigator.onLine === false) setTimeout(() => reserva('offline'), 0); // adiado: o resto da página ainda está a ser montado
 else {
+  dgt.once('load', revelarSat);
   dgt.on('tileload', () => { dgtOk = true; });
   dgt.on('tileerror', () => { dgtErros++; if (!dgtOk && dgtErros >= 2) reserva('erro'); });
   dgt.addTo(map);
@@ -784,7 +880,7 @@ const mapaCidade = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
 let fundoMapa = false;
 function ligarMapa(ligar) {
   fundoMapa = ligar === undefined ? !fundoMapa : ligar;
-  if (fundoMapa) { map.removeLayer(dgt); map.removeLayer(fixa); mapaCidade.addTo(map); map.setMaxZoom(20); }
+  if (fundoMapa) { map.removeLayer(dgt); mapaCidade.once('load', revelarSat); mapaCidade.addTo(map); map.setMaxZoom(20); }
   else { map.removeLayer(mapaCidade); fixa.addTo(map); if (!emReserva && navigator.onLine !== false) dgt.addTo(map); else map.setMaxZoom(18); }
   document.body.classList.toggle('fundo-mapa', fundoMapa);
   try { localStorage.setItem('co-fundo', fundoMapa ? 'mapa' : 'satelite'); } catch (err) { /* sem armazenamento local */ }
@@ -962,6 +1058,7 @@ function mostrarInfo(el, modo) {
   modal.classList.toggle('lado', encostado && modo === 'lado');
   modal.classList.toggle('baixo', encostado && modo !== 'lado');
   modalConteudo.innerHTML = edicao ? htmlForm(el) : htmlInfo(el);
+  const voltar = $('#btn-voltar'); voltar.hidden = !el.pai; if (el.pai) voltar.title = voltar.ariaLabel = 'Voltar a «' + el.pai.nome + '»'; // um ponto dentro de uma zona: seta para o cartão da zona
   modal.querySelector('.cartao').scrollTop = 0;
   modal.classList.add('aberto'); document.body.classList.add('cartao-aberto');
 }
@@ -979,6 +1076,7 @@ modalConteudo.addEventListener('click', e => {
   const img = e.target.closest('.fotos img'); if (img) abrirLightbox(img.src, img.dataset.legenda);
 });
 $('#btn-fechar').addEventListener('click', fecharCartao);
+$('#btn-voltar').addEventListener('click', () => { if (selecionado && selecionado.pai) selecionar(selecionado.pai, true); });
 modal.addEventListener('click', e => { if (e.target === modal) fecharCartao(); });
 
 // ---------- lightbox ----------
@@ -1075,7 +1173,7 @@ async function irParaFreguesia(id, opcoes = {}) {
   const b = listaFreg.querySelector(`[data-freg="${id}"]`); if (b) { b.classList.add('a-carregar'); b.textContent += '…'; }
   try { localStorage.setItem('co-freguesia', id); } catch (err) { /* sem armazenamento local */ }
   const qs = new URLSearchParams(location.search); qs.set('freguesia', id); qs.delete('cidade');
-  if (opcoes.editar) qs.set('editor', ''); // abre lá em modo de edição (a conta é verificada outra vez)
+  if (opcoes.editar) qs.set('editor', ''); else qs.delete('editor'); // abre lá em modo de edição (a conta é verificada outra vez)
   if (opcoes.criar) qs.set('criar', ''); else qs.delete('criar');
   location.href = location.pathname + qsTexto(qs);
   return true; // a página vai mudar
@@ -1113,7 +1211,7 @@ $('#btn-repor').addEventListener('click', () => { limparSelecao(); limparRuaDest
 $('#btn-lisboa').addEventListener('click', () => abrirCidade(true));
 
 // ---------- mapa geral de Lisboa: as 24 freguesias; clicar numa abre-a (os limites só se carregam aqui) ----------
-let cidade = false, camadaCidade = null, osmNaCidade = false;
+let cidade = false, camadaCidade = null;
 function carregarLimitesCidade() {
   if (window.LIMITES_FREGUESIAS) return Promise.resolve(window.LIMITES_FREGUESIAS);
   return new Promise((ok, falha) => {
@@ -1158,6 +1256,7 @@ function construirCidade(lista) {
   return g;
 }
 map.on('zoomend', () => { if (!cidade) return; const z = map.getZoom(); map.getContainer().classList.toggle('cidade-longe', z < 12.5); map.getContainer().classList.toggle('cidade-muito-longe', z < 12); });
+let cidadeJaAberta = false;
 async function abrirCidade(ligar) {
   if (ligar === undefined) ligar = !cidade;
   if (ligar === cidade) return;
@@ -1168,16 +1267,18 @@ async function abrirCidade(ligar) {
     if (guiaoAberto()) ligarGuiao(false);
     limparSelecao(); limparRuaDestaque(); fecharCartao(); abrirPainel(false); recolherDesmat(); abrirCamadas(false);
     cidade = true; document.body.classList.add('cidade'); map.getContainer().classList.add('modo-cidade');
-    if (emReserva && !fundoMapa) { mapaCidade.addTo(map); osmNaCidade = true; } // sem satélite em direto, a imagem guardada só cobre a freguesia
+    if (visitaAberta()) irPassoVisita(passosVisita().findIndex(p => p.id === 'cidade')); // saiu para Lisboa a meio da visita: continua pelo passo do mapa de Lisboa
     camadaCidade.limpar();
     document.title = 'Lisboa · freguesias'; $('#marca-titulo').textContent = 'Lisboa'; $('#marca-sub').textContent = '24 freguesias';
     map.setMaxBounds(null); map.setMinZoom(10.5);
     camadaCidade.addTo(map);
     map.once('moveend', () => { if (cidade) map.setMaxBounds(camadaCidade.limites.pad(.8)); }); // antes do voo: sem animação, o moveend é imediato
-    map.flyToBounds(camadaCidade.limites, { paddingTopLeft: [16, 70], paddingBottomRight: [16, 70], duration: 1.1 });
+    if (window.ENTRA_NA_CIDADE && !cidadeJaAberta) map.fitBounds(camadaCidade.limites, { padding: [16, 70], animate: false }); // à entrada: já lá está
+    else map.flyToBounds(camadaCidade.limites, { paddingTopLeft: [16, 70], paddingBottomRight: [16, 70], duration: 1.1 });
+    cidadeJaAberta = true;
   } else {
     cidade = false; document.body.classList.remove('cidade'); map.getContainer().classList.remove('modo-cidade', 'cidade-longe', 'cidade-muito-longe');
-    map.removeLayer(camadaCidade); if (osmNaCidade) { map.removeLayer(mapaCidade); osmNaCidade = false; }
+    map.removeLayer(camadaCidade);
     if (semFreguesia) { semFreguesia = false; camadaCidade = null; } // daqui em diante esta freguesia é a aberta (o mapa refaz-se com ela realçada)
     aplicarTitulo(); map.setMaxBounds(null);
     map.once('moveend', () => { if (!cidade) { map.setMinZoom(MIN_ZOOM); map.setMaxBounds(limiteBounds.pad(LIMITE_MOVER)); } });
@@ -1425,6 +1526,7 @@ function abrirCriar(abrir, direto) { // com um evento ativo, abrir o «+» pergu
     menu.innerHTML = '<h4>Criar</h4>' + CRIAR.filter(c => !c.movel).map(htmlCriar).join('') + (movel ? '<h4>Na minha localização</h4>' + CRIAR.filter(c => c.movel).map(htmlCriar).join('') : '');
   }
   menu.classList.toggle('aberto', abrir); b.classList.toggle('on', abrir); b.setAttribute('aria-expanded', String(abrir));
+  if (abrir) { const topo = edicao && window.innerHeight > 520 ? barra.getBoundingClientRect().bottom : 66; menu.style.maxHeight = Math.max(120, b.getBoundingClientRect().top - topo - 16) + 'px'; } // entre o botão e a barra de edição, com deslocamento
 }
 function criarDoMenu(id) {
   if (id === 'aqui-ponto') criarAqui('ponto');
@@ -1620,7 +1722,7 @@ function mostrarCategoria(cat) {
   categoriaAtual = cat;
   const marg = margensVoo(null, edicao);
   modal.classList.toggle('lado', edicao && marg.modo === 'lado'); modal.classList.toggle('baixo', edicao && marg.modo !== 'lado');
-  modalConteudo.innerHTML = edicao ? htmlFormCategoria(cat) : htmlCategoria(cat);
+  modalConteudo.innerHTML = edicao ? htmlFormCategoria(cat) : htmlCategoria(cat); $('#btn-voltar').hidden = true;
   modal.querySelector('.cartao').scrollTop = 0; modal.classList.add('aberto'); document.body.classList.add('cartao-aberto');
 }
 // ---- Vista de Apresentação: percorre os destaques (lista personalizável) ou os membros de uma categoria ----
@@ -1676,14 +1778,15 @@ $('#g-sair').addEventListener('click', () => ligarGuiao(false));
 $('#g-prev').addEventListener('click', e => { irPasso(passo - 1); e.currentTarget.blur(); }); // sem foco no botão, a tecla Espaço não avança dois passos
 $('#g-next').addEventListener('click', e => { irPasso(passo + 1); e.currentTarget.blur(); });
 document.addEventListener('keydown', e => {
+  if (e.target && e.target.matches && e.target.matches('#levantamento input')) { if (e.key === 'Escape') { e.target.blur(); cancelarLevantamento(); } return; }
   if (e.target && e.target.matches && e.target.matches('input, textarea, select')) { if (e.key === 'Escape' && edicao && ferramenta !== 'mover') { porFerramenta('mover'); e.target.blur(); } return; }
   if ((e.key === ' ' || e.key === 'Enter') && e.target && e.target.matches && e.target.matches('button, a')) return; // o botão trata da sua própria ativação
   if (e.key === 'Escape') {
     if (lightbox.classList.contains('aberto')) { lightbox.classList.remove('aberto'); return; }
-    if (levant) { cancelarLevantamento(); return; }
+    if (levant || levantGps) { cancelarLevantamento(); return; }
     if ($('#menu-criar').classList.contains('aberto')) { abrirCriar(false); return; }
     if (desmat.classList.contains('expandido')) { recolherDesmat(); return; }
-    if (cidade) { abrirCidade(false); return; }
+    if (cidade) { if (!semFreguesia) abrirCidade(false); return; } // à entrada não há de onde voltar
     if (edicao && ferramenta !== 'mover') { porFerramenta('mover'); return; }
     if (cartaoAberto()) { fecharCartao(); categoriaAtual = null; return; }
     if (guiaoAberto()) { ligarGuiao(false); return; }
@@ -1744,7 +1847,6 @@ const passoAplica = p => (!p.so || (p.so === 'ver' && !edicao) || (p.so === 'cid
 // o contador conta os passos do capítulo em curso (visualização ou edição) que têm conteúdo; o da cidade só se estamos lá
 const passoConta = p => (edicao ? (p.so === 'edicao' || !p.so) : p.so !== 'edicao') && (p.so !== 'cidade' || cidade) && (!p.se || p.se());
 const visitaAberta = () => !visitaEl.hidden;
-const alvoVisivel = p => { if (!p.alvo) return false; const el = document.querySelector(p.alvo); if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 2 && r.height > 2; };
 function posicionarVisita() {
   const p = visitaPassos[visitaI]; if (!p) return;
   const cartao = visitaEl.querySelector('.cartao'), foco = visitaEl.querySelector('.foco');
@@ -1778,29 +1880,32 @@ function mostrarPassoVisita() {
   $('#visita-next').focus({ preventScroll: true });
 }
 function irPassoVisita(i, sentido = 1) { // salta os passos que não se aplicam agora
-  const anterior = visitaPassos[visitaI]; if (anterior && anterior.depois) try { anterior.depois(); } catch (err) { /* o ecrã já mudou */ }
-  visitaPassos = passosVisita(); // «quando» é avaliado no momento
-  while (i >= 0 && i < visitaPassos.length && !passoAplica(visitaPassos[i])) i += sentido;
-  if (i < 0) i = 0;
-  if (i >= visitaPassos.length) { terminarVisita(); return; }
+  const anterior = visitaPassos[visitaI], lista = passosVisita(); // as condições avaliam-se no momento
+  while (i >= 0 && i < lista.length && !passoAplica(lista[i])) i += sentido;
+  if (i < 0) { if (visitaI >= 0) return; i = 0; } // já é o primeiro passo deste capítulo
+  if (anterior && anterior.depois) try { anterior.depois(); } catch (err) { /* o ecrã já mudou */ }
+  visitaPassos = lista;
+  if (i >= lista.length) { terminarVisita(); return; }
+  if (lista[i].so === 'freguesia') gravarEstadoVisita({ viuFreguesia: true });
   visitaI = i; const p = visitaPassos[i]; if (p.antes) try { p.antes(); } catch (err) { /* segue sem a preparação */ }
   mostrarPassoVisita();
 }
 function iniciarVisita(idPasso) {
   if (cartaoAberto() && !idPasso) fecharCartao();
-  visitaEl.hidden = false; visitaI = -1;
-  const lista = passosVisita(), i = idPasso ? lista.findIndex(p => p.id === idPasso) : 0;
+  visitaEl.hidden = false; visitaI = -1; $('#convite-instalar').hidden = true;
+  const lista = passosVisita(); let i = idPasso ? lista.findIndex(p => p.id === idPasso) : 0;
+  if (cidade && lista[i] && lista[i].so === 'freguesia') i = lista.findIndex(p => p.id === 'cidade'); // reaberta no mapa de Lisboa a meio da visita
   irPassoVisita(i >= 0 ? i : 0);
 }
 function seguinteVisita() { const p = visitaPassos[visitaI]; if (p && p.seguinte) try { p.seguinte(); } catch (err) { /* segue */ } irPassoVisita(visitaI + 1, 1); }
-function fecharVisita() { const p = visitaPassos[visitaI]; if (p && p.depois) try { p.depois(); } catch (err) { /* o ecrã já mudou */ } clearTimeout(visitaTimer); visitaEl.hidden = true; visitaI = -1; atualizarBotaoVisita(); }
+function fecharVisita() { const p = visitaPassos[visitaI]; if (p && p.depois) try { p.depois(); } catch (err) { /* o ecrã já mudou */ } clearTimeout(visitaTimer); visitaEl.hidden = true; visitaI = -1; atualizarBotaoVisita(); atualizarInstalar(); }
 function sairVisita() { // sai a meio: fica o ponto onde se ia, para retomar
   const p = visitaPassos[visitaI]; gravarEstadoVisita({ aberta: false, saida: true, ...(p && p.so === 'edicao' ? { edicaoSaida: true } : {}) });
   fecharVisita(); aviso('Visita guiada interrompida. Retoma-a em ☰ → 🎓 Visita guiada.', 4000);
 }
 function terminarVisita() {
-  const emEdicao = edicao;
-  gravarEstadoVisita({ aberta: false, passo: null, ...(emEdicao ? { edicaoFeita: true } : { feita: true }) });
+  // só fica feita se chegou a ver os passos da freguesia (no mapa de Lisboa a maior parte salta-se)
+  gravarEstadoVisita({ aberta: false, passo: null, ...(edicao ? { edicaoFeita: true } : lerEstadoVisita().viuFreguesia ? { feita: true } : {}) });
   fecharVisita();
 }
 function atualizarBotaoVisita() { const e = lerEstadoVisita(); $('#btn-visita').textContent = e.passo && !e.feita ? '🎓 Retomar a visita guiada' : '🎓 Visita guiada'; }
@@ -1833,6 +1938,31 @@ function arrancarVisitaGuiada() {
   else if (!e.feita && !e.saida && !eventoAtivo()) iniciarVisita(); // a primeira visita arranca sozinha, exceto durante um evento
 }
 atualizarBotaoVisita();
+
+// ---------- instalar como app (telemóvel e tablet) ----------
+// O Android dá um pedido de instalação (beforeinstallprompt); o iPhone não, e explica-se o caminho. Precisa de https (ou do
+// próprio aparelho). A aplicação de computador tem o seu instalador. O service worker (sw.js) guarda a app para abrir sem internet.
+const CHAVE_CONVITE = 'co-instalar-dispensado';
+let pedidoInstalar = null;
+const jaInstalada = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const emIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const aparelhoMovel = () => matchMedia('(pointer: coarse)').matches || estreito();
+const podeInstalar = () => !AMBIENTE.app && !jaInstalada() && aparelhoMovel() && (!!pedidoInstalar || emIOS());
+function atualizarInstalar() {
+  $('#btn-instalar').hidden = !podeInstalar();
+  let dispensado = false; try { dispensado = localStorage.getItem(CHAVE_CONVITE) === '1'; } catch (err) { /* sem armazenamento local */ }
+  $('#convite-instalar').hidden = !podeInstalar() || dispensado || visitaAberta();
+}
+async function instalarApp() {
+  $('#convite-instalar').hidden = true;
+  if (pedidoInstalar) { const p = pedidoInstalar; pedidoInstalar = null; p.prompt(); try { await p.userChoice; } catch (err) { /* recusou */ } atualizarInstalar(); return; }
+  await dialogo({ titulo: 'Instalar neste aparelho', texto: 'No Safari, carrega em <b>Partilhar</b> (o quadrado com a seta para cima) e depois em <b>Adicionar ao ecrã principal</b>. A apresentação passa a abrir como uma aplicação, em ecrã inteiro.', botoes: [{ id: 'ok', texto: 'Fechar', classe: 'on' }] });
+}
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pedidoInstalar = e; atualizarInstalar(); });
+window.addEventListener('appinstalled', () => { pedidoInstalar = null; atualizarInstalar(); aviso('Aplicação instalada.', 3000); });
+$('#btn-instalar').addEventListener('click', instalarApp);
+$('#convite-sim').addEventListener('click', instalarApp);
+$('#convite-nao').addEventListener('click', () => { try { localStorage.setItem(CHAVE_CONVITE, '1'); } catch (err) { /* sem armazenamento local */ } atualizarInstalar(); aviso('Podes instalar mais tarde em ☰ → 📲 Instalar.', 3500); });
 
 // cliques no índice: chips de categorias, visita editável
 $('#indice').addEventListener('click', e => {
@@ -1918,7 +2048,7 @@ const DICAS = {
   mover: 'Arrasta os pontos; larga um ponto sobre uma zona para o meter lá dentro. Clica num elemento para editar o cartão; numa zona, arrasta os vértices (duplo clique apaga um).',
   ponto: 'Clica no mapa para criar um ponto. Dentro de uma zona fica filho dela.',
   poligono: 'Clica em cada vértice da zona · duplo clique termina · Esc cancela',
-  pincel: 'Pinta a zona arrastando o rato ou o dedo · Esc cancela',
+  pincel: 'Pinta a zona a arrastar o rato ou o dedo · Esc cancela',
   rua: 'Clica numa rua do mapa para a acrescentar como elemento (a camada «Nomes das ruas» ficou ligada).',
   lote: 'Clica num lote do cadastro para o acrescentar como zona (a camada «Lotes do cadastro» ficou ligada).',
   grupo: 'Clica no mapa para pôr cada ponto do conjunto (todos partilham um só cartão) · Esc termina',
@@ -1947,8 +2077,8 @@ function entrarEdicao(ligar) {
   if (s && POR_ID[s.id]) selecionar(POR_ID[s.id], false); // depois de descartar, o elemento é outro objeto com o mesmo id
   posicionarDesmat();
   visitaAoMudarEdicao();
-  if (!edicao) cancelarLevantamento();
-  else if (eventoAtivo() && !entrandoPorCriar) setTimeout(() => { if (edicao && !dialogoEl.classList.contains('aberto') && !levant) escolherRegisto(); }, 350); // ao entrar na edição: levantamento ou ocorrência?
+  if (!edicao) { cancelarLevantamento(true); if (new URLSearchParams(location.search).has('editor')) { const qs = new URLSearchParams(location.search); qs.delete('editor'); history.replaceState(null, '', location.pathname + qsTexto(qs) + location.hash); } }
+  else if (eventoAtivo() && !entrandoPorCriar) setTimeout(() => { if (edicao && eventoAtivo() && !dialogoEl.classList.contains('aberto') && !levant) escolherRegisto(); }, 350); // ao entrar na edição: levantamento ou ocorrência?
 }
 let entrandoPorCriar = false;
 function porFerramenta(nome, alvo) {
@@ -1959,6 +2089,7 @@ function porFerramenta(nome, alvo) {
   alvoFerramenta = ferramenta === 'colocar' ? alvo || null : null;
   barra.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === ferramenta));
   $('#map').classList.toggle('desenhar', edicao && ferramenta !== 'mover');
+  $('#map').classList.toggle('marcar', edicao && ['ponto', 'grupo', 'colocar', 'levantamento', 'poligono'].includes(ferramenta));
   $('#dica').textContent = $('#dica').title = !edicao ? '' : ferramenta === 'colocar' && alvoFerramenta ? `Clica no mapa onde fica «${alvoFerramenta.nome}» · Esc cancela` : ferramenta === 'grupo' && grupoEmCurso ? `Clica no mapa para acrescentar pontos a «${grupoEmCurso.nome}» · Esc termina` : DICAS[ferramenta];
   if (edicao && ferramenta === 'pincel') map.dragging.disable(); else map.dragging.enable();
   map.doubleClickZoom[edicao && ferramenta === 'poligono' ? 'disable' : 'enable']();
@@ -2001,9 +2132,11 @@ function lerAutosaveDe(id) { // só com sessão: o rascunho desta conta ou, se n
 }
 function apagarAutosave(id) { try { localStorage.removeItem(chaveAuto(id)); if (SESSAO) localStorage.removeItem(PREFIXO_ANTIGO + (id || C.preset)); } catch (err) { /* sem armazenamento local */ } }
 function estado(txt, sujo) { estadoEl.textContent = txt; barra.classList.toggle('sujo', !!sujo); }
+let rascunhoEnviado = false; // o rascunho é o que seguiu para o servidor central: tem de aparecer, mas não está por guardar
 function autoGuardar() {
+  if (!SESSAO) return; // cada rascunho tem dono
   try {
-    localStorage.setItem(chaveAuto(), JSON.stringify({ quando: Date.now(), utilizador: SESSAO ? SESSAO.utilizador : '', dados: serializar() }));
+    localStorage.setItem(chaveAuto(), JSON.stringify({ quando: Date.now(), utilizador: SESSAO ? SESSAO.utilizador : '', enviado: rascunhoEnviado, dados: serializar() }));
     if (SESSAO) localStorage.removeItem(PREFIXO_ANTIGO + C.preset); // um rascunho de antes das contas passa a ser desta conta
     $('#estado-auto').textContent = 'rascunho guardado às ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5); autoFalhou = false;
   }
@@ -2012,7 +2145,7 @@ function autoGuardar() {
 // a gravação automática espera meio segundo sem alterações (escrever o preset inteiro a cada tecla custava, com fotos embebidas, megabytes por tecla)
 let autoTimer = null;
 function marcarAlterado() {
-  alterado = true; estado('Alterações por guardar', true);
+  alterado = true; rascunhoEnviado = false; estado('Alterações por guardar', true);
   clearTimeout(autoTimer); autoTimer = setTimeout(() => { autoTimer = null; autoGuardar(); }, 500);
 }
 function autoGuardarJa() { if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; autoGuardar(); } } // antes de trocar de preset ou de sair da página
@@ -2078,7 +2211,11 @@ function carregarPresetFicheiro(id) { // carrega dados/presets/<id>.js como scri
 }
 async function mudarPreset(id, silencioso) {
   if (!id || id === C.preset) return;
-  if (alterado && (await dialogo({ titulo: 'Trocar de preset', texto: `Guardar as alterações de «${esc(C.titulo)}» antes de trocar? Se não guardares, ficam na gravação automática deste preset.`, botoes: [{ id: 'nao', texto: 'Trocar sem guardar' }, { id: 'sim', texto: 'Guardar e trocar', classe: 'on' }] })) === 'sim') await guardar();
+  if (alterado) {
+    const r = await dialogo({ titulo: 'Trocar de preset', texto: `Guardar as alterações de «${esc(C.titulo)}» antes de trocar? Se não guardares, ficam em rascunho neste preset.`, botoes: [{ id: 'cancelar', texto: 'Cancelar' }, { id: 'nao', texto: 'Trocar sem guardar' }, { id: 'sim', texto: 'Guardar e trocar', classe: 'on' }] });
+    if (r === 'cancelar') { preencherPresets(); return; }
+    if (r === 'sim') await guardar();
+  }
   autoGuardarJa(); // sem guardar, as alterações ficam na gravação automática deste preset
   let d = null; try { if (PRESETS_LOCAIS.has(id) && lerAutosaveDe(id)) throw new Error('só neste browser'); d = clonar(await carregarPresetFicheiro(id)); } catch (err) { if (!lerAutosaveDe(id)) { aviso('Não foi possível abrir o preset: ' + err.message, 5000); preencherPresets(); return; } }
   let auto = lerAutosaveDe(id); const base = d || auto.dados;
@@ -2097,7 +2234,11 @@ async function novoPreset() {
   const nome = await perguntarTexto('Novo preset', 'Nome do novo preset (fica vazio, pronto a encher)', 'Novo preset', 'Criar'); if (nome === null) return;
   const limpoNome = nome.trim() || 'Novo preset';
   let id = idDe(limpoNome); for (let k = 2; PRESETS.some(p => p.id === id); k++) id = idDe(limpoNome) + '-' + k;
-  if (alterado && (await confirmar('Preset novo', `Guardar as alterações de «${esc(C.titulo)}» antes de criar o preset novo? Se não guardares, ficam na gravação automática.`, 'Guardar primeiro'))) await guardar();
+  if (alterado) {
+    const r = await dialogo({ titulo: 'Preset novo', texto: `Guardar as alterações de «${esc(C.titulo)}» antes de criar o preset novo? Se não guardares, ficam em rascunho.`, botoes: [{ id: 'cancelar', texto: 'Cancelar' }, { id: 'nao', texto: 'Criar sem guardar' }, { id: 'sim', texto: 'Guardar e criar', classe: 'on' }] });
+    if (r === 'cancelar') return;
+    if (r === 'sim') await guardar();
+  }
   autoGuardarJa();
   PRESETS.push({ id, nome: limpoNome, subtitulo: '', elementos: 0 });
   carregar({ titulo: limpoNome, subtitulo: '', elementos: [], categorias: [] }); C.preset = id; FICHEIRO = clonar(serializar());
@@ -2182,7 +2323,9 @@ async function restaurarAutosave() { // repõe o preset em curso da sessão ante
   const r = lerAutosaveDe(C.preset);
   if (!r || JSON.stringify(r.dados) === JSON.stringify(FICHEIRO)) return;
   if (!PRESETS_LOCAIS.has(C.preset) && !(await autosaveValido(C.preset, r))) return;
-  const id = C.preset; carregar(clonar(r.dados)); C.preset = id; alterado = true;
+  const id = C.preset; carregar(clonar(r.dados)); C.preset = id;
+  if (r.enviado) { alterado = false; rascunhoEnviado = true; FICHEIRO = clonar(r.dados); estado('Registos enviados para o servidor central'); return; }
+  alterado = true;
   marcarAlterado(); estado('Alterações por guardar (rascunho de ' + new Date(r.quando).toLocaleString('pt-PT') + ')', true);
   aviso('Rascunho de ' + dataHora(r.quando) + ' recuperado: ainda não está guardado no ficheiro do preset.', 7000);
 }
@@ -2202,6 +2345,7 @@ function limpo(el, completo) { // completo: as ruas levam também o traçado (pa
 function serializar(completo) {
   const d = { preset: C.preset, freguesia: FREG.id, titulo: C.titulo || FREG.nome, subtitulo: C.subtitulo || '', elementos: ELEMENTOS.map(e => limpo(e, completo)) };
   if (Array.isArray(C.visita)) d.visita = C.visita.filter(id => POR_ID[id]);
+  if (C.removidosEvento && Object.keys(C.removidosEvento).length) d.removidosEvento = C.removidosEvento;
   if (C.categorias && C.categorias.length) d.categorias = C.categorias.map(c => ({ id: c.id, nome: c.nome, icone: c.icone || '', cor: c.cor, membros: c.membros.filter(id => POR_ID[id]) }));
   return d;
 }
@@ -2211,12 +2355,13 @@ function ficheiroConteudos(d) {
     'window.CONTEUDOS = ' + JSON.stringify(d, null, 1) + ';\n';
 }
 function carregar(d) {
+  cancelarLevantamento(true); // o registo em curso era do preset que estava aberto
   limparSelecao(); limparRuaDestaque(); fecharCartao(); categoriaAtual = null;
   if (guiaoAberto()) ligarGuiao(false); visitaAtual = null; passos = [];
   ELEMENTOS.length = 0; for (const k in POR_ID) delete POR_ID[k];
   C.titulo = d.titulo; C.subtitulo = d.subtitulo;
   for (const e of d.elementos || []) { const p = preparar(e, null); if (p) ELEMENTOS.push(p); }
-  C.visita = d.visita; C.categorias = d.categorias || []; normalizarExtras(); categoriasAtivas.clear();
+  C.visita = d.visita; C.categorias = d.categorias || []; C.removidosEvento = d.removidosEvento; normalizarExtras(); categoriasAtivas.clear();
   aplicarTitulo(); construir(); construirIndice(); construirPesquisa();
   if (edicao) { $('#ed-titulo').value = C.titulo || ''; $('#ed-subtitulo').value = C.subtitulo || ''; }
 }
@@ -2227,7 +2372,7 @@ async function verificarServidor() { // o servidor local (tools/serve.mjs) aceit
   barra.classList.toggle('offline', !servidorOk);
   return servidorOk;
 }
-// devolve 'servidor' (gravado no servidor local), 'transferido' (sem servidor: o ficheiro foi transferido) ou
+// devolve 'servidor' (gravado no servidor local), 'transferido' (sem servidor: o ficheiro foi transferido), 'central' (sem servidor, com semTransferir: só para a fila) ou
 // 'recusado' (sem sessão ou sem permissão para esta freguesia: o trabalho fica na gravação automática)
 async function guardar(opcoes = {}) {
   const dados = serializar(), paraCentral = !opcoes.semCentral && CONFIG_CENTRAL.enviarAoGuardar !== false;
@@ -2246,7 +2391,8 @@ async function guardar(opcoes = {}) {
       aviso('Não foi possível guardar no servidor (' + err.message + '); a transferir o ficheiro.', 6000);
     }
   } else if (!podeEditarEm(SESSAO, FREG.id)) { autoGuardarJa(); aviso('Para guardar, inicia sessão com uma conta que edite ' + FREG.nome + '.', 6000); return 'recusado'; }
-  if (paraCentral) enfileirarCentral(serializar(true));
+  const naFila = paraCentral && enfileirarCentral(serializar(true), opcoes.soEvento);
+  if (opcoes.semTransferir && naFila) { alterado = false; FICHEIRO = clonar(dados); rascunhoEnviado = true; cancelarAuto(); autoGuardar(); estado('Na fila do servidor central · ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5)); return 'central'; }
   autoGuardarJa(); transferir(dados); // sem servidor o trabalho fica também na gravação automática
   return 'transferido';
 }
@@ -2304,11 +2450,13 @@ async function copiarCentral(manual) {
   finally { aCopiar = false; }
 }
 setInterval(() => { if (HORAS_COPIA > 0 && urlCentral() && copiaEmAtraso()) copiarCentral(false); }, 3600e3);
-function enfileirarCentral(dados) {
-  if (!urlCentral()) return;
-  const f = filaCentral().filter(x => !(x.freguesia === FREG.id && x.preset === dados.preset)); // só a versão mais recente de cada preset
-  f.push({ freguesia: FREG.id, preset: dados.preset, quando: Date.now(), utilizador: SESSAO ? SESSAO.utilizador : '', dados });
-  if (gravarFila(f)) { atualizarEstadoCentral(); enviarFilaCentral(); }
+function enfileirarCentral(dados, soEvento) {
+  if (!urlCentral()) return false;
+  const eu = normalizarUtilizador(SESSAO ? SESSAO.utilizador : ''), meu = x => x.freguesia === FREG.id && x.preset === dados.preset && normalizarUtilizador(x.utilizador) === eu;
+  const fila = filaCentral(), antes = fila.find(meu), f = fila.filter(x => !meu(x)); // de cada preset, só a versão mais recente de cada conta
+  f.push({ freguesia: FREG.id, preset: dados.preset, quando: Date.now(), utilizador: SESSAO ? SESSAO.utilizador : '', soEvento: !!soEvento && (!antes || !!antes.soEvento), dados }); // um envio completo à espera não passa a ser só de registos
+  if (!gravarFila(f)) return false;
+  atualizarEstadoCentral(); enviarFilaCentral(); return true;
 }
 // cada envio segue com a sessão de quem o fez: um envio de outra conta espera que essa conta entre outra vez
 function podeEnviar(x) {
@@ -2324,16 +2472,17 @@ async function enviarFilaCentral() {
     for (let f = filaCentral().filter(podeEnviar); f.length; f = filaCentral().filter(podeEnviar)) {
       const x = f[0];
       try {
-        await pedirCentral('/presets/' + encodeURIComponent(x.freguesia) + '/' + encodeURIComponent(x.preset), { method: 'POST', body: JSON.stringify({ dados: x.dados, origem: AMBIENTE.app ? 'aplicacao' : 'browser', versao: AMBIENTE.versao || '', quando: x.quando }) });
+        await pedirCentral('/presets/' + encodeURIComponent(x.freguesia) + '/' + encodeURIComponent(x.preset), { method: 'POST', body: JSON.stringify({ dados: x.dados, soEvento: !!x.soEvento, origem: AMBIENTE.app ? 'aplicacao' : 'browser', versao: AMBIENTE.versao || '', quando: x.quando }) });
         estadoCentral = 'enviado às ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5);
       } catch (err) {
         // sem rede, servidor em baixo ou sessão terminada: fica na fila e tenta-se mais tarde; um preset recusado (400, 403 sem
         // permissão para a freguesia, 409, 413) sai da fila (está guardado neste computador)
-        if (err.codigo && err.codigo >= 400 && err.codigo < 500 && err.codigo !== 401 && err.codigo !== 408 && err.codigo !== 429) aviso(`O servidor central recusou «${x.preset}»: ${err.message}.`, 7000);
+        if ([400, 403, 409, 413].includes(err.codigo)) aviso(`O servidor central recusou «${x.preset}»: ${err.message}.`, 7000);
         else { estadoCentral = err.codigo === 401 ? 'inicia sessão para enviar' : err.message; break; }
       }
       gravarFila(filaCentral().filter(y => !(y.freguesia === x.freguesia && y.preset === x.preset && y.quando === x.quando)));
     }
+    if (estadoCentral.startsWith('enviado')) sincronizarEvento();
     const resto = filaCentral(); if (resto.length && !resto.some(podeEnviar)) estadoCentral = 'inicia sessão' + (resto[0].utilizador ? ' como ' + resto[0].utilizador : '') + ' para enviar';
   } finally { aEnviar = false; atualizarEstadoCentral(); }
 }
@@ -2388,7 +2537,7 @@ const PAPEL_CONTA = { freguesia: 'Freguesia', cidade: 'Cidade', admin: 'Administ
 const CHAVE_SESSAO_CENTRAL = 'co-central-sessao', CHAVE_ULTIMO = 'co-ultimo-utilizador', CHAVE_LEMBRAR = 'co-lembrar';
 let SESSAO = null; // { utilizador, nome, papel, freguesias }
 const dataHora = q => q ? new Date(q).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' }) : '';
-const normalizarUtilizador = u => String(u || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[\s'’-]+/g, '').slice(0, 80);
+const normalizarUtilizador = u => { const n = String(u || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[\s'’-]+/g, '').slice(0, 80); return { systemadmin: 'system.admin', concelhialisboa: 'concelhia.lisboa' }[n] || n; }; // como em servidor-central/contas.mjs
 async function chaveDeEntrada(utilizador, palavraPasse) {
   if (!window.crypto || !crypto.subtle) throw new Error('este browser não deixa verificar a palavra-passe nesta página (abre-a por http://127.0.0.1 ou https://)');
   const semAcentos = String(palavraPasse).normalize('NFD').replace(/[̀-ͯ]/g, ''); // acentos e cedilhas não contam (as maiúsculas sim)
@@ -2413,7 +2562,8 @@ function gravarSessaoCentral(s) {
 }
 const sessaoCentralDe = j => ({ ...j.sessao, testemunho: j.testemunho, expira: j.expira, url: urlCentral(), lembrar: !!j.lembrar });
 async function pedirLocal(caminho, corpo) { // pedidos de conta ao servidor local (GET sem corpo, POST com corpo); lança com .codigo
-  const r = await fetch(caminho, corpo === undefined ? { cache: 'no-store' } : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) });
+  let r; try { r = await fetch(caminho, corpo === undefined ? { cache: 'no-store' } : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) }); }
+  catch (err) { throw Object.assign(new Error('sem ligação ao servidor local'), { codigo: 0 }); }
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw Object.assign(new Error(j.erro || 'erro ' + r.status), { codigo: r.status });
   return j;
@@ -2508,8 +2658,10 @@ async function pedirEdicao({ criar } = {}) {
     else if (r === 'outra' && (await terminarSessao())) return pedirEdicao({ criar });
     return false;
   }
+  await lerEventoServidor(); // o estado guardado pode estar desatualizado
   if (!alterado) { acrescentarPresetsLocais(); preencherPresets(); await restaurarAutosave(); }
   entrandoPorCriar = !!criar; entrarEdicao(true); entrandoPorCriar = false;
+  sincronizarEvento();
   if (criar) { abrirCriar(true); if (PARAMS.has('criar')) { const qs = new URLSearchParams(location.search); qs.delete('criar'); history.replaceState(null, '', location.pathname + qsTexto(qs) + location.hash); } }
   return true;
 }
@@ -2667,14 +2819,31 @@ const eventoAtivo = () => EVENTO && EVENTO.ativo && EVENTOS[EVENTO.id] ? EVENTOS
 const detalheDe = (el, i) => el.tipo === 'grupo' && el.evento && Array.isArray(el.detalhes) ? el.detalhes[i || 0] || null : null;
 const categoriaEvento = (el, d) => (EVENTOS[el.evento] ? EVENTOS[el.evento].categorias : []).find(c => c.id === d.c) || null;
 const moradaTexto = d => d && d.rua ? d.rua + (d.numero ? ', ' + d.numero : '') : 'sem morada';
+// um registo tirado não volta quando o servidor central junta os registos dos vários dispositivos
+function marcarRemovidos(el, lista) { const ids = lista.map(d => d && d.i).filter(Boolean); if (!el.evento || !ids.length) return; C.removidosEvento = C.removidosEvento || {}; C.removidosEvento[el.evento] = [...new Set([...(C.removidosEvento[el.evento] || []), ...ids])]; }
+// traz do servidor central os registos deste preset feitos noutros dispositivos
+async function sincronizarEvento() {
+  const ev = eventoAtivo(); if (!ev || !edicao || !urlCentral() || (!lerSessaoCentral() && !lerCentral().chave)) return;
+  const presetPedido = C.preset;
+  let dados; try { dados = (await pedirCentral('/presets/' + encodeURIComponent(FREG.id) + '/' + encodeURIComponent(presetPedido))).dados; } catch (err) { return; }
+  if (!edicao || !dados || C.preset !== presetPedido) return; // entretanto saiu da edição ou trocou de preset
+  const fora = new Set([...((dados.removidosEvento || {})[ev.id] || []), ...((C.removidosEvento || {})[ev.id] || [])]);
+  if (fora.size) { C.removidosEvento = C.removidosEvento || {}; C.removidosEvento[ev.id] = [...fora]; }
+  const la = (dados.elementos || []).find(e => e.tipo === 'grupo' && e.evento === ev.id), g = ELEMENTOS.find(e => e.tipo === 'grupo' && e.evento === ev.id);
+  let mudou = false;
+  if (g) for (let i = g.pontos.length - 1; i >= 0; i--) if (g.detalhes[i] && fora.has(g.detalhes[i].i)) { g.pontos.splice(i, 1); g.detalhes.splice(i, 1); mudou = true; }
+  if (la && Array.isArray(la.detalhes)) la.detalhes.forEach((d, i) => { if (!d || !d.i || fora.has(d.i)) return; let h = ELEMENTOS.find(e => e.tipo === 'grupo' && e.evento === ev.id); const k = h ? h.detalhes.findIndex(x => x && x.i === d.i) : -1; if (k >= 0) { if (String(d.movido || '') > String(h.detalhes[k].movido || '')) { h.pontos[k] = la.pontos[i]; h.detalhes[k] = { ...h.detalhes[k], ...d }; mudou = true; } return; } if (!h) { h = preparar({ ...la, fotos: la.fotos || [], pontos: [la.pontos[i]], detalhes: [d] }, null); if (h) ELEMENTOS.push(h); } else { h.pontos.push(la.pontos[i]); h.detalhes.push(d); } mudou = true; });
+  if (g && !g.pontos.length) { if (selecionado === g) { fecharCartao(); limparSelecao(); } removerDoModelo(g); mudou = true; } // outro dispositivo tirou o último
+  if (mudou) { construir(); construirIndice(); construirPesquisa(); if (selecionado && POR_ID[selecionado.id] === selecionado) selecionar(selecionado, false, !cartaoAberto()); }
+}
 const contagensDe = el => (el.detalhes || []).reduce((m, d) => { const c = d && d.c ? d.c : 'sem'; m[c] = (m[c] || 0) + 1; return m; }, {});
 async function lerEventoServidor() { // o servidor central, senão o local; a última resposta fica em cache
   try { EVENTO = JSON.parse(localStorage.getItem(CHAVE_EVENTO) || 'null'); } catch (err) { EVENTO = null; }
   aplicarEvento();
   await ambientePronto;
-  let j = null;
+  let j = null; // com servidor central, é ele que manda; sem resposta dele fica o último estado conhecido, para o evento funcionar sem rede
   if (urlCentral()) { try { j = await pedirCentral('/evento', { semSessao: true }); } catch (err) { j = null; } }
-  if (!j && (contasLocais() || !urlCentral())) { try { j = await pedirLocal('/evento'); } catch (err) { j = null; } }
+  else if (contasLocais()) { try { j = await pedirLocal('/evento'); } catch (err) { j = null; } }
   if (j) { EVENTO = j.evento || null; try { localStorage.setItem(CHAVE_EVENTO, JSON.stringify(EVENTO)); } catch (err) { /* sem armazenamento local */ } aplicarEvento(); }
   return EVENTO;
 }
@@ -2687,7 +2856,11 @@ function aplicarEvento() {
 }
 // administração: ligar e desligar (no servidor central e no local, onde houver sessão de administração)
 async function gerirEvento() {
-  const fontes = fontesAdmin(); if (!fontes.length) { aviso('Só a administração liga e desliga eventos.', 4000); return; }
+  let fontes = fontesAdmin(); if (!fontes.length) { aviso('Só a administração liga e desliga eventos.', 4000); return; }
+  if (urlCentral() && !fontes.some(f => f.valor === 'central')) { // é o servidor central que manda: sem sessão lá, a mudança não chegava a ninguém
+    if (!(await dialogoEntrar({ soCentral: true, motivo: 'O evento liga-se no servidor central: entra lá com a conta da administração.' }))) return;
+    fontes = fontesAdmin(); if (!fontes.some(f => f.valor === 'central')) { aviso('Essa conta não é da administração no servidor central.', 5000); return; }
+  }
   await lerEventoServidor();
   const ev = EVENTOS.iluminacao, atual = EVENTO, ativo = !!(atual && atual.ativo && atual.id === ev.id);
   const r = await dialogo({ titulo: 'Evento',
@@ -2708,7 +2881,7 @@ async function escolherRegisto() {
   if (r === 'evento') levantamento(ev); else if (r === 'ocorrencia') abrirCriar(true, true);
 }
 // ---- o levantamento: tipo → localização → confirmar a morada → acrescentar ao conjunto ----
-let levant = null, levantClique = null; // o registo em curso { ev, cat, m (marcador), loc, morada }; quem espera um toque no mapa
+let levant = null, levantClique = null, levantGps = null; // o registo em curso { ev, cat, m (marcador), loc, morada }; quem espera um toque no mapa; cancelar a espera pelo GPS
 async function levantamento(ev, catId) {
   porFerramenta('mover'); fecharCartao(); abrirCriar(false, true);
   let cat = catId || null; try { if (!cat) cat = localStorage.getItem('co-evento-cat:' + ev.id); } catch (err) { /* sem armazenamento local */ }
@@ -2718,7 +2891,8 @@ async function levantamento(ev, catId) {
   try { localStorage.setItem('co-evento-cat:' + ev.id, r); } catch (err) { /* sem armazenamento local */ }
   if (levant && levant.m) { levant.cat = categoria; mostrarLevantamento(); return; } // só mudou o tipo
   let loc = null;
-  try { loc = await localizarPrecisa(); } catch (err) { aviso('Sem localização (' + err.message + '). Toca no mapa no sítio exato do candeeiro.', 7000); }
+  try { loc = await localizarPrecisa(); } catch (err) { if (err.cancelado) return; aviso('Sem localização (' + err.message + '). Toca no mapa no sítio exato do candeeiro.', 7000); }
+  if (!edicao) return; // saiu da edição enquanto esperava
   if (!loc) { loc = await esperarCliqueNoMapa(); if (!loc) return; }
   abrirLevantamento(ev, categoria, loc);
 }
@@ -2728,7 +2902,8 @@ function localizarPrecisa(maxMs = 9000, boa = 12) {
     if (!window.isSecureContext) { falha(new Error('o browser só dá a localização em https ou no próprio aparelho')); return; }
     if (!navigator.geolocation) { falha(new Error('este browser não dá a localização')); return; }
     let melhor = null, id = null, t = null;
-    const parar = () => { if (id !== null) navigator.geolocation.clearWatch(id); clearTimeout(t); $('#aviso').classList.remove('aberto'); };
+    const parar = () => { if (id !== null) navigator.geolocation.clearWatch(id); clearTimeout(t); levantGps = null; $('#aviso').classList.remove('aberto'); };
+    levantGps = () => { parar(); falha(Object.assign(new Error('cancelado'), { cancelado: true })); };
     const fim = () => { parar(); if (melhor) ok(melhor); else falha(new Error('demorou demasiado')); };
     aviso('A obter a localização…');
     id = navigator.geolocation.watchPosition(p => {
@@ -2755,9 +2930,14 @@ function abrirLevantamento(ev, cat, loc) {
   levant = { ev, cat, m, loc, morada: moradaSugerida(loc.ll), manual: false };
   m.on('dragend', () => { levant.loc = { ll: m.getLatLng(), precisao: null }; levant.morada = moradaSugerida(m.getLatLng()); levant.manual = false; mostrarLevantamento(); });
   if (!$('#lista-ruas').children.length) $('#lista-ruas').innerHTML = [...new Set([...RUAS.map(r => r.nome), ...ED.numeros.map(n => n[3])])].filter(Boolean).sort((a, b) => a.localeCompare(b, 'pt')).map(n => `<option value="${esc(n)}">`).join('');
-  map.flyTo(loc.ll, Math.max(map.getZoom(), 19), { duration: .8 });
-  mostrarLevantamento();
+  document.body.classList.add('a-levantar');
+  mostrarLevantamento(); centrarLevantamento(loc.ll);
   if (!LIMITES.some(a => dentro(loc.ll, a))) aviso(`A localização fica fora de ${FREG.nome}: confirma que estás na freguesia certa.`, 6000);
+}
+function centrarLevantamento(ll) { // põe o marcador no meio do mapa que fica livre, entre a barra de edição e o painel do registo
+  const W = map.getSize().x, H = map.getSize().y, p = $('#levantamento').getBoundingClientRect(), topo = edicao && window.innerHeight > 520 ? barra.getBoundingClientRect().bottom : 0;
+  const aoLado = p.left > W / 2, cx = aoLado ? p.left / 2 : W / 2, cy = aoLado ? (topo + H) / 2 : (topo + p.top) / 2, z = Math.max(map.getZoom(), 19);
+  map.flyTo(map.unproject(map.project(ll, z).add([W / 2 - cx, H / 2 - cy]), z), z, { duration: .8 });
 }
 function mostrarLevantamento() {
   const { cat, loc, morada, manual } = levant, el = $('#levantamento');
@@ -2769,33 +2949,41 @@ function mostrarLevantamento() {
   el.classList.add('aberto');
 }
 function cancelarLevantamento(silencioso) {
+  if (levantGps) levantGps();
   if (levantClique) { const fim = levantClique; levantClique = null; fim(null); }
   if (!levant) return;
   if (levant.m) map.removeLayer(levant.m);
-  levant = null; $('#levantamento').classList.remove('aberto');
+  levant = null; $('#levantamento').classList.remove('aberto'); document.body.classList.remove('a-levantar');
   if (!silencioso) aviso('Registo cancelado.', 2000);
 }
 async function confirmarLevantamento() {
-  if (!levant) return;
+  if (!levant || !SESSAO || !edicao) return;
   const rua = $('#lev-rua').value.trim(), numero = $('#lev-numero').value.trim();
   if (!rua) { aviso('Falta a rua.', 3000); $('#lev-rua').focus(); return; }
   if (!numero && !(await confirmar('Sem número de porta', 'Não há número de porta. Registar na mesma, só com a rua?', 'Registar'))) { $('#lev-numero').focus(); return; }
   const { ev, cat, m, loc } = levant;
-  const d = { c: cat.id, rua, numero, quando: new Date().toISOString(), autor: SESSAO ? SESSAO.utilizador : '' }; if (loc.precisao != null) d.precisao = Math.round(loc.precisao);
+  const b = new Uint8Array(6); crypto.getRandomValues(b); // o id deixa juntar os registos de vários dispositivos no servidor central
+  const d = { i: [...b].map(x => x.toString(16).padStart(2, '0')).join(''), c: cat.id, rua, numero, quando: new Date().toISOString(), autor: SESSAO ? SESSAO.utilizador : '' }; if (loc.precisao != null) d.precisao = Math.round(loc.precisao);
+  const soEvento = !alterado; // sem mais nada por guardar, o envio só mexe no conjunto do evento: não pisa o que outro dispositivo mudou no resto do preset
   const g = registarNoConjunto(ev, arredLL(m.getLatLng()), d);
   cancelarLevantamento(true);
-  const total = g.pontos.length, r = await guardar();
-  aviso(`${cat.icone} Registado: ${moradaTexto(d)} · ${total} registo${total === 1 ? '' : 's'} em ${FREG.nome}${r === 'servidor' ? ' (guardado)' : r === 'recusado' ? ' (por guardar)' : ''}.`, 6000);
+  const total = g.pontos.length, r = await guardar({ semTransferir: true, soEvento });
+  aviso(`${cat.icone} Registado: ${moradaTexto(d)} · ${total} registo${total === 1 ? '' : 's'} em ${FREG.nome}${r === 'servidor' ? ' (guardado)' : r === 'central' ? ' (a enviar)' : r === 'recusado' ? ' (por guardar)' : ''}.`, 6000);
 }
 function registarNoConjunto(ev, pos, d) { // o conjunto do evento nesta freguesia (criado no primeiro registo)
   let g = ELEMENTOS.find(e => e.tipo === 'grupo' && e.evento === ev.id);
-  if (g) { g.pontos.push(pos); if (!Array.isArray(g.detalhes)) g.detalhes = g.pontos.slice(0, -1).map(() => ({})); g.detalhes.push(d); }
-  else {
+  if (g) {
+    if (!Array.isArray(g.detalhes)) g.detalhes = []; while (g.detalhes.length < g.pontos.length) g.detalhes.push({});
+    g.pontos.push(pos); g.detalhes.push(d);
+    const v = vista[g.id], m = marcador(g, pos, false, g.pontos.length - 1).addTo(map); v.marcadores.push(m); v.camadas.push(m); // refazer tudo custava 176 ms com 500 pontos
+    if (g.oculto) { categoriasAtivas.clear(); aplicarFiltro(); } // o registo acabado de fazer tem de se ver
+    if (selecionado === g && cartaoAberto()) mostrarInfo(g, modal.classList.contains('lado') ? 'lado' : 'baixo');
+  } else {
     const c = ev.conjunto, id = POR_ID[c.id] ? c.id + '-' + Date.now().toString(36) : c.id;
     g = preparar({ id, tipo: 'grupo', nome: c.nome, icone: c.icone, prioridade: c.prioridade, competencia: c.competencia, texto: c.texto, fotos: [], evento: ev.id, pontos: [pos], detalhes: [d] }, null);
-    ELEMENTOS.push(g);
+    ELEMENTOS.push(g); construir(); construirIndice(); construirPesquisa();
   }
-  construir(); construirIndice(); construirPesquisa(); marcarAlterado(); selecionar(g, false);
+  marcarAlterado();
   return g;
 }
 function htmlResumoEvento(el) { // no cartão do conjunto: a tabela por categoria e a lista dos registos
@@ -2811,9 +2999,15 @@ async function resumoLocalEvento(ev) {
   const out = { total: 0, freguesias: {} };
   await Promise.all(FREGUESIAS.map(async f => {
     try {
-      let d; if (f.id === FREG.id) d = serializar(); else { const base = f.id === 'campo-de-ourique' ? 'dados/' : 'dados/freguesias/' + f.id + '/'; d = JSON.parse(jsonDoFicheiro(await (await fetch(base + 'conteudos.js', { cache: 'no-store' })).text())); }
-      const g = (d.elementos || []).find(e => e.tipo === 'grupo' && e.evento === ev.id); if (!g) return;
-      out.freguesias[f.id] = { total: (g.pontos || []).length, contagens: contagensDe(g) }; out.total += (g.pontos || []).length;
+      const base = f.id === 'campo-de-ourique' ? 'dados/' : 'dados/freguesias/' + f.id + '/';
+      const indice = (await (await fetch(base + 'presets/index.js', { cache: 'no-store' })).text()).replace(/^[\s\S]*?=\s*/, '').replace(/;\s*$/, '');
+      const presets = await Promise.all(JSON.parse(indice).map(async p => { if (f.id === FREG.id && p.id === C.preset) return serializar(); try { return JSON.parse(jsonDoFicheiro(await (await fetch(base + 'presets/' + p.id + '.js', { cache: 'no-store' })).text())); } catch (err) { return null; } }));
+      if (f.id === FREG.id && !presets.some(p => p && p.preset === C.preset)) presets.push(serializar());
+      const vistos = new Map();
+      presets.forEach((d, n) => { const g = d && (d.elementos || []).find(e => e.tipo === 'grupo' && e.evento === ev.id); if (g) (g.detalhes || []).forEach((x, k) => vistos.set((x && x.i) || n + '#' + k, x && x.c ? x.c : 'sem')); });
+      if (!vistos.size) return;
+      const contagens = {}; for (const c of vistos.values()) contagens[c] = (contagens[c] || 0) + 1;
+      out.freguesias[f.id] = { total: vistos.size, contagens }; out.total += vistos.size;
     } catch (err) { /* freguesia sem dados */ }
   }));
   return out;
@@ -2837,7 +3031,7 @@ async function resumoCidadeEvento() {
 $('#lev-ok').addEventListener('click', confirmarLevantamento);
 $('#lev-cancelar').addEventListener('click', () => cancelarLevantamento());
 $('#lev-tipo').addEventListener('click', () => { if (levant) levantamento(levant.ev); });
-$('#lev-gps').addEventListener('click', async () => { if (!levant) return; try { const loc = await localizarPrecisa(); levant.m.setLatLng(loc.ll); levant.loc = loc; levant.morada = moradaSugerida(loc.ll); levant.manual = false; map.flyTo(loc.ll, Math.max(map.getZoom(), 19), { duration: .6 }); mostrarLevantamento(); } catch (err) { aviso('Sem localização: ' + err.message + '.', 5000); } });
+$('#lev-gps').addEventListener('click', async () => { if (!levant) return; try { const loc = await localizarPrecisa(); levant.m.setLatLng(loc.ll); levant.loc = loc; levant.morada = moradaSugerida(loc.ll); levant.manual = false; mostrarLevantamento(); centrarLevantamento(loc.ll); } catch (err) { aviso('Sem localização: ' + err.message + '.', 5000); } });
 for (const id of ['lev-rua', 'lev-numero']) $('#' + id).addEventListener('input', () => { if (levant) { levant.manual = true; $('#lev-fonte').textContent = 'Morada escrita à mão.'; } });
 $('#lev-numero').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); confirmarLevantamento(); } });
 
@@ -2952,7 +3146,7 @@ function removerDoModelo(el) {
 async function apagar(el) {
   const n = (el.filhos || []).length;
   if (!(await confirmar('Apagar elemento', `Apagar «${esc(el.nome)}»${n ? ` e os seus ${n} ponto${n > 1 ? 's' : ''}` : ''}?`, 'Apagar', true))) return;
-  limparSelecao(); fecharCartao(); removerDoModelo(el);
+  limparSelecao(); fecharCartao(); removerDoModelo(el); if (el.evento) marcarRemovidos(el, el.detalhes || []);
   const ids = [el.id, ...(el.filhos || []).map(f => f.id)]; // sai também das categorias e da visita
   for (const c of C.categorias) c.membros = c.membros.filter(id => !ids.includes(id));
   if (Array.isArray(C.visita)) C.visita = C.visita.filter(id => !ids.includes(id));
@@ -2967,7 +3161,7 @@ function reordenar(el, delta) {
 // o ponto foi largado depois de arrastado: nova posição e, se for o caso, nova zona-mãe
 function largarPonto(el, idx, ll, zona) {
   const pos = arredLL(ll);
-  if (el.tipo === 'grupo') el.pontos[idx] = pos;
+  if (el.tipo === 'grupo') { el.pontos[idx] = pos; const d = detalheDe(el, idx); if (d) d.movido = new Date().toISOString(); } // entre dispositivos, ganha o último arrasto
   else {
     el.pos = pos; delete el.area;
     if (zona !== el.pai) {
@@ -3053,7 +3247,7 @@ function htmlFormLugar(el) { // pontos do conjunto; tirar do mapa ou pôr no map
     const p = priDe(el), aAcrescentar = ferramenta === 'grupo' && grupoEmCurso === el;
     return `<div class="fotos-ed"><h3>Pontos do conjunto (${el.pontos.length})</h3>
       ${el.pontos.map((q, i) => { const d = detalheDe(el, i), cat = d && categoriaEvento(el, d); return `<div class="membro"><span class="pinta" style="--c:${cat ? cat.cor : p.cor}"></span><span>${cat ? esc(cat.icone) + ' ' + esc(moradaTexto(d)) : 'Ponto ' + (i + 1)} <small class="nota">${cat && d.quando ? esc(dataHora(d.quando)) : q[0].toFixed(5) + ', ' + q[1].toFixed(5)}</small></span><button type="button" class="fechar" data-ac="grupo-tirar" data-i="${i}" aria-label="Tirar o ponto ${i + 1}">✕</button></div>`; }).join('')}
-      <div class="linha"><button type="button" class="btn${aAcrescentar ? ' on' : ''}" data-ac="grupo-mais">＋ Acrescentar pontos no mapa</button></div>
+      ${el.evento ? '' : `<div class="linha"><button type="button" class="btn${aAcrescentar ? ' on' : ''}" data-ac="grupo-mais">＋ Acrescentar pontos no mapa</button></div>`}
       <div class="nota">Arrasta os pontos no mapa para os mudar de sítio.</div></div>`;
   }
   if (el.tipo === 'ponto') return `<div class="fotos-ed"><h3>Lugar no mapa</h3><div class="linha">${el.pai ? '' : '<button type="button" class="btn" data-ac="em-conjunto" title="Acrescentar mais pontos com este mesmo cartão">⁘ Transformar em conjunto</button>'}<button type="button" class="btn" data-ac="desmaterializar" title="Fica sem lugar no mapa, no canto superior direito">◌ Desmaterializar</button></div></div>`;
@@ -3152,7 +3346,7 @@ modalConteudo.addEventListener('click', async e => {
   else if (ac === 'foto-url') { const u = await perguntarTexto('Foto por endereço', 'Endereço ou caminho da imagem (por exemplo assets/fotos/nome.jpg)', '', 'Acrescentar'); if (u && u.trim()) { el.fotos.push({ src: u.trim(), legenda: '' }); marcarAlterado(); mostrarInfo(el, modal.classList.contains('lado') ? 'lado' : 'baixo'); } }
   else if (ac === 'grupo-tirar') {
     if (el.pontos.length <= 1) { aviso('Um conjunto precisa de pelo menos um ponto; para o eliminar, apaga o conjunto.', 4000); return; }
-    el.pontos.splice(+b.dataset.i, 1); if (Array.isArray(el.detalhes)) el.detalhes.splice(+b.dataset.i, 1); construir(); marcarAlterado(); selecionar(el, false);
+    el.pontos.splice(+b.dataset.i, 1); if (Array.isArray(el.detalhes)) marcarRemovidos(el, el.detalhes.splice(+b.dataset.i, 1)); construir(); marcarAlterado(); selecionar(el, false);
   }
   else if (ac === 'grupo-mais') { porFerramenta('grupo', el); selecionar(el, false); aviso(`Clica no mapa para acrescentar pontos a «${el.nome}». Esc termina.`, 4000); }
   else if (ac === 'em-conjunto') emConjunto(el);
@@ -3166,7 +3360,14 @@ modalConteudo.addEventListener('click', async e => {
 
 // ---- eventos do mapa e da barra ----
 map.on('click', e => {
-  if (!edicao) { desselecionar(); if (estreito()) abrirPainel(false); return; }
+  if (!edicao) {
+    // fora do limite da freguesia, sem nada selecionado: volta ao mapa de Lisboa (com um cartão aberto, o primeiro clique só o fecha)
+    // o que está aberto por cima do mapa fecha primeiro
+    const porCima = $('#lista-camadas').classList.contains('aberto') || $('#lista-legenda').classList.contains('aberto') || (estreito() && painel.classList.contains('aberto'));
+    if (!porCima && !cidade && !selecionado && !ruaDestaque && !cartaoAberto() && !guiaoAberto() && !LIMITES.some(a => dentro(e.latlng, a))) { abrirCidade(true); return; }
+    if (porCima) { abrirCamadas(false); abrirLegenda(false); }
+    desselecionar(); if (estreito()) abrirPainel(false); return;
+  }
   if (ferramenta === 'poligono') { desenho.push(e.latlng); tempPontos.push(L.circleMarker(e.latlng, { radius: 5, color: '#fff', fillColor: '#f3c35b', fillOpacity: 1, interactive: false }).addTo(map)); atualizarTemp(); }
   else if (ferramenta === 'ponto') novoPonto(e.latlng);
   else if (ferramenta === 'grupo') pontoDeGrupo(e.latlng);
@@ -3208,6 +3409,14 @@ $('#btn-central').addEventListener('click', painelCentral);
 // a aplicação de computador e o servidor local dizem quem são (em file:// ou num servidor qualquer não há resposta)
 const ambientePronto = fetch('ambiente.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : {}).then(a => { AMBIENTE = Object.assign(AMBIENTE, a); document.body.classList.toggle('na-app', !!AMBIENTE.app); }).catch(() => {});
 const sessaoPronta = ambientePronto.then(lerSessao).catch(() => null);
+ambientePronto.then(() => { // a app guarda-se para abrir sem internet (a aplicação de computador já traz tudo)
+  if (!AMBIENTE.app && 'serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register('sw.js').then(() => {
+    if (navigator.serviceWorker.controller) return;
+    // primeira visita: os dados vieram antes de o service worker existir; pedem-se outra vez, para abrir sem internet
+    navigator.serviceWorker.addEventListener('controllerchange', () => { for (const u of [...FREG.ficheiros.map(f => BASE + f), D.imagem.ficheiro]) fetch(u).catch(() => {}); }, { once: true });
+  }).catch(() => { /* funciona na mesma, só sem guardar */ });
+  setTimeout(atualizarInstalar, 4000);
+});
 sessaoPronta.finally(() => { atualizarEstadoCentral(); enviarFilaCentral(); if (HORAS_COPIA > 0 && urlCentral() && copiaEmAtraso()) setTimeout(() => copiarCentral(false), 8000); });
 barra.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => porFerramenta(b.dataset.tool)));
 $('#ed-titulo').addEventListener('input', e => { C.titulo = e.target.value.trim(); aplicarTitulo(); marcarAlterado(); });
@@ -3224,10 +3433,11 @@ let idInicial = ''; try { idInicial = decodeURIComponent(location.hash.slice(1))
 arrancarPresets().then(() => { const el = POR_ID[idInicial]; if (el && !cidade) map.whenReady(() => setTimeout(() => { if (POR_ID[idInicial] === el) selecionar(el, true); }, 300)); });
 // sem freguesia no endereço (ou com ?cidade), abre no mapa de Lisboa; ?freguesia=<id> abre essa freguesia
 const PARAMS = new URLSearchParams(location.search);
-if ((PARAMS.has('cidade') || (!PARAMS.has('freguesia') && !idInicial)) && !EDITOR) map.whenReady(() => abrirCidade(true));
+if (EDITOR || idInicial) semFreguesia = false; // ?editor e #id abrem logo a freguesia
+if (window.ENTRA_NA_CIDADE) map.whenReady(() => abrirCidade(true));
 if (EDITOR) pedirEdicao({ criar: PARAMS.has('criar') }); // ?editor abre logo em modo de edição (depois de iniciar sessão); ?criar abre também o «+»
 sessaoPronta.then(lerEventoServidor).finally(() => map.whenReady(() => setTimeout(arrancarVisitaGuiada, 1400))); // depois de o mapa se acomodar (o voo até Lisboa dura 1,1 s)
-window.__mapa = { map, C, FREG, ELEMENTOS, POR_ID, RUAS_VISTA, EVENTOS, get EVENTO() { return EVENTO; }, get levant() { return levant; }, lerEventoServidor, aplicarEvento, gerirEvento, escolherRegisto, levantamento, abrirLevantamento, mostrarLevantamento, confirmarLevantamento, cancelarLevantamento, moradaSugerida, registarNoConjunto, resumoCidadeEvento, localizarPrecisa, iniciarVisita, sairVisita, terminarVisita, irPassoVisita, seguinteVisita, visitaAberta, lerEstadoVisita, get visitaPasso() { return visitaPassos[visitaI] && visitaPassos[visitaI].id; }, get visitaPassos() { return visitaPassos; }, pedirEdicao, entrarConta, lerSessao, terminarSessao, menuConta, verHistorico, gerirContas, mudarPalavraPasse, dialogoEntrar, get SESSAO() { return SESSAO; }, lerSessaoCentral, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, ligarVerdes, ligarMapa, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva, entrarEdicao, porFerramenta, serializar, guardar, carregar, lerPreset, novoPreset, apagarPreset, mudarPreset, PRESETS, importarPreset, reporDoFicheiro, largarPonto, novoPonto, criarRua, criarDeLote, painelCentral, abrirDoCentral, enviarFilaCentral, copiarCentral, estadoCopia, filaCentral, lerCentral, gravarCentral, get AMBIENTE() { return AMBIENTE; }, confirmar, perguntarTexto, abrirCidade, irParaFreguesia, sairEdicao, descartarAlteracoes, dialogo, construirDesmat, expandirDesmat, pontoDeGrupo, emConjunto, novoDesmaterializado, desmaterializar, colocarNoMapa, criarAqui, ruaMaisProxima, abrirCriar, acrescentarPresetImportado, PRESETS_LOCAIS, get cidade() { return cidade; }, get alterado() { return alterado; }, novaCategoria, definirMembro, alternarCategoria, editarVisita, mostrarCategoria, categoriasAtivas, get edicao() { return edicao; }, get ferramenta() { return ferramenta; }, get passos() { return passos; } };
+window.__mapa = { map, C, FREG, ELEMENTOS, POR_ID, RUAS_VISTA, atualizarInstalar, instalarApp, podeInstalar, get satVisivel() { return satVisivel; }, EVENTOS, get EVENTO() { return EVENTO; }, get levant() { return levant; }, lerEventoServidor, aplicarEvento, gerirEvento, escolherRegisto, levantamento, abrirLevantamento, mostrarLevantamento, confirmarLevantamento, cancelarLevantamento, moradaSugerida, registarNoConjunto, resumoCidadeEvento, localizarPrecisa, iniciarVisita, sairVisita, terminarVisita, irPassoVisita, seguinteVisita, visitaAberta, lerEstadoVisita, get visitaPasso() { return visitaPassos[visitaI] && visitaPassos[visitaI].id; }, get visitaPassos() { return visitaPassos; }, pedirEdicao, entrarConta, lerSessao, terminarSessao, menuConta, verHistorico, gerirContas, mudarPalavraPasse, dialogoEntrar, get SESSAO() { return SESSAO; }, lerSessaoCentral, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, ligarVerdes, ligarMapa, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva, entrarEdicao, porFerramenta, serializar, guardar, carregar, lerPreset, novoPreset, apagarPreset, mudarPreset, PRESETS, importarPreset, reporDoFicheiro, largarPonto, novoPonto, criarRua, criarDeLote, painelCentral, abrirDoCentral, enviarFilaCentral, copiarCentral, estadoCopia, filaCentral, lerCentral, gravarCentral, get AMBIENTE() { return AMBIENTE; }, confirmar, perguntarTexto, abrirCidade, irParaFreguesia, sairEdicao, descartarAlteracoes, dialogo, construirDesmat, expandirDesmat, pontoDeGrupo, emConjunto, novoDesmaterializado, desmaterializar, colocarNoMapa, criarAqui, ruaMaisProxima, abrirCriar, acrescentarPresetImportado, PRESETS_LOCAIS, get cidade() { return cidade; }, get alterado() { return alterado; }, novaCategoria, definirMembro, alternarCategoria, editarVisita, mostrarCategoria, categoriasAtivas, get edicao() { return edicao; }, get ferramenta() { return ferramenta; }, get passos() { return passos; } };
 });
 </script>
 </body>
