@@ -2,9 +2,9 @@
 // As imagens e as bibliotecas vêm logo do que está guardado (e atualizam-se por trás); o resto vem da rede, com o guardado
 // como reserva, para quem tem rede ver sempre os dados mais recentes. Contas, sessões, evento e cópia central nunca se guardam;
 // a API e o que vem de outros sites (satélite em direto) passam ao lado.
-const CACHE = 'co-v6';
-const BASE = ['./', 'index.html', 'config.js', 'manifest.webmanifest', 'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css', 'dados/freguesias/index.js', 'dados/freguesias/limites.js', 'dados/freguesias/ruas-cidade.js', 'assets/lisboa-dgt-2023.jpg', 'assets/lisboa-dgt-2023-alto.jpg', 'assets/icones/icone-192.png', 'assets/icones/icone-512.png', 'assets/icones/ps-logotipo.png'];
-const NUNCA = /\/(api|consulta|sessao|evento|categorias|historico|contas|guardar|ativar-preset|apagar-preset|guardar-foto|copia-central)(\/|$)|\/ambiente\.json$/;
+const CACHE = 'co-v7';
+const BASE = ['./', 'index.html', 'config.js', 'manifest.webmanifest', 'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css', 'dados/freguesias/index.js', 'dados/freguesias/limites.js', 'dados/freguesias/ruas-cidade.js', 'vendor/jspdf/jspdf.umd.min.js', 'relatorios/evento.js', 'assets/lisboa-dgt-2023.jpg', 'assets/lisboa-dgt-2023-alto.jpg', 'assets/icones/icone-192.png', 'assets/icones/icone-512.png', 'assets/icones/ps-logotipo.png'];
+const NUNCA = /\/(api|consulta|sessao|eventos?|definicoes|categorias|historico|contas|guardar|ativar-preset|apagar-preset|guardar-foto|copia-central)(\/|$)|\/ambiente\.json$/;
 const ESTAVEL = /\.(jpe?g|png|webp|gif|avif|svg|woff2)$|\/vendor\//;
 
 self.addEventListener('install', e => {

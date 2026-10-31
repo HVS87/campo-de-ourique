@@ -20,7 +20,7 @@ const LIMITE = 40 * 1024 * 1024;
 const idValido = id => typeof id === 'string' && /^[a-z0-9][a-z0-9-]{0,60}$/.test(id);
 // objetos que se podem copiar e repor (cópia local, reposição); o segredo das sessões fica sempre no servidor
 const ID = '[a-z0-9][a-z0-9-]{0,60}';
-const CHAVE_OBJETO = new RegExp(`^(presets/${ID}/${ID}/(\\d+|atual|revisoes)\\.json|(indice|elementos)/${ID}\\.json|historico/\\d{4}-\\d{2}\\.json|chaves\\.json|contas/contas\\.json|evento/atual\\.json|categorias/fundidas\\.json|apagados/${ID}\\.json)$`);
+const CHAVE_OBJETO = new RegExp(`^(presets/${ID}/${ID}/(\\d+|atual|revisoes)\\.json|(indice|elementos)/${ID}\\.json|historico/\\d{4}-\\d{2}\\.json|chaves\\.json|contas/contas\\.json|evento/(atual|catalogo)\\.json|definicoes/geral\\.json|categorias/fundidas\\.json|apagados/${ID}\\.json)$`);
 export const PAPEIS = { leitor: ['ler'], contribuidor: ['ler', 'enviar'], admin: ['ler', 'enviar', 'admin'] };
 const AUTORIA = ['autor', 'contribuidor', 'utilizador'];
 const semAutoria = o => {
@@ -325,6 +325,20 @@ export function criarAPI({ armazem, nome = 'Servidor central das freguesias', or
       const [, , rec, f, p, extra] = partes, c = await quem(req);
       if (rec === 'estado' && req.method === 'GET') return json(200, { ok: true, nome, api: VERSAO_API, leituraPublica, chave: c ? { nome: c.nome, papel: c.papel, utilizador: c.utilizador || null, conta: c.conta ? c.conta.papel : null, freguesias: c.freguesias } : null });
       if (rec === 'evento' && req.method === 'GET' && !f) return json(200, { evento: await contas.lerEvento() });
+      if (rec === 'definicoes' && req.method === 'GET' && !f) return json(200, { definicoes: await contas.lerDefinicoes() });
+      if (rec === 'definicoes' && req.method === 'POST' && !f) {
+        if (!pode(c, 'admin')) return recusa(c);
+        let b; try { b = JSON.parse(await corpoTexto(req)) || {}; } catch (err) { return json(err.codigo || 400, { erro: err.codigo ? err.message : 'JSON inválido' }); }
+        const r = await contas.mudarDefinicoes({ ...comoConta(c), papel: 'admin' }, b, { origem: 'servidor central' });
+        return r.erro ? json(r.codigo, { erro: r.erro }) : json(200, r);
+      }
+      if (rec === 'eventos' && req.method === 'GET' && !f) return json(200, { eventos: await contas.lerCatalogo() });
+      if (rec === 'eventos' && req.method === 'POST' && !f) {
+        if (!pode(c, 'admin')) return recusa(c);
+        let b; try { b = JSON.parse(await corpoTexto(req)) || {}; } catch (err) { return json(err.codigo || 400, { erro: err.codigo ? err.message : 'JSON inválido' }); }
+        const r = await contas.guardarEvento({ ...comoConta(c), papel: 'admin' }, b, { origem: 'servidor central' });
+        return r.erro ? json(r.codigo, { erro: r.erro }) : json(200, r);
+      }
       if (rec === 'evento' && req.method === 'GET' && f === 'resumo') { if (!pode(c, 'ler')) return recusa(c); const atual = await contas.lerEvento(); const id = q.id || (atual && atual.id); return json(200, id ? await resumoEvento(id) : { evento: null, total: 0, freguesias: {} }); }
       if (rec === 'evento' && req.method === 'POST' && !f) {
         if (!pode(c, 'admin')) return recusa(c);

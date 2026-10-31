@@ -1,7 +1,7 @@
 {
   "name": "campo-de-ourique",
   "productName": "PS Lisboa - Repositório da Cidade",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "Apresentação interativa das freguesias de Lisboa num mapa de satélite, com modo de edição (versão browser e aplicação de computador)",
   "author": "Hugo (HVS87)",
   "license": "MIT",
@@ -48,6 +48,7 @@
       "manifest.webmanifest",
       "config.js",
       "vendor/**",
+      "relatorios/**",
       "dados/**",
       "assets/**",
       "tools/servidor.mjs",

@@ -159,6 +159,30 @@ async function cenario(nome, raiz, gravavel) {
       assert.equal((await (await get('/evento')).json()).evento.ativo, false);
       const { historico } = await (await get('/historico', 'Admin.Teste')).json(); assert.ok(historico.some(x => x.acao === 'ativou o evento' && x.utilizador === 'Admin.Teste')); assert.ok(historico.some(x => x.acao === 'desativou o evento'));
     },
+    'definições: a Visita Guiada inicial liga e desliga, sem depender dos eventos': async () => {
+      assert.equal((await (await get('/definicoes')).json()).definicoes.visitaInicial, true);
+      assert.equal((await post('/definicoes', JSON.stringify({ visitaInicial: false }), { quem: 'Alcantara' })).status, 403);
+      assert.equal((await post('/definicoes', JSON.stringify({ visitaInicial: 'não' }), { quem: 'Admin.Teste' })).status, 400);
+      assert.equal((await post('/definicoes', JSON.stringify({ visitaInicial: false }), { quem: 'Admin.Teste' })).status, 200);
+      assert.equal((await (await get('/definicoes')).json()).definicoes.visitaInicial, false);
+      assert.equal((await post('/definicoes', JSON.stringify({ visitaInicial: true }), { quem: 'Admin.Teste' })).status, 200);
+    },
+    'eventos: todos leem o catálogo, só a administração cria, altera e apaga': async () => {
+      const novo = { id: 'passeios', nome: 'Levantamento de Passeios', icone: '🚶', descricao: 'Passeios em mau estado.', termos: { um: 'passeio', varios: 'passeios' }, categorias: [{ id: 'buraco', nome: 'Buraco', icone: '🕳', cor: '#eb6834' }] };
+      assert.deepEqual((await (await get('/eventos')).json()).eventos, []);
+      assert.equal((await post('/eventos', JSON.stringify(novo), { quem: 'Alcantara' })).status, 403);
+      assert.equal((await post('/eventos', JSON.stringify({ ...novo, id: 'Má id!' }), { quem: 'Admin.Teste' })).status, 400);
+      assert.equal((await post('/eventos', JSON.stringify({ ...novo, nome: ' ' }), { quem: 'Admin.Teste' })).status, 400);
+      assert.equal((await post('/eventos', JSON.stringify({ ...novo, categorias: [{ id: 'a', nome: 'A' }, { id: 'a', nome: 'B' }] }), { quem: 'Admin.Teste' })).status, 400);
+      assert.equal((await post('/eventos', JSON.stringify(novo), { quem: 'Admin.Teste' })).status, 200);
+      assert.equal((await post('/eventos', JSON.stringify({ ...novo, nome: 'Passeios de Lisboa' }), { quem: 'Admin.Teste' })).status, 200);
+      const l = (await (await get('/eventos')).json()).eventos; assert.equal(l.length, 1); assert.equal(l[0].nome, 'Passeios de Lisboa'); assert.equal(l[0].termos.um, 'passeio'); assert.equal(l[0].categorias[0].cor, '#eb6834');
+      assert.equal((await post('/evento', JSON.stringify({ id: 'passeios', nome: 'Passeios de Lisboa', ativo: true }), { quem: 'Admin.Teste' })).status, 200);
+      assert.equal((await post('/eventos', JSON.stringify({ id: 'passeios', apagar: true }), { quem: 'Admin.Teste' })).status, 409); // ativo não se apaga
+      assert.equal((await post('/evento', JSON.stringify({ id: 'passeios', ativo: false }), { quem: 'Admin.Teste' })).status, 200);
+      assert.equal((await post('/eventos', JSON.stringify({ id: 'passeios', apagar: true }), { quem: 'Admin.Teste' })).status, 200);
+      assert.deepEqual((await (await get('/eventos')).json()).eventos, []);
+    },
     'terminar a sessão': async () => {
       const r = await post('/sessao/terminar', '', { quem: 'Alcantara' }); assert.match(r.headers.get('set-cookie'), /Max-Age=0/);
       assert.equal((await post('/guardar?freguesia=alcantara', JSON.stringify({ preset: 'x', elementos: [] }))).status, 401);

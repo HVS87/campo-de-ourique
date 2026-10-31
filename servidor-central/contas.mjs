@@ -15,6 +15,8 @@
 //   contas/contas.json (as contas, com os verificadores) · contas/segredo.json (assina as sessões; nunca sai do servidor)
 //   historico/<AAAA-MM>.json (quem fez o quê, só para a administração)
 //   evento/atual.json (o evento em curso: { id, nome, ativo, desde, por }; a administração ativa-o e desativa-o)
+//   evento/catalogo.json (os eventos criados pela administração: nome, ícone, termos e tipos de registo)
+//   definicoes/geral.json (as opções da plataforma que a administração escolhe: { visitaInicial })
 export const ITERACOES = 100000;
 export const PAPEIS_CONTA = { freguesia: 'Freguesia', cidade: 'Cidade', admin: 'Administração' };
 const ESPERA_BASE = 60e3, ESPERA_MAX = 15 * 60e3, ERROS_ATE_BLOQUEAR = 5;
@@ -208,5 +210,44 @@ export function criarContas({ armazem, iniciais = [], segredo = '', horas = 12, 
     await registar({ conta: admin, acao: (ativo ? 'ativou' : 'desativou') + ' o evento', alvo: evento.nome, origem: contexto.origem });
     return { evento };
   }
-  return { entrar, verificar, mudarPalavraPasse, reporPalavraPasse, listar, registar, historico, garantir, lerEvento, definirEvento };
+  // o catálogo: os eventos que a administração criou ou alterou (a página junta-os aos que traz de origem)
+  const KC = 'evento/catalogo.json', ID_EVENTO = /^[a-z0-9][a-z0-9-]{0,40}$/;
+  async function lerCatalogo() { const c = await lerJSON(KC); return Array.isArray(c) ? c : []; }
+  const texto = (v, max) => String(v == null ? '' : v).trim().slice(0, max);
+  function eventoLimpo(e) {
+    const categorias = (Array.isArray(e.categorias) ? e.categorias : []).slice(0, 12).map(c => ({ id: texto(c && c.id, 41), nome: texto(c && c.nome, 60), icone: texto(c && c.icone, 8), cor: /^#[0-9a-f]{6}$/i.test(c && c.cor) ? c.cor : '#9aa3ad' }));
+    if (categorias.some(c => !ID_EVENTO.test(c.id) || !c.nome) || new Set(categorias.map(c => c.id)).size !== categorias.length) return null;
+    const termos = e.termos || {};
+    return { id: e.id, nome: texto(e.nome, 80), icone: texto(e.icone, 8) || '📍', descricao: texto(e.descricao, 500), competencia: ['governo', 'camara', 'junta'].includes(e.competencia) ? e.competencia : '', termos: { um: texto(termos.um, 30) || 'registo', varios: texto(termos.varios, 30) || 'registos' }, categorias };
+  }
+  async function guardarEvento(admin, b, contexto = {}) {
+    if (!admin || admin.papel !== 'admin') return { erro: 'Só a administração cria e altera eventos', codigo: 403 };
+    if (!ID_EVENTO.test(String(b.id || ''))) return { erro: 'Evento inválido', codigo: 400 };
+    const lista = await lerCatalogo(), i = lista.findIndex(e => e.id === b.id);
+    if (b.apagar) {
+      const atual = await lerEvento(); if (atual && atual.id === b.id && atual.ativo) return { erro: 'Desativa o evento antes de o apagar', codigo: 409 };
+      if (i < 0) return { erro: 'Evento não encontrado', codigo: 404 };
+      const [fora] = lista.splice(i, 1); await armazem.escrever(KC, JSON.stringify(lista, null, 1));
+      await registar({ conta: admin, acao: 'apagou o evento', alvo: fora.nome, origem: contexto.origem });
+      return { eventos: lista };
+    }
+    if (Array.isArray(b.categorias) && b.categorias.length > 12) return { erro: 'Um evento tem no máximo 12 tipos', codigo: 400 };
+    const e = eventoLimpo(b); if (!e || !e.nome) return { erro: 'O evento precisa de um nome, e cada tipo de um nome diferente', codigo: 400 };
+    if (i >= 0) lista[i] = e; else lista.push(e);
+    await armazem.escrever(KC, JSON.stringify(lista, null, 1));
+    await registar({ conta: admin, acao: (i >= 0 ? 'alterou' : 'criou') + ' o evento', alvo: e.nome, origem: contexto.origem });
+    return { eventos: lista };
+  }
+  // as definições gerais da plataforma: visitaInicial (a Visita Guiada abre sozinha a quem nunca a viu; ligada por omissão)
+  const KD = 'definicoes/geral.json';
+  async function lerDefinicoes() { return { visitaInicial: true, ...((await lerJSON(KD)) || {}) }; }
+  async function mudarDefinicoes(admin, b, contexto = {}) {
+    if (!admin || admin.papel !== 'admin') return { erro: 'Só a administração muda as definições', codigo: 403 };
+    if (typeof b.visitaInicial !== 'boolean') return { erro: 'Definição inválida', codigo: 400 };
+    const definicoes = { ...(await lerDefinicoes()), visitaInicial: b.visitaInicial };
+    await armazem.escrever(KD, JSON.stringify(definicoes, null, 1));
+    await registar({ conta: admin, acao: (b.visitaInicial ? 'ligou' : 'desligou') + ' a Visita Guiada inicial', origem: contexto.origem });
+    return { definicoes };
+  }
+  return { entrar, verificar, mudarPalavraPasse, reporPalavraPasse, listar, registar, historico, garantir, lerEvento, definirEvento, lerCatalogo, guardarEvento, lerDefinicoes, mudarDefinicoes };
 }

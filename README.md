@@ -35,6 +35,10 @@ os dedos (pinça) na vista geral da freguesia também abre o mapa de Lisboa.
 
 ### Visita guiada
 
+A abertura automática é um interruptor próprio do `System.Admin`, no menu da conta («Abrir a Visita Guiada a quem entra pela
+primeira vez»): não depende de haver um evento ativo, e fica no servidor central e no local. Desligada, a visita continua
+no índice (☰ → 🎓 Visita guiada).
+
 Na primeira vez que se abre a apresentação, uma visita guiada explica a interface passo a passo: cada passo realça
 um elemento do ecrã (a escurecer o resto) e explica-o num cartão, com «Seguinte», «Anterior» e uma barra de
 progresso. Nos passos do mapa pode-se experimentar ao mesmo tempo; os outros preparam o ecrã sozinhos (abrem o
@@ -184,7 +188,7 @@ cidade toda:
 
 Um **evento** é um levantamento feito por equipas por toda a cidade, como o **Levantamento Iluminação Pública**
 (candeeiros apagados ou fundidos e candeeiros em falta ou zonas escuras). O `System.Admin` liga-o e desliga-o no menu da
-conta → **Evento** (ou na página de consulta do servidor central). O estado fica no servidor central, se houver, e no
+conta → **Eventos** (ou na página de consulta do servidor central). O estado fica no servidor central, se houver, e no
 servidor local; a apresentação lembra-o neste browser para abrir sem rede.
 
 Com o evento ativo:
@@ -206,13 +210,28 @@ Com o evento ativo:
 - **O resumo da cidade**, no mapa de Lisboa (botão «💡 Resumo da cidade» na barra), é uma tabela com o total de
   Lisboa e, por freguesia, o número de cada tipo. Vem do servidor central (que junta as 24 freguesias) ou, sem ele,
   dos ficheiros de cada freguesia neste computador.
-- **A visita guiada não arranca sozinha** na primeira abertura enquanto o evento durar; continua no índice (☰ → 🎓 Visita guiada).
 
 No modelo de dados, o conjunto leva `evento: "iluminacao"` e `detalhes`, uma entrada por ponto:
 `{ i, c: "fundido" | "falta", rua, numero, quando, autor, precisao? }`; `i` identifica o registo. Várias equipas podem
 registar na mesma freguesia: o servidor central junta os registos de todos os dispositivos, em vez de os substituir, e
 cada dispositivo traz os dos outros ao entrar na edição e depois de enviar. Um registo tirado fica em
 `removidosEvento` e não volta. O resumo da cidade soma os presets de cada freguesia, sem contar duas vezes o mesmo registo.
+
+### Criar eventos e exportar o relatório
+
+Em menu da conta → **Eventos**, o `System.Admin` vê todos os eventos e pode:
+
+- **+ Novo evento:** nome, ícone, descrição, competência, como se chama um registo («falha»/«falhas», «passeio»/«passeios») e,
+  se fizer falta, os tipos de registo, cada um com a sua cor. O evento fica em `evento/catalogo.json`, no servidor central e no
+  local, e a página junta-o aos que traz de origem. Nenhum outro código depende do tema do evento.
+- **Competência:** a do Levantamento Iluminação Pública é sempre a Câmara Municipal e não se muda nem no evento nem no conjunto.
+- **Ativar ou desativar:** só há um ativo de cada vez. Os registos ficam guardados ao mudar de evento.
+- **Exportar PDF:** funciona também com o evento inativo. Escolhem-se os tipos a incluir e se levam fotos. O relatório
+  (`relatorios/evento.js`, com a biblioteca `vendor/jspdf`) começa pelo resumo da cidade: totais, tipos, mapa e tabela por
+  freguesia, e ruas com mais registos. Segue com cada freguesia: o mapa dos registos e a ficha de cada um, com a morada, o tipo, a
+  data, as coordenadas, um mapa do sítio exato, as notas e as fotos. Os nomes de quem registou não saem no relatório.
+  Os mapas das fichas vêm do satélite da DGT e, sem rede, da imagem guardada da freguesia.
+- **Apagar:** só um evento criado aqui, inativo e sem registos.
 
 ## Modo de edição
 

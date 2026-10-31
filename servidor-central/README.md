@@ -181,6 +181,10 @@ Os pedidos levam `Authorization: Bearer <testemunho da sessão ou chave de acess
 | `POST /api/v1/evento` | admin | recebe `{ id, nome, ativo }` e liga ou desliga o evento |
 | `GET /api/v1/categorias` | leitor | as categorias de todos os presets e onde são usadas |
 | `POST /api/v1/categorias/fundir` | administração | `{ de: [nomes], para, icone, cor }` junta-as numa só em todo o lado (cada preset alterado ganha uma revisão) |
+| `GET /api/v1/definicoes` | todos | as opções gerais: `{ definicoes: { visitaInicial } }` |
+| `POST /api/v1/definicoes` | admin | recebe `{ visitaInicial }`: a Visita Guiada abre ou não sozinha a quem nunca a viu |
+| `GET /api/v1/eventos` | todos | os eventos criados pela administração: `{ eventos: [{ id, nome, icone, descricao, competencia, termos, categorias }] }` |
+| `POST /api/v1/eventos` | admin | cria ou altera um evento; com `{ id, apagar: true }` apaga-o (recusa se estiver ativo) |
 | `GET /api/v1/evento/resumo?id=` | leitor | por freguesia, quantos registos de cada categoria tem o evento, somando os presets, e o total da cidade |
 | `GET /api/v1/contas` | admin | as contas, sem os verificadores, com a última entrada e o bloqueio |
 | `POST /api/v1/contas/<utilizador>/palavra-passe` | admin | recebe `{ nova }` (chave de entrada) e repõe a palavra-passe |

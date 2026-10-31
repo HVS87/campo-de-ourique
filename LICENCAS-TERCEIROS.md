@@ -6,6 +6,7 @@ A licença MIT do ficheiro [LICENSE](LICENSE) cobre o código deste projeto (HTM
 | O quê | Onde | Licença |
 |---|---|---|
 | Leaflet 1.9.4, © Vladimir Agafonkin, CloudMade | `vendor/leaflet/` | BSD 2-Clause |
+| jsPDF 4.2.1, © Parallax, Pure Lyric e colaboradores | `vendor/jspdf/` | MIT |
 | Electron 44 (inclui o Chromium e o Node.js), © OpenJS Foundation e colaboradores | dentro da aplicação de computador | MIT (o Chromium e o Node.js trazem as suas licenças, no ficheiro LICENSES.chromium.html da aplicação) |
 | electron-updater, © Loopline Systems e colaboradores do electron-builder | dentro da aplicação de computador (atualizações) | MIT |
 | Leaflet 1.9.4 por CDN (cdnjs) | página de consulta do servidor central (`servidor-central/consulta.html`) | BSD 2-Clause |

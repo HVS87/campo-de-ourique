@@ -173,6 +173,21 @@ async function bateria(tipo) {
       assert.equal((await enviar(c.chave, 'ajuda', 'k', { ...preset('K', 1), freguesia: 'ajuda' })).status, 201);
       assert.equal((await enviar(c.chave, 'belem', 'k', { ...preset('K', 1), freguesia: 'belem' })).status, 403);
     },
+    'definições: a Visita Guiada inicial no servidor central': async () => {
+      assert.equal((await (await pedir(null, '/definicoes')).json()).definicoes.visitaInicial, true);
+      assert.equal((await pedir(contribuidor, '/definicoes', { method: 'POST', body: JSON.stringify({ visitaInicial: false }) })).status, 403);
+      assert.equal((await pedir(sessoes.Admin, '/definicoes', { method: 'POST', body: JSON.stringify({ visitaInicial: false }) })).status, 200);
+      assert.equal((await (await pedir(null, '/definicoes')).json()).definicoes.visitaInicial, false);
+      assert.equal((await pedir(sessoes.Admin, '/definicoes', { method: 'POST', body: JSON.stringify({ visitaInicial: true }) })).status, 200);
+    },
+    'eventos: o catálogo no servidor central': async () => {
+      const novo = { id: 'passeios', nome: 'Levantamento de Passeios', termos: { um: 'passeio', varios: 'passeios' }, categorias: [{ id: 'buraco', nome: 'Buraco', cor: '#eb6834' }] };
+      assert.deepEqual((await (await pedir(null, '/eventos')).json()).eventos, []);
+      assert.equal((await pedir(contribuidor, '/eventos', { method: 'POST', body: JSON.stringify(novo) })).status, 403);
+      assert.equal((await pedir(sessoes.Admin, '/eventos', { method: 'POST', body: JSON.stringify(novo) })).status, 200);
+      assert.equal((await (await pedir(null, '/eventos')).json()).eventos[0].termos.varios, 'passeios');
+      assert.equal((await pedir(sessoes.Admin, '/eventos', { method: 'POST', body: JSON.stringify({ id: 'passeios', apagar: true }) })).status, 200);
+    },
     'evento: estado, ativação e resumo por freguesia': async () => {
       assert.equal((await (await pedir(null, '/evento')).json()).evento, null);
       assert.equal((await pedir(contribuidor, '/evento', { method: 'POST', body: JSON.stringify({ id: 'iluminacao', ativo: true }) })).status, 403);
