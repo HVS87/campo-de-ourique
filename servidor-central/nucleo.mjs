@@ -40,7 +40,7 @@ const semAcentos = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLow
 function geometria(e) {
   const ll = p => [p[1], p[0]]; // [lat, lon] → [lon, lat] do GeoJSON
   if (e.tipo === 'ponto' && e.pos) return { type: 'Point', coordinates: ll(e.pos) };
-  if (e.tipo === 'grupo' && e.pontos) return { type: 'MultiPoint', coordinates: e.pontos.map(ll) };
+  if (e.tipo === 'grupo' && e.pontos && e.pontos.length) return { type: 'MultiPoint', coordinates: e.pontos.map(ll) };
   if (e.tipo === 'rua' && e.linhas) return { type: 'MultiLineString', coordinates: e.linhas.map(l => l.map(ll)) };
   if (e.tipo === 'zona' && e.poligono) return { type: 'Polygon', coordinates: [e.poligono.concat([e.poligono[0]]).map(ll)] };
   return null; // desmaterializado (ou rua sem traçado)
@@ -67,11 +67,15 @@ function achatar(reg) { // calculado uma vez, ao receber (a consulta só junta l
 // Pontos dos conjuntos: cada envio leva o preset inteiro do dispositivo que o fez, por isso os registos juntam-se aos que
 // já cá estão (duas equipas com a mesma conta não apagam os registos uma da outra). Cada registo tem um id («i»); um
 // registo tirado fica em dados.removidosEvento = { <evento>: [ids] } e não volta. Ordem por data, para o mesmo conteúdo dar o mesmo texto.
-function juntarEventos(antes, d) {
+// O conjunto de um evento pode ficar sem pontos, e só a administração o apaga: apagado, fica em dados.conjuntosApagados e um
+// dispositivo atrasado não o traz de volta, a não ser com um registo novo.
+function juntarEventos(antes, d, { admin = false } = {}) {
   if (!antes) return;
   const removidos = {};
   for (const fonte of [antes.removidosEvento, d.removidosEvento]) for (const [ev, ids] of Object.entries(fonte || {})) removidos[ev] = [...new Set([...(removidos[ev] || []), ...(Array.isArray(ids) ? ids : [])])];
   if (Object.keys(removidos).length) d.removidosEvento = removidos;
+  const apagados = [...new Set([...((antes && antes.conjuntosApagados) || []), ...(admin && Array.isArray(d.conjuntosApagados) ? d.conjuntosApagados : [])])]; // só a administração acrescenta
+  if (apagados.length) d.conjuntosApagados = apagados; else delete d.conjuntosApagados;
   const grupos = x => (x.elementos || []).filter(e => e && e.tipo === 'grupo' && Array.isArray(e.detalhes)), chave = e => e.evento || e.id;
   for (const ev of new Set([...grupos(antes), ...grupos(d)].map(chave))) {
     const a = grupos(antes).find(e => chave(e) === ev), g = grupos(d).find(e => chave(e) === ev);
@@ -84,7 +88,13 @@ function juntarEventos(antes, d) {
       juntos.set(id, { p: novo ? e.pontos[i] : ja.p, x: junto });
     });
     const lista = [...juntos.values()].sort((p, q) => String(p.x.quando || '').localeCompare(String(q.x.quando || '')) || (p.x.quando ? String(p.x.i || '').localeCompare(String(q.x.i || '')) : 0)); // sem data, fica a ordem em que vieram
-    if (!lista.length) { if (g) d.elementos.splice(d.elementos.indexOf(g), 1); continue; }
+    if (!lista.length) {
+      const doEvento = (g || a).evento;
+      if (doEvento && g && !apagados.includes(ev)) { g.pontos = []; g.detalhes = []; continue; } // fica, vazio, à espera dos próximos registos
+      if (g) d.elementos.splice(d.elementos.indexOf(g), 1);
+      if (doEvento && !g && !admin && !apagados.includes(ev)) d.elementos.push({ ...a, pontos: [], detalhes: [] }); // quem não é da administração não o apaga
+      continue;
+    }
     const alvo = g || { ...a }; alvo.pontos = lista.map(l => l.p); alvo.detalhes = lista.map(l => l.x); if (!g) d.elementos.push(alvo);
   }
 }
@@ -161,7 +171,7 @@ export function criarAPI({ armazem, nome = 'Servidor central das freguesias', or
     const juntar = t => { // corre outra vez se outro envio do mesmo preset gravar primeiro: ninguém pisa os registos de ninguém
       try { atual = t == null ? null : JSON.parse(t); } catch (err) { atual = null; }
       const novo = corpo.soEvento && atual ? soEventos(atual.dados, structuredClone(d)) : structuredClone(d);
-      juntarEventos(atual && atual.dados, novo); reg = null;
+      juntarEventos(atual && atual.dados, novo, { admin: pode(c, 'admin') }); reg = null;
       for (const x of fundidas) fundirCategorias(novo, x.de, x.para, x.modelo);
       if (atual && JSON.stringify(atual.dados) === JSON.stringify(novo)) return t; // nada mudou
       const rev = (atual ? atual.revisao : 0) + 1, recebido = new Date().toISOString();

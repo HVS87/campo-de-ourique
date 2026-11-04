@@ -1047,6 +1047,7 @@ async function verificarDuplicado(el) { // depois de criar, largar ou renomear u
 }
 async function reverDuplicados() { for (const [a, b] of paresDuplicados()) { if (POR_ID[a.id] !== a || POR_ID[b.id] !== b) continue; if ((await perguntarDuplicado(b, a)) === 'cancelar') break; } }
 function consolidar(fica, sai) {
+  if (podeFicarVazio(sai) && !daAdministracao()) { aviso('Só a administração apaga o conjunto de um evento.', 4000); return; }
   const lista = e => e.pai ? e.pai.filhos : ELEMENTOS;
   const reg = { quando: Date.now(), fica: fica.id, sai: sai.id, nomeFica: fica.nome, nomeSai: sai.nome, antesFica: clonar(limpo(fica, true)), antesSai: clonar(limpo(sai, true)), paiFica: fica.pai ? fica.pai.id : null, paiSai: sai.pai ? sai.pai.id : null, posFica: lista(fica).indexOf(fica), posSai: lista(sai).indexOf(sai),
     catsFica: categoriasDe(fica).map(c => c.id), catsSai: categoriasDe(sai).map(c => c.id), visitaFica: Array.isArray(C.visita) && C.visita.includes(fica.id), visitaSai: Array.isArray(C.visita) ? C.visita.indexOf(sai.id) : -1 };
@@ -1101,6 +1102,9 @@ async function verConsolidacoes() {
     reverterConsolidacao(k);
   }
 }
+// a exceção à regra de um conjunto ter pelo menos um ponto: o de um evento fica, mesmo vazio, à espera dos próximos registos da freguesia
+function podeFicarVazio(el) { return el.tipo === 'grupo' && !!el.evento; }
+const daAdministracao = () => !!(SESSAO && SESSAO.papel === 'admin'); // só ela apaga o conjunto de um evento e tira todos os registos de uma vez
 function preparar(el, pai) {
   if (!el || !el.id || !TIPO[el.tipo]) { console.warn('Elemento ignorado (sem id ou tipo válido):', el); return null; }
   if (POR_ID[el.id]) console.warn('Id repetido:', el.id);
@@ -1122,7 +1126,7 @@ function preparar(el, pai) {
   if (el.competencia && !COMP[el.competencia]) { console.warn('Competência desconhecida:', el.id, el.competencia); delete el.competencia; }
   if (el.tipo === 'desmaterializado') { delete el.pos; delete el.area; } // sem lugar no mapa
   if (el.tipo === 'ponto' && !el.pos && el.area && D.areas[el.area]) el.pos = centro(D.areas[el.area]);
-  const ok = el.tipo === 'desmaterializado' ? true : el.tipo === 'ponto' ? !!el.pos : el.tipo === 'grupo' ? !!(el.pontos && el.pontos.length) : el.tipo === 'rua' ? !!(el.linhas && el.linhas.length) : !!(el.poligono && el.poligono.length >= 3);
+  const ok = el.tipo === 'desmaterializado' ? true : el.tipo === 'ponto' ? !!el.pos : el.tipo === 'grupo' ? !!(el.pontos && (el.pontos.length || podeFicarVazio(el))) : el.tipo === 'rua' ? !!(el.linhas && el.linhas.length) : !!(el.poligono && el.poligono.length >= 3);
   if (!ok) { console.warn('Elemento sem geometria:', el.id); return null; }
   POR_ID[el.id] = el;
   el.filhos = el.tipo === 'zona' ? (el.filhos || []).map(f => preparar(f, el)).filter(Boolean) : [];
@@ -1308,7 +1312,7 @@ function ligarPulsar(v, partes) {
 function limitesDe(el) {
   if (el.tipo === 'desmaterializado') return null; // sem lugar no mapa
   if (el.tipo === 'ponto') return L.latLngBounds([el.pos, el.pos]);
-  if (el.tipo === 'grupo') return L.latLngBounds(el.pontos);
+  if (el.tipo === 'grupo') return el.pontos.length ? L.latLngBounds(el.pontos) : null; // vazio: o de um evento, sem registos
   if (el.tipo === 'rua') return L.latLngBounds(el.linhas.flat());
   return L.latLngBounds(el.poligono);
 }
@@ -2926,6 +2930,7 @@ function serializar(completo) {
   const d = { preset: C.preset, freguesia: FREG.id, titulo: C.titulo || FREG.nome, subtitulo: C.subtitulo || '', elementos: ELEMENTOS.map(e => limpo(e, completo)) };
   if (Array.isArray(C.visita)) d.visita = C.visita.filter(id => POR_ID[id]);
   if (C.removidosEvento && Object.keys(C.removidosEvento).length) d.removidosEvento = C.removidosEvento;
+  if (C.conjuntosApagados && C.conjuntosApagados.length) d.conjuntosApagados = C.conjuntosApagados;
   const mantidos = (C.duplicadosMantidos || []).filter(p => p.split('|').every(id => POR_ID[id])); if (mantidos.length) d.duplicadosMantidos = mantidos;
   if (C.categorias && C.categorias.length) d.categorias = C.categorias.map(c => ({ id: c.id, nome: c.nome, icone: c.icone || '', cor: c.cor, membros: c.membros.filter(id => POR_ID[id]) }));
   return d;
@@ -2942,7 +2947,7 @@ function carregar(d) {
   ELEMENTOS.length = 0; for (const k in POR_ID) delete POR_ID[k];
   C.titulo = d.titulo; C.subtitulo = d.subtitulo; consolidacoes = []; C.duplicadosMantidos = d.duplicadosMantidos;
   for (const e of d.elementos || []) { const p = preparar(e, null); if (p) ELEMENTOS.push(p); }
-  C.visita = d.visita; C.categorias = d.categorias || []; C.removidosEvento = d.removidosEvento; normalizarExtras(); categoriasAtivas.clear();
+  C.visita = d.visita; C.categorias = d.categorias || []; C.removidosEvento = d.removidosEvento; C.conjuntosApagados = d.conjuntosApagados; normalizarExtras(); categoriasAtivas.clear();
   aplicarTitulo(); construir(); construirIndice(); construirPesquisa(); atualizarAvisosEdicao();
   if (edicao) { $('#ed-titulo').value = C.titulo || ''; $('#ed-subtitulo').value = C.subtitulo || ''; }
 }
@@ -3481,7 +3486,7 @@ async function sincronizarConjuntos() {
       else { g.pontos.push(la.pontos[i]); g.detalhes.push(d); }
       mudou = true;
     });
-    if (g && !g.pontos.length) { if (selecionado === g) { fecharCartao(); limparSelecao(); } removerDoModelo(g); mudou = true; } // outro dispositivo tirou o último
+    if (g && !g.pontos.length && !podeFicarVazio(g)) { if (selecionado === g) { fecharCartao(); limparSelecao(); } removerDoModelo(g); mudou = true; } // outro dispositivo tirou o último
   }
   if (mudou) { construir(); construirIndice(); construirPesquisa(); if (selecionado && POR_ID[selecionado.id] === selecionado) selecionar(selecionado, false, !cartaoAberto()); }
 }
@@ -4004,9 +4009,11 @@ function removerDoModelo(el) {
   delete POR_ID[el.id]; for (const f of el.filhos || []) delete POR_ID[f.id];
 }
 async function apagar(el) {
+  if (podeFicarVazio(el) && !daAdministracao()) { aviso('Só a administração apaga o conjunto de um evento. Podes tirar os pontos, um a um.', 5000); return; }
   const n = (el.filhos || []).length;
   if (!(await confirmar('Apagar elemento', `Apagar «${esc(el.nome)}»${n ? ` e os seus ${n} ponto${n > 1 ? 's' : ''}` : ''}?`, 'Apagar', true))) return;
   limparSelecao(); fecharCartao(); removerDoModelo(el); if (el.tipo === 'grupo') marcarRemovidos(el, el.detalhes || []);
+  if (podeFicarVazio(el)) C.conjuntosApagados = [...new Set([...(C.conjuntosApagados || []), chaveConjunto(el)])]; // o servidor central não o traz de volta
   esquecerIds([el.id, ...(el.filhos || []).map(f => f.id)]);
   construir(); construirIndice(); construirPesquisa(); marcarAlterado();
 }
@@ -4099,7 +4106,7 @@ function htmlForm(el) {
       <div class="checks">${C.categorias.map(c => `<label class="check"><input type="checkbox" name="cat" value="${c.id}" ${c.membros.includes(el.id) ? 'checked' : ''}><span class="pinta categoria" style="--c:${c.cor}"></span>${c.icone ? esc(c.icone) + ' ' : ''}${esc(c.nome)}</label>`).join('') || '<span class="nota">Ainda não há categorias: cria-as no índice (☰), em «+ Nova categoria».</span>'}</div>
       <label class="check destaque"><input type="checkbox" name="visita" ${visitaIds().includes(el.id) ? 'checked' : ''}>Destaque na Vista de Apresentação</label>
     </div>
-    <div class="acoes-ed"><button type="button" class="btn" data-ac="subir" title="Mover para cima na ordem">↑</button><button type="button" class="btn" data-ac="descer" title="Mover para baixo na ordem">↓</button><span class="esp"></span><button type="button" class="btn perigo" data-ac="apagar">Apagar</button><button type="button" class="btn on" data-ac="concluir">Concluído</button></div>
+    <div class="acoes-ed"><button type="button" class="btn" data-ac="subir" title="Mover para cima na ordem">↑</button><button type="button" class="btn" data-ac="descer" title="Mover para baixo na ordem">↓</button><span class="esp"></span>${podeFicarVazio(el) && !daAdministracao() ? '' : `<button type="button" class="btn perigo" data-ac="apagar">Apagar</button>`}<button type="button" class="btn on" data-ac="concluir">Concluído</button></div>
   </form>`;
 }
 function htmlTiposPonto(el) { // os tipos deste conjunto: dão a cor de cada ponto e as linhas da tabela do cartão
@@ -4112,6 +4119,7 @@ function htmlFormLugar(el) { // pontos do conjunto; tirar do mapa ou pôr no map
     return `<div class="fotos-ed"><h3>Pontos do conjunto (${el.pontos.length})</h3>
       ${el.pontos.map((q, i) => { const d = detalheDe(el, i), cat = d && tipoDoPonto(el, d); return `<div class="membro"><span class="pinta" style="--c:${cat ? cat.cor : p.cor}"></span><span class="abrir-sub" role="button" tabindex="0" data-sub="${i}" title="Abrir o cartão deste ponto">${cat ? esc(cat.icone) + ' ' + esc(moradaTexto(d)) : esc(nomeSub(el, i))} <small class="nota">${cat && d.quando ? esc(dataHora(d.quando)) : q[0].toFixed(5) + ', ' + q[1].toFixed(5)}</small></span><button type="button" class="fechar" data-ac="grupo-tirar" data-i="${i}" aria-label="Tirar o ponto ${i + 1}">✕</button></div>`; }).join('')}
       ${el.evento ? '' : `<div class="linha"><button type="button" class="btn" data-ac="grupo-registar" title="Procura a tua localização e sugere a morada, que confirmas antes de registar">📍 Registar na minha localização</button><button type="button" class="btn${aAcrescentar ? ' on' : ''}" data-ac="grupo-mais">＋ Acrescentar pontos no mapa</button>${(s => s.length ? `<select name="agregar-solto" class="seletor" aria-label="Agregar um ponto solto"><option value="">⁘ Agregar um ponto solto…</option>${s.map(x => `<option value="${esc(x.id)}">${esc(x.nome)}</option>`).join('')}</select>` : '')(pontosComLugar())}</div>`}
+      ${el.evento ? (el.pontos.length ? (daAdministracao() ? '<div class="linha"><button type="button" class="btn perigo" data-ac="grupo-tirar-todos" title="Só a administração">Tirar todos os registos</button></div>' : '') : '<div class="nota">Ainda sem registos nesta freguesia: o próximo registo do evento entra aqui.</div>') : ''}
       <div class="nota">Toca num ponto para abrir o seu cartão. Arrasta os pontos no mapa para os mudar de sítio; ${el.evento ? '' : 'largar um ponto solto em cima de um ponto do conjunto agrega-o.'}</div></div>${el.evento ? '' : htmlTiposPonto(el)}`;
   }
   if (el.tipo === 'ponto') return `<div class="fotos-ed"><h3>Lugar no mapa</h3><div class="linha">${el.pai ? '' : '<button type="button" class="btn" data-ac="em-conjunto" title="Acrescentar mais pontos com este mesmo cartão">⁘ Transformar em conjunto</button>'}<button type="button" class="btn" data-ac="desmaterializar" title="Fica sem lugar no mapa, no canto superior direito">◌ Desmaterializar</button>${(c => c.length ? `<select name="agregar-a" class="seletor" aria-label="Agregar a um conjunto"><option value="">⁘ Agregar a um conjunto…</option>${c.map(x => `<option value="${esc(x.id)}">${esc(x.nome)}</option>`).join('')}</select>` : '')(ELEMENTOS.filter(x => x.tipo === 'grupo' && !x.evento))}</div></div>`;
@@ -4230,8 +4238,13 @@ modalConteudo.addEventListener('click', async e => {
   else if (ac === 'foto-ficheiro' || ac === 'foto-camara') { const inp = form.querySelector(ac === 'foto-camara' ? 'input[name=camara]' : 'input[name=ficheiros]'); inp.onchange = () => adicionarFicheiros(el, [...inp.files], dono); inp.click(); }
   else if (ac === 'foto-url') { const u = await perguntarTexto('Foto por endereço', 'Endereço ou caminho da imagem (por exemplo assets/fotos/nome.jpg)', '', 'Acrescentar'); if (u && u.trim()) { dono.fotos.push({ src: u.trim(), legenda: '' }); if (dono !== el) tocado(dono); marcarAlterado(); mostrarInfo(el, modal.classList.contains('lado') ? 'lado' : 'baixo'); } }
   else if (ac === 'grupo-tirar') {
-    if (el.pontos.length <= 1) { aviso('Um conjunto precisa de pelo menos um ponto; para o eliminar, apaga o conjunto.', 4000); return; }
+    if (el.pontos.length <= 1 && !podeFicarVazio(el)) { aviso('Um conjunto precisa de pelo menos um ponto; para o eliminar, apaga o conjunto.', 4000); return; }
     el.pontos.splice(+b.dataset.i, 1); if (Array.isArray(el.detalhes)) marcarRemovidos(el, el.detalhes.splice(+b.dataset.i, 1)); construir(); marcarAlterado(); selecionar(el, false);
+  }
+  else if (ac === 'grupo-tirar-todos') {
+    const n = el.pontos.length, T = termosDe(EVENTOS[el.evento]);
+    if (!n || !podeFicarVazio(el) || !daAdministracao() || !(await confirmar('Tirar todos os registos', `Tirar todos os registos de ${esc(FREG.nome)} (${n})? O conjunto fica, sem pontos, à espera dos próximos registos. Ao guardar, saem também dos outros dispositivos.`, 'Tirar todos', true))) return;
+    el.pontos.length = 0; marcarRemovidos(el, el.detalhes.splice(0)); construir(); construirIndice(); marcarAlterado(); selecionar(el, false);
   }
   else if (ac === 'desagregar') desagregarPonto(el, +b.dataset.i);
   else if (ac === 'grupo-registar') levantamento(fonteRegisto(el));

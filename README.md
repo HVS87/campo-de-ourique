@@ -230,6 +230,7 @@ Em menu da conta → **Eventos**, o `System.Admin` vê todos os eventos e pode:
 - **+ Novo evento:** nome, ícone, descrição, competência, como se chama um registo («falha»/«falhas», «passeio»/«passeios») e,
   se fizer falta, os tipos de registo, cada um com a sua cor. O evento fica em `evento/catalogo.json`, no servidor central e no
   local, e a página junta-o aos que traz de origem. Nenhum outro código depende do tema do evento.
+- **Conjunto sem pontos:** ao contrário dos outros conjuntos, o de um evento pode ficar vazio. Qualquer conta acrescenta e tira pontos, um a um, e o conjunto fica à espera dos próximos registos da freguesia. Só o `System.Admin` tira todos os registos de uma vez («Tirar todos os registos») e apaga o conjunto por completo. O servidor central aplica a mesma regra: um envio de uma freguesia sem o conjunto não o apaga, e um conjunto apagado pela administração só volta com um registo novo.
 - **Competência:** a do Levantamento Iluminação Pública é sempre a Câmara Municipal e não se muda nem no evento nem no conjunto.
 - **Calendário, em alternativa ao controlo manual:** ao editar o evento, escolhe-se «Pelo calendário», com o início e o fim. O evento liga-se e desliga-se sozinho a essas horas, mesmo com a página aberta ou sem rede, e o painel deixa de oferecer «Ativar»; «Terminar agora» encurta-o. Os calendários não se podem sobrepor. Enquanto um decorre, passa à frente do que estiver ligado à mão e não se liga outro.
 - **Ativar ou desativar:** só há um ativo de cada vez. Os registos ficam guardados ao mudar de evento.

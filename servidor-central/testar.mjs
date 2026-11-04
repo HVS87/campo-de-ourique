@@ -208,6 +208,19 @@ async function bateria(tipo) {
       const r = await (await pedir(contribuidor, '/evento/resumo')).json();
       assert.equal(r.evento, 'iluminacao'); assert.equal(r.total, 4); assert.deepEqual(r.freguesias.belem.contagens, { fundido: 2, falta: 1 }); assert.equal(r.freguesias.belem.total, 3); assert.equal(r.freguesias.alcantara.total, 1);
       assert.equal((await pedir(null, '/evento/resumo')).status, 401);
+      // o conjunto de um evento pode ficar sem pontos: guarda-se, conta zero e não tem geometria
+      assert.equal((await enviar(contribuidor, 'alcantara', 'vazio', { ...grupo('alcantara', []), preset: 'vazio' })).status, 201);
+      const vz = (await (await pedir(contribuidor, '/elementos?freguesia=alcantara')).json()).elementos.find(e => e.preset === 'vazio' && e.evento === 'iluminacao'); assert.ok(vz, 'o conjunto vazio fica'); assert.equal(vz.pontos, 0); assert.ok(!vz.geometria);
+      // um envio sem o conjunto: de uma freguesia, volta (vazio); da administração, sai e não volta com um dispositivo atrasado
+      assert.equal((await enviar(contribuidor, 'alcantara', 'vazio', { preset: 'vazio', freguesia: 'alcantara', titulo: 'Vazio', elementos: [] })).status, 201);
+      const ler = async () => ((await (await pedir(sessoes.Admin, '/presets/alcantara/vazio')).json()).dados.elementos || []).filter(e => e.evento === 'iluminacao');
+      assert.equal((await ler()).length, 1, 'uma freguesia não apaga o conjunto do evento');
+      assert.equal((await enviar(sessoes.Admin, 'alcantara', 'vazio', { preset: 'vazio', freguesia: 'alcantara', titulo: 'Vazio', elementos: [], conjuntosApagados: ['iluminacao'] })).status, 201);
+      assert.equal((await ler()).length, 0, 'a administração apaga-o');
+      assert.equal((await enviar(contribuidor, 'alcantara', 'vazio', { ...grupo('alcantara', []), preset: 'vazio' })).status, 201);
+      assert.equal((await ler()).length, 0, 'um dispositivo atrasado não o traz de volta');
+      assert.equal((await enviar(contribuidor, 'alcantara', 'vazio', { ...grupo('alcantara', ['fundido']), preset: 'vazio' })).status, 201);
+      assert.equal((await ler()).length, 1, 'um registo novo traz o conjunto');
       const el = (await (await pedir(contribuidor, '/elementos?freguesia=belem')).json()).elementos.find(e => e.evento === 'iluminacao'); assert.equal(el.pontos, 3); assert.equal(el.contagens.fundido, 2);
       assert.equal((await pedir(sessoes.Admin, '/evento', { method: 'POST', body: JSON.stringify({ id: 'iluminacao', ativo: false }) })).status, 200);
       assert.equal((await (await pedir(null, '/evento')).json()).evento.ativo, false);
