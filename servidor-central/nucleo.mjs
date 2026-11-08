@@ -15,6 +15,7 @@
 // o quê (o histórico, os autores) só a administração vê; os outros recebem os dados sem os nomes.
 import { criarContas, podeEditar, resumoAlteracoes, fundirCategorias, juntarCategorias, pedidoFundir } from './contas.mjs';
 import CONTAS_INICIAIS from './contas-iniciais.mjs';
+import { juntarTresVias, juntarEventos, juntarVarrimento, aplicarPublico, AUTOR_PUBLICO, iguais as mesmoConteudo } from '../comum/juntar.mjs';
 export const VERSAO_API = 1;
 const LIMITE = 40 * 1024 * 1024;
 const idValido = id => typeof id === 'string' && /^[a-z0-9][a-z0-9-]{0,60}$/.test(id);
@@ -64,44 +65,10 @@ function achatar(reg) { // calculado uma vez, ao receber (a consulta só junta l
     rec(e.filhos, e); } })(reg.dados.elementos, null);
   return out;
 }
-// Pontos dos conjuntos: cada envio leva o preset inteiro do dispositivo que o fez, por isso os registos juntam-se aos que
-// já cá estão (duas equipas com a mesma conta não apagam os registos uma da outra). Cada registo tem um id («i»); um
-// registo tirado fica em dados.removidosEvento = { <evento>: [ids] } e não volta. Ordem por data, para o mesmo conteúdo dar o mesmo texto.
-// O conjunto de um evento pode ficar sem pontos, e só a administração o apaga: apagado, fica em dados.conjuntosApagados e um
-// dispositivo atrasado não o traz de volta, a não ser com um registo novo.
-function juntarEventos(antes, d, { admin = false } = {}) {
-  if (!antes) return;
-  const removidos = {};
-  for (const fonte of [antes.removidosEvento, d.removidosEvento]) for (const [ev, ids] of Object.entries(fonte || {})) removidos[ev] = [...new Set([...(removidos[ev] || []), ...(Array.isArray(ids) ? ids : [])])];
-  if (Object.keys(removidos).length) d.removidosEvento = removidos;
-  const apagados = [...new Set([...((antes && antes.conjuntosApagados) || []), ...(admin && Array.isArray(d.conjuntosApagados) ? d.conjuntosApagados : [])])]; // só a administração acrescenta
-  if (apagados.length) d.conjuntosApagados = apagados; else delete d.conjuntosApagados;
-  const grupos = x => (x.elementos || []).filter(e => e && e.tipo === 'grupo' && Array.isArray(e.detalhes)), chave = e => e.evento || e.id;
-  for (const ev of new Set([...grupos(antes), ...grupos(d)].map(chave))) {
-    const a = grupos(antes).find(e => chave(e) === ev), g = grupos(d).find(e => chave(e) === ev);
-    if (!g && (d.elementos || []).some(e => e && e.id === a.id)) continue; // o elemento deixou de ser um conjunto
-    const fora = new Set(removidos[ev] || []), juntos = new Map();
-    for (const e of [a, g]) if (e) e.detalhes.forEach((x, i) => {
-      const id = (x && x.i) || [x && x.quando, x && x.rua, x && x.numero, e.pontos[i]].join('|'); if (fora.has(id)) return; // registos de antes dos ids: pelo conteúdo
-      const ja = juntos.get(id), este = x || {}, novo = !ja || String(este.movido || '') >= String(ja.x.movido || ''), editou = !ja || String(este.editado || '') >= String(ja.x.editado || ''); // a posição é a do último arrasto, o resto da última edição; o autor não se perde num envio de quem não o vê
-      const junto = editou ? { ...(ja && ja.x), ...este } : { ...este, ...ja.x }, movido = novo ? este.movido : ja.x.movido; if (movido) junto.movido = movido;
-      juntos.set(id, { p: novo ? e.pontos[i] : ja.p, x: junto });
-    });
-    const lista = [...juntos.values()].sort((p, q) => String(p.x.quando || '').localeCompare(String(q.x.quando || '')) || (p.x.quando ? String(p.x.i || '').localeCompare(String(q.x.i || '')) : 0)); // sem data, fica a ordem em que vieram
-    if (!lista.length) {
-      const doEvento = (g || a).evento;
-      if (doEvento && g && !apagados.includes(ev)) { g.pontos = []; g.detalhes = []; continue; } // fica, vazio, à espera dos próximos registos
-      if (g) d.elementos.splice(d.elementos.indexOf(g), 1);
-      if (doEvento && !g && !admin && !apagados.includes(ev)) d.elementos.push({ ...a, pontos: [], detalhes: [] }); // quem não é da administração não o apaga
-      continue;
-    }
-    const alvo = g || { ...a }; alvo.pontos = lista.map(l => l.p); alvo.detalhes = lista.map(l => l.x); if (!g) d.elementos.push(alvo);
-  }
-}
 // um registo com localização só mexe nos pontos dos conjuntos: o resto do preset fica como está no servidor, mesmo que o dispositivo não o tenha atualizado
 function soEventos(antes, d) {
   const eh = e => e && e.tipo === 'grupo' && Array.isArray(e.detalhes), chave = e => e.evento || e.id, novos = (d.elementos || []).filter(eh), velhos = antes.elementos || [];
-  return { ...antes, removidosEvento: d.removidosEvento, elementos: velhos.map(e => { const n = e && e.tipo === 'grupo' && novos.find(x => chave(x) === chave(e)); return n ? { ...e, pontos: n.pontos, detalhes: n.detalhes } : e; }).concat(novos.filter(n => !velhos.some(e => e && e.tipo === 'grupo' && chave(e) === chave(n)))) };
+  return { ...antes, removidosEvento: d.removidosEvento, varrimento: juntarVarrimento(antes.varrimento, d.varrimento), elementos: velhos.map(e => { const n = e && e.tipo === 'grupo' && novos.find(x => chave(x) === chave(e)); return n ? { ...e, pontos: n.pontos, detalhes: n.detalhes } : e; }).concat(novos.filter(n => !velhos.some(e => e && e.tipo === 'grupo' && chave(e) === chave(n)))) };
 }
 const resumo = r => ({ categorias: (r.dados.categorias || []).filter(c => c && c.nome).map(c => ({ nome: c.nome, icone: c.icone || '', cor: c.cor || '', n: (c.membros || []).length })), freguesia: r.freguesia, preset: r.preset, titulo: r.dados.titulo || r.preset, subtitulo: r.dados.subtitulo || '', revisao: r.revisao, autor: r.autor, contribuidor: r.contribuidor, origem: r.origem, recebido: r.recebido, elementos: (r.dados.elementos || []).length });
 function filtrar(lista, f) {
@@ -115,7 +82,8 @@ function csv(lista, comAutor) { // o autor só para a administração
   return '﻿' + cols.join(';') + '\r\n' + lista.map(e => cols.map(k => c(e[k])).join(';')).join('\r\n') + '\r\n'; // ; e BOM: abre bem no Excel em português
 }
 
-export function criarAPI({ armazem, nome = 'Servidor central das freguesias', origens = ['*'], leituraPublica = false, chaveAdmin = '', pagina = '', contasIniciais = CONTAS_INICIAIS, segredoSessoes = '', horasSessao = 24, horasLembrar = 30 * 24 }) {
+// lerBase(f, p) (opcional): o preset publicado com o site, para um registo do público numa freguesia que ainda não tem nada guardado aqui
+export function criarAPI({ armazem, nome = 'Servidor central das freguesias', origens = ['*'], leituraPublica = false, chaveAdmin = '', pagina = '', contasIniciais = CONTAS_INICIAIS, segredoSessoes = '', horasSessao = 24, horasLembrar = 30 * 24, lerBase = null }) {
   const lerJSON = async k => { const t = await armazem.ler(k); if (t == null) return null; try { return JSON.parse(t); } catch (err) { return null; } };
   const gravarJSON = (k, v) => armazem.escrever(k, JSON.stringify(v));
   // ler, mudar e gravar um objeto JSON partilhado (índices, histórico); f recebe o valor atual (ou null) e devolve o novo
@@ -167,21 +135,43 @@ export function criarAPI({ armazem, nome = 'Servidor central das freguesias', or
     if (d.freguesia && d.freguesia !== f) return json(409, { erro: `O preset é da freguesia «${d.freguesia}», não de «${f}»` });
     d.freguesia = f; d.preset = p;
     const fundidas = (await lerJSON('categorias/fundidas.json')) || []; // o que a administração fundiu não volta com um envio de um ficheiro antigo
-    let atual = null, reg = null;
+    let atual = null, reg = null, conflitos = [], juntou = false;
     const juntar = t => { // corre outra vez se outro envio do mesmo preset gravar primeiro: ninguém pisa os registos de ninguém
       try { atual = t == null ? null : JSON.parse(t); } catch (err) { atual = null; }
-      const novo = corpo.soEvento && atual ? soEventos(atual.dados, structuredClone(d)) : structuredClone(d);
+      let novo = corpo.soEvento && atual ? soEventos(atual.dados, structuredClone(d)) : structuredClone(d); conflitos = []; juntou = false;
+      // outro dispositivo pode ter guardado entretanto: junta-se o que cada um mudou desde a base que este trazia (sem base, nada se apaga)
+      if (atual && !corpo.soEvento) { const r = juntarTresVias(atual.dados, novo, corpo.base); novo = r.dados; conflitos = r.conflitos; juntou = r.juntou; }
       juntarEventos(atual && atual.dados, novo, { admin: pode(c, 'admin') }); reg = null;
       for (const x of fundidas) fundirCategorias(novo, x.de, x.para, x.modelo);
-      if (atual && JSON.stringify(atual.dados) === JSON.stringify(novo)) return t; // nada mudou
+      if (atual && mesmoConteudo(atual.dados, novo)) return t; // nada mudou
       const rev = (atual ? atual.revisao : 0) + 1, recebido = new Date().toISOString();
     // o autor é a conta que enviou (com uma chave de acesso, o nome que vem no pedido)
       reg = { freguesia: f, preset: p, revisao: rev, utilizador: c.utilizador || '', autor: c.conta ? c.nome : String(corpo.autor || '').slice(0, 120), contribuidor: c.nome, origem: String(corpo.origem || '').slice(0, 30), versao: String(corpo.versao || '').slice(0, 30), quando: Number(corpo.quando) || null, recebido, dados: novo };
       return JSON.stringify(reg);
     };
     await trocarAtual(f, p, juntar);
-    if (!reg) return json(200, { ok: true, revisao: atual.revisao, igual: true });
+    if (!reg) return json(200, { ok: true, revisao: atual.revisao, igual: true, conflitos, juntou });
     await depoisDeGravar(c, f, p, reg, atual);
+    return json(201, { ok: true, revisao: reg.revisao, conflitos, juntou });
+  }
+  // um membro do público, sem conta, durante um evento que o permite: só acrescenta um registo (ou marca uma rua)
+  const PUBLICO = { nome: AUTOR_PUBLICO, papel: 'publico', utilizador: 'publico', conta: { utilizador: 'publico', nome: AUTOR_PUBLICO, papel: 'publico' } };
+  async function receberPublico(req, f, p) {
+    let corpo; try { corpo = JSON.parse(await corpoTexto(req)) || {}; } catch (err) { return json(err.codigo || 400, { erro: err.codigo ? err.message : 'JSON inválido' }); }
+    const atualEv = await contas.lerEvento(), def = (await contas.lerCatalogo()).find(e => e.id === corpo.evento);
+    if (!atualEv || !atualEv.ativo || atualEv.id !== corpo.evento || !def || !def.publico) return json(403, { erro: 'Este evento não aceita registos sem conta' });
+    let base = null;
+    if (!(await armazem.ler(pasta(f, p) + 'atual.json'))) { base = lerBase ? await lerBase(f, p).catch(() => null) : null; if (!base) return json(409, { erro: 'Esta freguesia ainda não tem dados no servidor central' }); }
+    let erro = null, reg = null, atual = null;
+    await trocarAtual(f, p, t => {
+      try { atual = t == null ? { revisao: 0, dados: { ...base, freguesia: f, preset: p } } : JSON.parse(t); } catch (err) { erro = 'Dados inválidos'; return t; }
+      const novo = structuredClone(atual.dados); erro = aplicarPublico(novo, def, { ...corpo, freguesia: f }); if (erro) return t;
+      const recebido = new Date().toISOString();
+      reg = { freguesia: f, preset: p, revisao: (atual.revisao || 0) + 1, utilizador: 'publico', autor: AUTOR_PUBLICO, contribuidor: AUTOR_PUBLICO, origem: 'publico', versao: '', quando: Date.now(), recebido, dados: novo };
+      return JSON.stringify(reg);
+    });
+    if (erro) return json(400, { erro });
+    await depoisDeGravar(PUBLICO, f, p, reg, atual.revisao ? atual : null);
     return json(201, { ok: true, revisao: reg.revisao });
   }
   const trocarAtual = async (f, p, mudar) => { const k = pasta(f, p) + 'atual.json'; if (armazem.atualizar) await armazem.atualizar(k, mudar); else { const t = await armazem.ler(k), novo = mudar(t); if (novo != null && novo !== t) await armazem.escrever(k, novo); } };
@@ -367,6 +357,7 @@ export function criarAPI({ armazem, nome = 'Servidor central das freguesias', or
       if (rec === 'chaves') return await chaves(req, c, f, p);
       if (rec === 'copia' || rec === 'objeto') return await copia(req, c, rec === 'copia' ? {} : q);
       if (rec === 'presets' && req.method === 'POST' && idValido(f) && idValido(p) && !extra) return await receber(req, c, f, p);
+      if (rec === 'publico' && req.method === 'POST' && idValido(f) && idValido(p) && !extra) return await receberPublico(req, f, p); // sem conta: só durante um evento que o permita
       if (rec === 'presets' && req.method === 'POST' && idValido(f) && idValido(p) && extra === 'apagar') return await apagarPreset(c, f, p);
       if (req.method !== 'GET') return json(405, { erro: 'Método não suportado' });
       if (!pode(c, 'ler')) return recusa(c);

@@ -59,6 +59,10 @@ export default {
       chaveAdmin: env.CHAVE_ADMIN || '', // segredo: npx wrangler secret put CHAVE_ADMIN
       segredoSessoes: env.SEGREDO_SESSOES || '', // opcional; sem ele, o segredo das sessões é gerado na primeira vez e fica no R2
       pagina,
+      lerBase: async (f, p) => { // o preset que veio com o site, para o primeiro registo do público numa freguesia
+        const r = await env.ASSETS.fetch(new URL((f === 'campo-de-ourique' ? '/dados/' : '/dados/freguesias/' + f + '/') + 'presets/' + p + '.js', request.url)); if (!r.ok) return null;
+        const t = await r.text(), a = t.indexOf('{', t.search(/window\.[A-Z_]+\s*=/)), b = t.lastIndexOf('}'); return a >= 0 && b > a ? JSON.parse(t.slice(a, b + 1)) : null;
+      },
     });
     const m = env.ASSETS && (request.method === 'GET' || request.method === 'HEAD') ? FICHEIRO_DADOS.exec(new URL(request.url).pathname) : null;
     if (m) return servirDados(request, env, m);

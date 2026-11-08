@@ -37,6 +37,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { criarContas, podeEditar, resumoAlteracoes, fundirCategorias, juntarCategorias, pedidoFundir } from '../servidor-central/contas.mjs';
 import CONTAS_INICIAIS from '../servidor-central/contas-iniciais.mjs';
+import { juntarTresVias, juntarEventos, aplicarPublico, AUTOR_PUBLICO, iguais } from '../comum/juntar.mjs';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -193,10 +194,18 @@ export function criarServidor({ raiz, gravavel = raiz, app = false, versao = '',
     const nao = recusa(s, F); if (nao) return json(res, ...nao);
     if (!dados || typeof dados !== 'object' || !Array.isArray(dados.elementos)) return json(res, 400, { erro: 'Esperava um objeto com a lista «elementos»' });
     if (dados.freguesia && dados.freguesia !== F.id) return json(res, 409, { erro: 'Este preset é da freguesia «' + dados.freguesia + '», não de «' + F.id + '»' }); // os presets de cada freguesia não se misturam
+    const base = dados.__base; delete dados.__base; // o que esta janela recebeu antes de mexer
     dados.freguesia = F.id;
     dados.preset = String(dados.preset || F.id);
     if (!idValido(dados.preset)) return json(res, 400, { erro: 'Id de preset inválido: ' + dados.preset });
     let antes = null; try { antes = lerPreset(F, dados.preset); } catch (err) { /* preset novo (ou escrito como código) */ }
+    // outra janela ou dispositivo pode ter guardado entretanto: junta-se o que cada um mudou (ler, juntar e escrever não se interrompem)
+    let conflitos = [], juntou = false;
+    if (antes) {
+      const r = juntarTresVias(antes, dados, base); dados = r.dados; conflitos = r.conflitos; juntou = r.juntou;
+      const recebido = structuredClone(dados); juntarEventos(antes, dados, { admin: s.papel === 'admin' }); juntou = juntou || !iguais(dados, recebido);
+      if (conflitos.length) fs.writeFileSync(paraEscrever(presetRel(F, dados.preset).replace(/\.js$/, '.anterior.js')), ficheiroPreset(antes)); // a versão que perdeu num conflito não se perde
+    }
     fs.writeFileSync(paraEscrever(presetRel(F, dados.preset)), ficheiroPreset(dados));
     const apagados = lerApagados(F); if (apagados.includes(dados.preset)) gravarApagados(F, apagados.filter(id => id !== dados.preset));
     copiaAnterior(F);
@@ -205,7 +214,23 @@ export function criarServidor({ raiz, gravavel = raiz, app = false, versao = '',
     const presets = regenerarIndice(F, [{ id: dados.preset, nome: dados.titulo || dados.preset, subtitulo: dados.subtitulo || '', elementos: dados.elementos.length }]);
     registo(`[${F.id}] ${s.utilizador} guardou o preset «${dados.preset}» (${dados.elementos.length} elementos) e ${F.rel}conteudos.js (${(texto.length / 1024).toFixed(0)} kB)`);
     await contas.registar({ conta: s, acao: 'guardou', freguesia: F.id, preset: dados.preset, resumo: resumoAlteracoes(antes, dados), origem: origemConta });
-    json(res, 200, { ok: true, bytes: texto.length, elementos: dados.elementos.length, presets });
+    json(res, 200, { ok: true, bytes: texto.length, elementos: dados.elementos.length, presets, conflitos, juntou, ...(juntou ? { dados } : {}) });
+  }
+  // um membro do público, sem sessão: só acrescenta um registo (ou marca uma rua) no conjunto do evento ativo
+  async function registoPublico(req, res) {
+    const F = freguesiaDe(req.url); if (!F) return json(res, 400, { erro: 'Freguesia desconhecida' });
+    let corpo; try { corpo = JSON.parse((await lerCorpo(req)).toString('utf8')) || {}; } catch (err) { return json(res, 400, { erro: 'JSON inválido' }); }
+    const ev = await contas.lerEvento(), def = (await contas.lerCatalogo()).find(e => e.id === corpo.evento), id = String(corpo.preset || '');
+    if (!ev || !ev.ativo || ev.id !== corpo.evento || !def || !def.publico) return json(res, 403, { erro: 'Este evento não aceita registos sem conta' });
+    if (!idValido(id)) return json(res, 400, { erro: 'Id de preset inválido' });
+    let dados; try { dados = lerPreset(F, id); } catch (err) { return json(res, 404, { erro: 'Preset não encontrado' }); }
+    const erro = aplicarPublico(dados, def, { ...corpo, freguesia: F.id }); if (erro) return json(res, 400, { erro });
+    fs.writeFileSync(paraEscrever(presetRel(F, id)), ficheiroPreset(dados)); // ler, mudar e escrever sem nada pelo meio: outro pedido não se mete
+    let ativo = null; try { ativo = (/"preset": *"([^"]+)"/.exec(fs.readFileSync(paraLer(F.rel + 'conteudos.js'), 'utf8')) || [])[1]; } catch (err) { /* sem conteudos.js */ }
+    if (ativo === id) fs.writeFileSync(paraEscrever(F.rel + 'conteudos.js'), ficheiroConteudos(F, dados));
+    regenerarIndice(F);
+    await contas.registar({ conta: { utilizador: 'publico', nome: AUTOR_PUBLICO, papel: 'publico' }, acao: corpo.tipo === 'varrimento' ? 'marcou uma rua (público)' : 'registou (público)', freguesia: F.id, preset: id, origem: origemConta });
+    json(res, 201, { ok: true });
   }
   function ativarPreset(res, F, id) { // torna um preset o ativo: copia-o para <pasta>/conteudos.js
     if (!idValido(id)) return json(res, 400, { erro: 'Id inválido' });
@@ -334,6 +359,7 @@ export function criarServidor({ raiz, gravavel = raiz, app = false, versao = '',
         if (!local(req)) return json(res, 403, { erro: 'Só a partir desta máquina' });
         if (!origemPropria(req)) return json(res, 403, { erro: 'Só a partir da própria apresentação (origem ' + (req.headers.origin || 'desconhecida') + ')' });
         if (rel === '/copia-central') return await guardarCopia(req, res, req.url); // a cópia do servidor central corre sozinha, sem sessão
+        if (rel === '/publico') return await registoPublico(req, res); // sem sessão: só durante um evento que o permita
         const s = await sessaoDe(req);
         if (rel.startsWith('/guardar-foto/')) {
           const nao = recusa(s, null); if (nao) return json(res, ...nao);

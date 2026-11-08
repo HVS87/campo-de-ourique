@@ -148,6 +148,20 @@ async function cenario(nome, raiz, gravavel) {
       assert.equal((await entrar('Alcantara', 'reposta')).r.status, 200);
       assert.ok((await (await get('/historico', 'Admin.Teste')).json()).historico.some(e => e.acao === 'repôs a palavra-passe' && e.alvo === 'Alcantara'));
     },
+    'guardar: duas janelas ao mesmo tempo juntam-se, sem perder nada': async () => {
+      const { baseDe } = await import('../comum/juntar.mjs');
+      const B0 = { preset: 'janelas', titulo: 'Janelas', subtitulo: '', elementos: [{ id: 'a', tipo: 'ponto', nome: 'A', texto: 'a', fotos: [], pos: [38.7, -9.2] }, { id: 'b', tipo: 'ponto', nome: 'B', texto: 'b', fotos: [], pos: [38.71, -9.2] }, { id: 'g', tipo: 'grupo', nome: 'G', texto: '', fotos: [], pontos: [[38.72, -9.2]], detalhes: [{ i: 'g1' }] }] };
+      const gravar = (d, base) => post('/guardar?freguesia=alcantara', JSON.stringify(base ? { ...d, __base: base } : d), { quem: 'Alcantara' });
+      assert.equal((await gravar(B0)).status, 200);
+      const base = baseDe(B0), c = () => JSON.parse(JSON.stringify(B0));
+      const d1 = c(); d1.elementos[0].texto = 'a (1)'; d1.elementos[2].pontos.push([38.73, -9.2]); d1.elementos[2].detalhes.push({ i: 'g2' });
+      const d2 = c(); d2.elementos[1].texto = 'b (2)'; d2.elementos[2].pontos.push([38.74, -9.2]); d2.elementos[2].detalhes.push({ i: 'g3' });
+      const rs = await Promise.all([gravar(d1, base), gravar(d2, base)]); assert.ok(rs.every(r => r.status === 200));
+      const j = await rs[1].json(); assert.ok(j.juntou || (await rs[0].clone().json()).juntou, 'nenhuma das gravações juntou');
+      const t = fs.readFileSync(path.join(gravavel, 'dados', 'freguesias', 'alcantara', 'presets', 'janelas.js'), 'utf8'), d = JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1));
+      assert.equal(d.elementos.find(e => e.id === 'a').texto, 'a (1)'); assert.equal(d.elementos.find(e => e.id === 'b').texto, 'b (2)');
+      assert.deepEqual(d.elementos.find(e => e.id === 'g').detalhes.map(x => x.i).sort(), ['g1', 'g2', 'g3']);
+    },
     'evento: todos leem, só a administração liga e desliga': async () => {
       assert.equal((await (await get('/evento')).json()).evento, null);
       assert.equal((await post('/evento', JSON.stringify({ id: 'iluminacao', nome: 'Levantamento Iluminação Pública', ativo: true }), { quem: 'Alcantara' })).status, 403);

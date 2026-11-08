@@ -4,7 +4,7 @@
 // vêm da apresentação e, com rede, o detalhe de cada ficha vem do satélite em direto da DGT (sem rede, recorta-se a imagem guardada).
 //   RelatorioEvento.gerar({ evento, freguesias, limites, tipos, fotos, fonte, aoProgresso }) → Promise<Blob>
 //     freguesias: [{ id, nome, ha, imagem: { ficheiro, bounds }, registos: [{ lat, lon, c, rua, numero, nome, texto, fotos, quando, precisao }] }]
-//     competencia: quem tem de resolver (o nome, opcional); limites: window.LIMITES_FREGUESIAS; tipos: ids dos tipos a incluir (omitido: todos); fotos: incluir as fotos (omitido: sim)
+//     extensivo: false para só o resumo da cidade; competencia: quem tem de resolver (o nome, opcional); limites: window.LIMITES_FREGUESIAS; tipos: ids dos tipos a incluir (omitido: todos); fotos: incluir as fotos (omitido: sim)
 window.RelatorioEvento = (function () {
   'use strict';
   const FERRAMENTA = 'PS Lisboa - Repositório da Cidade', LOGO = 'assets/icones/ps-logotipo.png';
@@ -260,9 +260,9 @@ window.RelatorioEvento = (function () {
     const ligacoes = escreverResumo(E, R, logoUrl, mapa);
     let feitos = 0; const total = R.todos.length, avancar = async () => { feitos++; if (feitos % 5 === 0 || feitos === total) { progresso(feitos, total); await aoFolego(); } };
     const paginaDe = {};
-    for (const f of R.com) { paginaDe[f.id] = await escreverFreguesia(E, R, f, porLimite[f.id], avancar); doc.outline.add(null, limpo(f.nome) + ' (' + f.registos.length + ')', { pageNumber: paginaDe[f.id] }); }
+    if (o.extensivo !== false) for (const f of R.com) { paginaDe[f.id] = await escreverFreguesia(E, R, f, porLimite[f.id], avancar); doc.outline.add(null, limpo(f.nome) + ' (' + f.registos.length + ')', { pageNumber: paginaDe[f.id] }); } // o resumo fica pelas páginas da cidade
     // o índice da tabela e o rodapé só se sabem no fim
-    for (const l of ligacoes) { doc.setPage(l.pagina); E.letra(9, 'normal', '#205daa'); const p = paginaDe[l.f.id]; doc.text(String(p), l.xPag, l.yb, { align: 'right' }); doc.link(MARGEM, l.y, UTIL, 5.2, { pageNumber: p }); }
+    for (const l of ligacoes) { if (!paginaDe[l.f.id]) continue; doc.setPage(l.pagina); E.letra(9, 'normal', '#205daa'); const p = paginaDe[l.f.id]; doc.text(String(p), l.xPag, l.yb, { align: 'right' }); doc.link(MARGEM, l.y, UTIL, 5.2, { pageNumber: p }); }
     const n = doc.getNumberOfPages();
     for (let p = 1; p <= n; p++) {
       doc.setPage(p); E.linhaH(ALT - 13); E.letra(7.5, 'normal', SUAVE);

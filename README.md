@@ -223,6 +223,21 @@ registar na mesma freguesia: o servidor central junta os registos de todos os di
 cada dispositivo traz os dos outros ao entrar na edição e depois de enviar. Um registo tirado fica em
 `removidosEvento` e não volta. O resumo da cidade soma os presets de cada freguesia, sem contar duas vezes o mesmo registo.
 
+### Vários dispositivos e janelas ao mesmo tempo
+
+Nada se perde quando duas pessoas, ou a mesma conta em dois dispositivos, guardam o mesmo preset ao mesmo tempo:
+
+- **Junção a três vias, campo a campo:** cada «Guardar» leva a base, ou seja, as impressões do que a janela recebeu antes de mexer. O servidor
+  central e o servidor local juntam o que cada lado mudou desde essa base. Os registos dos conjuntos juntam-se pelo id de cada registo, e as
+  fotos foto a foto. O código está em `comum/juntar.mjs`, o mesmo para a página e para os dois servidores.
+- **O mesmo campo mudado nos dois lados:** fica o último a guardar, e quem guarda é avisado. A outra versão fica no histórico de revisões do
+  servidor central ou, no servidor local, em `presets/<id>.anterior.js`.
+- **Apagar:** um elemento apagado num lado e mudado no outro fica. Sem base (um dispositivo antigo, ou um envio pela API sem `base`), nada se
+  apaga: junta-se o que há dos dois lados.
+- **Janelas do mesmo browser:** cada uma tem o seu rascunho e os seus envios na fila. O rascunho de uma janela que fechou sem guardar fica para a
+  próxima que abrir o mesmo preset com a mesma conta.
+- **Identificadores:** os elementos novos levam um sufixo ao acaso, para dois dispositivos a criar «Novo ponto 1» não darem o mesmo.
+
 ### Criar eventos e exportar o relatório
 
 Em menu da conta → **Eventos**, o `System.Admin` vê todos os eventos e pode:
@@ -233,13 +248,34 @@ Em menu da conta → **Eventos**, o `System.Admin` vê todos os eventos e pode:
 - **Conjunto sem pontos:** ao contrário dos outros conjuntos, o de um evento pode ficar vazio. Qualquer conta acrescenta e tira pontos, um a um, e o conjunto fica à espera dos próximos registos da freguesia. Só o `System.Admin` tira todos os registos de uma vez («Tirar todos os registos») e apaga o conjunto por completo. O servidor central aplica a mesma regra: um envio de uma freguesia sem o conjunto não o apaga, e um conjunto apagado pela administração só volta com um registo novo.
 - **Competência:** a do Levantamento Iluminação Pública é sempre a Câmara Municipal e não se muda nem no evento nem no conjunto.
 - **Calendário, em alternativa ao controlo manual:** ao editar o evento, escolhe-se «Pelo calendário», com o início e o fim. O evento liga-se e desliga-se sozinho a essas horas, mesmo com a página aberta ou sem rede, e o painel deixa de oferecer «Ativar»; «Terminar agora» encurta-o. Os calendários não se podem sobrepor. Enquanto um decorre, passa à frente do que estiver ligado à mão e não se liga outro.
+- **Abrangência:** as freguesias onde o evento decorre («Toda a cidade» marca as 24) e, se for o caso, só algumas zonas delas
+  («⬠ Só algumas zonas…» lista as zonas do preset ativo de cada freguesia escolhida). Fora das freguesias, o evento não aparece
+  (nem o modo do evento, nem o «+» do evento, nem o varrimento); o «Resumo da cidade» continua. Numa freguesia com zonas, o
+  contorno delas aparece a tracejado, só se regista dentro delas e o varrimento fica só nas suas ruas. Fica em
+  `abrangencia: { freguesias, zonas }`; sem ela, o evento é de toda a cidade. O servidor também verifica os registos sem conta.
+- **Modo de visualização do evento** (ligado por omissão): enquanto o evento decorre, o mapa mostra só os registos dele, uma
+  faixa no topo dá o total e o «+» vai direto aos tipos do evento, com «📍 Outros problemas» para o menu habitual. Cada pessoa
+  pode desligá-lo nas Camadas ou em «Ver tudo», na faixa.
+- **Varrimento das ruas** (desligado por omissão): cada rua fica a vermelho (por percorrer) ou a azul (percorrida), em traço fino
+  e transparente ao longe. Um toque numa rua muda-a, e a marca guarda-se e junta-se entre dispositivos como um registo.
+- **Registos sem conta** (desligado por omissão, com um aviso sério ao ligar): qualquer pessoa regista e marca ruas sem iniciar
+  sessão; o autor fica «Membro do público». O servidor só aceita acrescentar um registo ao conjunto do evento, com até 3 fotos.
 - **Ativar ou desativar:** só há um ativo de cada vez. Os registos ficam guardados ao mudar de evento.
-- **Exportar PDF:** funciona também com o evento inativo. Escolhem-se os tipos a incluir e se levam fotos. O relatório
+- **Exportar PDF:** funciona também com o evento inativo. Escolhe-se o formato (extensivo, com a ficha de cada registo, ou só o
+  resumo da cidade), os tipos a incluir e se levam fotos. O relatório
   (`relatorios/evento.js`, com a biblioteca `vendor/jspdf`) começa pelo resumo da cidade: totais, tipos, mapa e tabela por
   freguesia, e ruas com mais registos. Segue com cada freguesia: o mapa dos registos e a ficha de cada um, com a morada, o tipo, a
   data, as coordenadas, um mapa do sítio exato, as notas e as fotos. Os nomes de quem registou não saem no relatório.
   Os mapas das fichas vêm do satélite da DGT e, sem rede, da imagem guardada da freguesia.
 - **Apagar:** só um evento criado aqui, inativo e sem registos.
+
+### Fotos dos registos
+
+«📷 Adicionar foto», no cartão de um ponto, de um ponto de uma zona ou de um ponto de um conjunto, e no painel do registo do
+evento: no telemóvel e no tablet pergunta se a foto vem da câmara (com «Usar esta foto» antes de a juntar) ou da galeria (uma
+ou várias); no computador abre uma caixa onde se larga a imagem, com um botão para a escolher. Ao dar por feito um registo
+novo sem foto (fechar o cartão, «Concluído», «Guardar» ou «Confirmar registo»), a página pergunta uma vez:
+«📷 Adicionar fotografia» ou «Não, obrigado», que guarda sem foto (pode juntar-se mais tarde, ao editar o ponto).
 
 ## Modo de edição
 

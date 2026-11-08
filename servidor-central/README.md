@@ -184,6 +184,7 @@ Os pedidos levam `Authorization: Bearer <testemunho da sessão ou chave de acess
 | `GET /api/v1/definicoes` | todos | as opções gerais: `{ definicoes: { visitaInicial } }` |
 | `POST /api/v1/definicoes` | admin | recebe `{ visitaInicial }`: a Visita Guiada abre ou não sozinha a quem nunca a viu |
 | `GET /api/v1/eventos` | todos | os eventos criados pela administração: `{ eventos: [{ id, nome, icone, descricao, competencia, termos, categorias }] }` |
+| `POST /api/v1/presets/<freguesia>/<preset>` (com `base`) | contribuidor | a base (de `comum/juntar.mjs`, `baseDe`) é o que o dispositivo recebeu antes de mexer: o servidor junta o que cada um mudou, e a resposta traz `conflitos` e `juntou`. Sem base, junta sem apagar nada |
 | `POST /api/v1/eventos` | admin | cria ou altera um evento, com o calendário opcional em `agenda: { inicio, fim }`, que não se pode sobrepor ao de outro; com `{ id, apagar: true }` apaga-o (recusa se estiver ativo) |
 | `GET /api/v1/evento/resumo?id=` | leitor | por freguesia, quantos registos de cada categoria tem o evento, somando os presets, e o total da cidade |
 | `GET /api/v1/contas` | admin | as contas, sem os verificadores, com a última entrada e o bloqueio |

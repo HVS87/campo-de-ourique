@@ -11,6 +11,7 @@ import net from 'node:net';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { derivarChave, verificadorDe } from './contas.mjs';
+import { baseDe } from '../comum/juntar.mjs';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url)), RAIZ = path.join(AQUI, '..');
 // contas de teste (as verdadeiras não estão aqui): carregadas pela reposição de objetos da administração
@@ -66,7 +67,7 @@ async function bateria(tipo) {
     'leitor não envia': async () => assert.equal((await enviar(leitor, 'alcantara', 'teste', preset('A', 3))).status, 403),
     'contribuidor envia (revisão 1)': async () => { const r = await enviar(contribuidor, 'alcantara', 'teste', preset('A', 3), { autor: 'Hugo', origem: 'browser' }); assert.equal(r.status, 201); assert.equal((await r.json()).revisao, 1); },
     'mesmo conteúdo não cria revisão': async () => { const j = await (await enviar(contribuidor, 'alcantara', 'teste', preset('A', 3))).json(); assert.equal(j.igual, true); assert.equal(j.revisao, 1); },
-    'alteração cria revisão 2': async () => assert.equal((await (await enviar(contribuidor, 'alcantara', 'teste', preset('B', 2), { autor: 'Hugo', origem: 'aplicacao' })).json()).revisao, 2),
+    'alteração cria revisão 2': async () => assert.equal((await (await enviar(contribuidor, 'alcantara', 'teste', preset('B', 2), { autor: 'Hugo', origem: 'aplicacao', base: baseDe(preset('A', 3)) })).json()).revisao, 2), // com a base, o que se tirou sai mesmo
     'envios simultâneos na mesma freguesia não se perdem': async () => {
       const rs = await Promise.all(['p-a', 'p-b', 'p-c', 'p-d'].map(p => enviar(contribuidor, 'belem', p, { ...preset('S ' + p, 1), freguesia: 'belem' })));
       assert.ok(rs.every(r => r.status === 201), 'algum envio falhou: ' + rs.map(r => r.status));
@@ -226,6 +227,39 @@ async function bateria(tipo) {
       assert.equal((await (await pedir(null, '/evento')).json()).evento.ativo, false);
       assert.ok((await (await pedir(sessoes.Admin, '/copia')).json()).objetos.some(o => o.chave === 'evento/atual.json'));
     },
+    'dois dispositivos ao mesmo tempo: nada se perde': async () => {
+      const ler = async () => (await (await pedir(contribuidor, '/presets/carnide/dois')).json()).dados;
+      const B0 = { preset: 'dois', freguesia: 'carnide', titulo: 'Dois', subtitulo: '', categorias: [{ id: 'c1', nome: 'Cat', membros: ['a'] }],
+        elementos: [{ id: 'a', tipo: 'ponto', nome: 'A', texto: 'texto a', fotos: [{ src: 'f1.jpg' }], pos: [38.7, -9.2] }, { id: 'b', tipo: 'ponto', nome: 'B', texto: 'texto b', fotos: [], pos: [38.71, -9.2] },
+          { id: 'z', tipo: 'zona', nome: 'Z', texto: '', fotos: [], poligono: [[38.70, -9.18], [38.71, -9.18], [38.71, -9.17]], filhos: [{ id: 'z1', tipo: 'ponto', nome: 'Z1', texto: 'dentro', fotos: [], pos: [38.706, -9.177] }] },
+          { id: 'g', tipo: 'grupo', nome: 'G', texto: '', fotos: [], pontos: [[38.72, -9.2]], detalhes: [{ i: 'g1', nome: 'G1' }] }] };
+      assert.equal((await enviar(contribuidor, 'carnide', 'dois', B0)).status, 201);
+      const base = baseDe(B0), copia = () => JSON.parse(JSON.stringify(B0)), el = (d, id) => d.elementos.flatMap(e => [e, ...(e.filhos || [])]).find(e => e.id === id);
+      // o dispositivo 1 muda o texto de A, acrescenta uma foto a A, um ponto ao conjunto e um ponto novo; o 2 muda B, o ponto da zona, outra foto de A, outro ponto do conjunto, e apaga nada
+      const d1 = copia(); el(d1, 'a').texto = 'texto a (1)'; el(d1, 'a').fotos.push({ src: 'f-1.jpg' }); el(d1, 'g').pontos.push([38.73, -9.2]); el(d1, 'g').detalhes.push({ i: 'g2', nome: 'G2' }); d1.elementos.push({ id: 'n1-ab12', tipo: 'ponto', nome: 'Novo 1', texto: '', fotos: [], pos: [38.74, -9.2] }); d1.categorias[0].membros.push('b');
+      const d2 = copia(); el(d2, 'b').texto = 'texto b (2)'; el(d2, 'z1').texto = 'dentro (2)'; el(d2, 'a').fotos.push({ src: 'f-2.jpg' }); el(d2, 'g').pontos.push([38.75, -9.2]); el(d2, 'g').detalhes.push({ i: 'g3', nome: 'G3' }); d2.elementos.push({ id: 'n2-cd34', tipo: 'ponto', nome: 'Novo 2', texto: '', fotos: [], pos: [38.76, -9.2] }); d2.titulo = 'Dois (2)';
+      const [r1, r2] = await Promise.all([enviar(contribuidor, 'carnide', 'dois', d1, { base }), enviar(contribuidor, 'carnide', 'dois', d2, { base })]);
+      assert.equal(r1.status, 201); assert.equal(r2.status, 201);
+      let x = await ler();
+      assert.equal(el(x, 'a').texto, 'texto a (1)'); assert.equal(el(x, 'b').texto, 'texto b (2)'); assert.equal(el(x, 'z1').texto, 'dentro (2)'); assert.equal(x.titulo, 'Dois (2)');
+      assert.deepEqual(el(x, 'a').fotos.map(f => f.src).sort(), ['f-1.jpg', 'f-2.jpg', 'f1.jpg']);
+      assert.deepEqual(el(x, 'g').detalhes.map(d => d.i).sort(), ['g1', 'g2', 'g3']); assert.equal(el(x, 'g').pontos.length, 3);
+      assert.ok(el(x, 'n1-ab12') && el(x, 'n2-cd34'), 'os dois pontos novos ficam'); assert.deepEqual(x.categorias[0].membros.sort(), ['a', 'b']);
+      assert.ok(x.elementos.find(e => e.id === 'z').filhos.some(f => f.id === 'z1'), 'o ponto continua dentro da zona');
+      // o mesmo campo mudado nos dois: fica o último e o conflito é dito; apagar de um lado o que o outro mudou não o apaga
+      const base2 = baseDe(x), e1 = JSON.parse(JSON.stringify(x)), e2 = JSON.parse(JSON.stringify(x));
+      el(e1, 'a').texto = 'versão 1'; el(e2, 'a').texto = 'versão 2';
+      e1.elementos = e1.elementos.filter(e => e.id !== 'b'); el(e2, 'b').texto = 'b mudado no 2';
+      assert.equal((await enviar(contribuidor, 'carnide', 'dois', e2, { base: base2 })).status, 201);
+      const j = await (await enviar(contribuidor, 'carnide', 'dois', e1, { base: base2 })).json();
+      x = await ler(); assert.equal(el(x, 'a').texto, 'versão 1'); assert.ok(j.conflitos.some(c => c.nome === 'A' && c.campo === 'texto'), 'o conflito não é dito: ' + JSON.stringify(j.conflitos));
+      assert.equal(el(x, 'b').texto, 'b mudado no 2', 'apagar não pode levar o que o outro mudou');
+      // apagar o que ninguém mais mudou apaga mesmo; um envio sem base não apaga nada
+      const base3 = baseDe(x), f1 = JSON.parse(JSON.stringify(x)); f1.elementos = f1.elementos.filter(e => e.id !== 'n2-cd34');
+      await enviar(contribuidor, 'carnide', 'dois', f1, { base: base3 }); x = await ler(); assert.ok(!el(x, 'n2-cd34'), 'o apagado volta');
+      const semBase = JSON.parse(JSON.stringify(x)); semBase.elementos = semBase.elementos.filter(e => e.id !== 'n1-ab12');
+      await enviar(contribuidor, 'carnide', 'dois', semBase); x = await ler(); assert.ok(el(x, 'n1-ab12'), 'sem base, nada se apaga');
+    },
     'categorias: lista e fundir em todos os presets (só a administração)': async () => {
       const base = (cats, p) => ({ preset: p, freguesia: 'penha', titulo: p, elementos: [{ id: 'a', tipo: 'ponto', nome: 'A', texto: '', fotos: [], pos: [38.7, -9.1] }, { id: 'b', tipo: 'ponto', nome: 'B', texto: '', fotos: [], pos: [38.71, -9.1] }], categorias: cats });
       await enviar(contribuidor, 'penha', 'um', base([{ id: 'c1', nome: 'Passeios', icone: '🚶', cor: '#111111', membros: ['a'] }, { id: 'c2', nome: 'passeio', icone: '', cor: '#222222', membros: ['b'] }], 'um'));
@@ -320,6 +354,23 @@ async function bateria(tipo) {
       const semEle = await (await fetch(s.base + '/dados/freguesias/beato/presets/index.js')).text(); assert.ok(!semEle.includes('Guardado Aqui'), 'o preset apagado continua no índice');
       await enviar(ADMIN, 'ajuda', 'exemplo-apagado', { preset: 'exemplo-apagado', freguesia: 'ajuda', titulo: 'X', elementos: [] }); await pedir(ADMIN, '/presets/ajuda/exemplo-apagado/apagar', { method: 'POST', body: '{}' });
     } }),
+    'eventos: a abrangência (freguesias e zonas) vale também para o público': async () => {
+      const post = (u, o) => pedir(sessoes.Admin, u, { method: 'POST', body: JSON.stringify(o) }), zona = [[38.69, -9.22], [38.70, -9.22], [38.70, -9.20], [38.69, -9.20]];
+      const ev = { id: 'abrange', nome: 'Abrange', publico: true, abrangencia: { freguesias: ['ajuda', 'nao valida'], zonas: { ajuda: [{ id: 'z', nome: 'Z', poligono: zona }], belem: [{ id: 'fora', nome: 'Fora', poligono: zona }] } } };
+      assert.equal((await post('/eventos', ev)).status, 200);
+      const guardado = (await (await pedir(null, '/eventos')).json()).eventos.find(e => e.id === 'abrange');
+      assert.deepEqual(guardado.abrangencia, { freguesias: ['ajuda'], zonas: { ajuda: [{ id: 'z', nome: 'Z', poligono: zona }] } }, 'só freguesias válidas, e zonas só das escolhidas');
+      assert.equal((await post('/evento', { id: 'abrange', nome: 'Abrange', ativo: true })).status, 200);
+      const registo = (f, pos) => pedir(null, '/publico/' + f + '/da-junta', { method: 'POST', body: JSON.stringify({ tipo: 'registo', evento: 'abrange', registo: { pos, rua: 'Rua A', numero: '1' } }) });
+      assert.equal((await registo('belem', [38.695, -9.21])).status, 400, 'fora das freguesias do evento');
+      await post('/eventos', { ...ev, abrangencia: { freguesias: ['belem'], zonas: { belem: [{ id: 'z', nome: 'Z', poligono: zona }] } } });
+      assert.equal((await registo('belem', [38.72, -9.15])).status, 400, 'fora das zonas');
+      assert.equal((await registo('belem', [38.695, -9.21])).status, 201, 'dentro da zona');
+      await post('/eventos', { ...ev, abrangencia: undefined });
+      assert.ok(!(await (await pedir(null, '/eventos')).json()).eventos.find(e => e.id === 'abrange').abrangencia, 'sem abrangência: toda a cidade');
+      assert.equal((await post('/evento', { id: 'abrange', nome: 'Abrange', ativo: false })).status, 200);
+      assert.equal((await post('/eventos', { id: 'abrange', apagar: true })).status, 200);
+    },
     'página de consulta': async () => { const r = await fetch(s.base + '/consulta'); assert.equal(r.status, 200); assert.ok((await r.text()).includes('Consulta dos dados')); },
   };
   console.log(`\n${tipo === 'node' ? 'Servidor Node' : 'Worker do Cloudflare (local)'}:`);

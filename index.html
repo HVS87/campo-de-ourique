@@ -74,11 +74,22 @@
   #dialogo .campo-dialogo.marca.interruptor input::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform .15s; }
   #dialogo .campo-dialogo.marca.interruptor input:checked { background: var(--accent-texto); } #dialogo .campo-dialogo.marca.interruptor input:checked::after { transform: translateX(16px); }
   @media (prefers-reduced-motion: reduce) { #dialogo .campo-dialogo.marca.interruptor input, #dialogo .campo-dialogo.marca.interruptor input::after { transition: none; } }
+  #faixa-evento { position: absolute; top: 64px; left: 50%; transform: translateX(-50%); z-index: 990; display: flex; align-items: center; gap: 10px; max-width: calc(100% - 32px); padding: 4px 5px 4px 14px; border-radius: 19px; font-size: 12.5px; color: var(--ink); }
+  #faixa-evento[hidden], body.cidade #faixa-evento, body.edicao #faixa-evento, body.visita-aberta #faixa-evento { display: none; }
+  #faixa-evento #faixa-txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } #faixa-evento .btn { flex: none; padding: 4px 12px; min-height: 30px; }
+  @media (max-width: 640px) { #faixa-evento { top: 62px; font-size: 11.5px; } }
+  .zona-largar { display: grid; place-items: center; gap: 8px; padding: 28px 16px; border: 2px dashed var(--panel-border); border-radius: 14px; text-align: center; color: var(--ink-dim); transition: border-color .15s, background .15s; }
+  .zona-largar b { color: var(--ink); font-size: 14px; } .zona-largar.por-cima { border-color: var(--accent-texto); background: rgb(var(--t) / .06); }
+  .pre-foto { display: block; max-width: 100%; max-height: 52vh; margin: 4px auto 8px; border-radius: 10px; }
+  #levantamento .lev-notas { display: block; margin: 4px 0 8px; font-size: 12px; color: var(--ink-dim); } #levantamento .lev-notas textarea { display: block; width: 100%; margin-top: 3px; min-height: 40px; resize: vertical; font: inherit; font-size: 13px; }
+  .aviso-forte { color: #e5484d !important; font-weight: 600; }
   .acoes-evento { white-space: nowrap; text-align: right; } .acoes-evento .btn { margin-left: 4px; }
   @media (max-width: 640px) { .acoes-evento { white-space: normal; } .acoes-evento .btn { margin: 2px 0 2px 4px; } }
   .form-evento { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; } .form-evento .campo-dialogo:first-child { grid-column: 1 / -1; }
   #dialogo .form-evento .campo-dialogo[hidden] { display: none; } .agenda-evento .campo-dialogo:first-child { grid-column: 1 / -1; }
   @media (max-width: 480px) { .form-evento { grid-template-columns: 1fr; } }
+  #dialogo .lista-freguesias { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 0 10px; max-height: 210px; overflow: auto; padding: 2px 0; }
+  #dialogo .lista-freguesias .campo-dialogo.marca { margin: 3px 0; } #dialogo .linha-zonas { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 6px 0 4px; } #dialogo .linha-zonas small { opacity: .75; }
   .titulo-tipos { font-size: 13px; margin: 12px 0 6px; } .titulo-tipos small, .form-evento small { font-weight: 400; color: var(--ink-dim); }
   #dialogo .campo-dialogo.tipo-evento { display: flex; gap: 6px; align-items: center; margin: 0 0 6px; }
   #dialogo .campo-dialogo.tipo-evento input { margin: 0; } #dialogo .campo-dialogo.tipo-evento input[name^=t-icone] { width: 58px; flex: none; text-align: center; } #dialogo .campo-dialogo.tipo-evento input[name^=t-nome] { flex: 1; min-width: 0; width: auto; } #dialogo .campo-dialogo.tipo-evento input[type=color] { width: 40px; height: 36px; flex: none; padding: 2px; cursor: pointer; }
@@ -684,6 +695,7 @@
 
 <button id="btn-painel" class="vidro redondo" aria-label="Abrir índice" aria-expanded="false">☰</button>
 <div id="marca" class="vidro"><b id="marca-titulo">Campo de Ourique</b><small id="marca-sub"></small></div>
+<div id="faixa-evento" class="vidro" hidden><span id="faixa-txt"></span><button type="button" class="btn" id="faixa-ver-tudo" title="Desligar o modo do evento (volta a ligar-se nas Camadas)">Ver tudo</button></div>
 
 <div id="pesquisa-box">
   <div class="campo vidro">
@@ -732,7 +744,8 @@
 <div id="levantamento" class="vidro" role="dialog" aria-labelledby="lev-titulo"><h3 id="lev-titulo"></h3><p class="nota" id="lev-nota"></p>
   <div class="morada"><label>Rua<input id="lev-rua" list="lista-ruas" autocomplete="off" spellcheck="false" placeholder="Nome da rua"></label><label>N.º porta<input id="lev-numero" autocomplete="off" inputmode="numeric" placeholder="ex.: 12"></label></div>
   <p class="nota" id="lev-fonte"></p>
-  <div class="botoes"><button type="button" class="btn" id="lev-cancelar">Cancelar</button><button type="button" class="btn" id="lev-tipo" title="Mudar entre apagado/fundido e em falta/zona escura">Mudar o tipo</button><button type="button" class="btn" id="lev-gps" title="Voltar à minha localização">📍</button><span class="esp"></span><button type="button" class="btn on" id="lev-ok">Confirmar registo</button></div></div>
+  <label class="lev-notas">Notas <small>opcional</small><textarea id="lev-notas" rows="2" placeholder="Por exemplo: a coluna está partida"></textarea></label>
+  <div class="botoes"><button type="button" class="btn" id="lev-cancelar">Cancelar</button><button type="button" class="btn" id="lev-tipo" title="Mudar entre apagado/fundido e em falta/zona escura">Mudar o tipo</button><button type="button" class="btn" id="lev-foto" title="Acrescentar uma foto a este registo">📷 Foto</button><button type="button" class="btn" id="lev-gps" title="Voltar à minha localização">📍</button><span class="esp"></span><button type="button" class="btn on" id="lev-ok">Confirmar registo</button></div></div>
 <datalist id="lista-ruas"></datalist>
 <div id="desmat" aria-label="Pontos desmaterializados"><button id="desmat-pilha" type="button"></button><div id="desmat-lista" role="list"></div></div>
 <div id="lightbox"><figure><img alt=""><figcaption></figcaption></figure></div>
@@ -862,7 +875,7 @@ const htmlNavSub = (el, i) => el.pontos.length < 2 ? '' : `<div class="linha nav
 function htmlFotosEd(fotos) {
   return `<div class="fotos-ed"><h3>Fotos</h3>
       ${fotos.map((f, i) => `<div class="foto-ed"><img src="${esc(f.src)}" alt="" loading="lazy"><div><input name="foto-src" data-i="${i}" value="${esc(f.src)}" placeholder="assets/fotos/ficheiro.jpg ou https://…"><input name="foto-leg" data-i="${i}" value="${esc(f.legenda || '')}" placeholder="Legenda"></div><button type="button" class="fechar" data-ac="foto-remover" data-i="${i}" aria-label="Remover foto">✕</button></div>`).join('')}
-      <div class="linha"><button type="button" class="btn" data-ac="foto-ficheiro">${aparelhoMovel() ? '🖼 Galeria' : '📷 Acrescentar ficheiro…'}</button>${aparelhoMovel() ? '<button type="button" class="btn" data-ac="foto-camara">📷 Câmara</button>' : ''}<button type="button" class="btn" data-ac="foto-url">🔗 Acrescentar por endereço</button><input type="file" name="ficheiros" accept="image/*" multiple hidden><input type="file" name="camara" accept="image/*" capture="environment" hidden></div>
+      <div class="linha"><button type="button" class="btn on" data-ac="foto-adicionar">📷 Adicionar foto</button><button type="button" class="btn" data-ac="foto-url">🔗 Acrescentar por endereço</button><input type="file" name="ficheiros" accept="image/*" multiple hidden><input type="file" name="camara" accept="image/*" capture="environment" hidden></div>
     </div>`;
 }
 function htmlFormSub(el, i) {
@@ -1361,6 +1374,7 @@ function limparSelecao() {
   if (location.hash) history.replaceState(null, '', location.pathname + location.search);
 }
 function selecionar(el, voar, semCartao) {
+  if (modoEventoAtivo() && !doEventoAtivo(el)) ligarModoEvento(false, `Modo do evento desligado, para mostrar «${el.nome}». Volta a ligá-lo nas Camadas.`);
   limparSelecao(); limparRuaDestaque(); categoriaAtual = null; subAtual = null;
   if ((el.pai || el).oculto) { categoriasAtivas.clear(); aplicarFiltro(); } // escondido pelo filtro de categorias: mostra tudo outra vez
   selecionado = el;
@@ -1428,9 +1442,9 @@ modalConteudo.addEventListener('click', e => {
     mostrarCategoria(c); const b = limitesCategoria(c); if (b) map.flyToBounds(b, Object.assign({ duration: .9 }, margensGerais())); return; }
   const img = e.target.closest('.fotos img'); if (img) abrirLightbox(img.src, img.dataset.legenda);
 });
-$('#btn-fechar').addEventListener('click', fecharCartao);
+$('#btn-fechar').addEventListener('click', fecharComFoto);
 $('#btn-voltar').addEventListener('click', () => { if (!selecionado) return; if (haSub(selecionado)) selecionar(selecionado, false); else if (selecionado.pai) selecionar(selecionado.pai, true); });
-modal.addEventListener('click', e => { if (e.target === modal) fecharCartao(); });
+modal.addEventListener('click', e => { if (e.target === modal) fecharComFoto(); });
 
 // ---------- lightbox ----------
 const lightbox = $('#lightbox');
@@ -1747,6 +1761,60 @@ function ruaSobre(r) {
   if (ruaHover && ruaHover !== r) classeRua(ruaHover, 'hover', false);
   ruaHover = r; if (r) classeRua(r, 'hover', true);
 }
+// ---------- o varrimento das ruas, durante um evento que o tenha ----------
+// Cada rua da freguesia a vermelho (por percorrer) ou a azul (percorrida), em traço suave para não tapar o mapa ao longe.
+// Um toque numa rua marca-a, ou volta a pô-la por percorrer. Guarda-se logo, como um registo, e junta-se entre dispositivos.
+let varrimentoLigado = true; try { varrimentoLigado = localStorage.getItem('co-varrimento') !== 'desligado'; } catch (err) { /* sem armazenamento local */ }
+const varrimentoVisivel = () => { const ev = eventoAtivo(); return !!(ev && ev.varrimento && varrimentoLigado && !cidade); };
+map.createPane('varrimento').style.zIndex = 394;
+const rendVarr = L.canvas({ pane: 'varrimento', padding: .3, tolerance: 8 });
+let grupoVarr = null;
+const ruasDoVarrimento = () => { const ev = eventoAtivo(), z = zonasDoEvento(ev); if (!z.length) return RUAS; return RUAS.filter(r => r.trocos.some(t => t.some(p => z.some(x => dentro(L.latLng(p), x.poligono))))); }; // numa freguesia com zonas, só as ruas delas
+let contornoZonas = null;
+function atualizarZonasEvento() { // o contorno tracejado das zonas onde o evento decorre
+  const ev = eventoAtivo(), z = zonasDoEvento(ev), chave = ev && z.length && !cidade ? ev.id + JSON.stringify(z.map(x => x.id)) : '';
+  if (contornoZonas && contornoZonas._chave !== chave) { map.removeLayer(contornoZonas); contornoZonas = null; }
+  if (!chave || contornoZonas) return;
+  contornoZonas = L.layerGroup(z.map(x => L.polygon(x.poligono, { color: '#f0b429', weight: 2.5, dashArray: '8 6', fill: false, interactive: false }).bindTooltip(esc(ev.icone + ' ' + x.nome), { sticky: true, className: 'rotulo' }))).addTo(map);
+  contornoZonas._chave = chave;
+}
+const estadoRua = nome => { const ev = eventoAtivo(), v = ev && C.varrimento && C.varrimento[ev.id] && C.varrimento[ev.id][nome]; return v && v.e ? 1 : 0; };
+const estiloVarr = feita => { const z = map.getZoom(), perto = z >= 16.5, meio = z >= 15.25; return { renderer: rendVarr, pane: 'varrimento', color: feita ? '#2f7de1' : '#e5484d', weight: perto ? 7 : meio ? 3.5 : 1.6, opacity: perto ? .5 : meio ? .32 : .24, lineCap: 'round', lineJoin: 'round', interactive: true, bubblingMouseEvents: false }; }; // ao longe, um traço fino e transparente que não tapa o mapa
+function atualizarVarrimento() {
+  atualizarZonasEvento();
+  const chaveVarr = JSON.stringify(zonasDoEvento(eventoAtivo()).map(x => x.id)); if (grupoVarr && grupoVarr._chave !== chaveVarr) { if (map.hasLayer(grupoVarr)) map.removeLayer(grupoVarr); grupoVarr = null; } // as zonas mudaram: outras ruas
+  if (!varrimentoVisivel()) { if (grupoVarr && map.hasLayer(grupoVarr)) map.removeLayer(grupoVarr); return; }
+  if (!grupoVarr) {
+    grupoVarr = L.layerGroup(); grupoVarr._chave = chaveVarr;
+    for (const rua of ruasDoVarrimento()) for (const t of rua.trocos) {
+      const l = L.polyline(t, estiloVarr(false)); l._rua = rua.nome;
+      l.bindTooltip(() => esc(rua.nome) + ' · ' + (estadoRua(rua.nome) ? 'percorrida' : 'por percorrer') + '<small> · toca para mudar</small>', { sticky: true, className: 'rotulo', opacity: 1 });
+      l.on('click', e => { L.DomEvent.stop(e); marcarRua(rua.nome); });
+      grupoVarr.addLayer(l);
+    }
+  }
+  grupoVarr.eachLayer(l => l.setStyle(estiloVarr(estadoRua(l._rua))));
+  if (!map.hasLayer(grupoVarr)) grupoVarr.addTo(map);
+}
+map.on('zoomend', () => { if (grupoVarr && map.hasLayer(grupoVarr)) grupoVarr.eachLayer(l => l.setStyle(estiloVarr(estadoRua(l._rua)))); });
+function ligarVarrimento(ligar) {
+  varrimentoLigado = ligar === undefined ? !varrimentoLigado : ligar;
+  try { localStorage.setItem('co-varrimento', varrimentoLigado ? 'ligado' : 'desligado'); } catch (err) { /* sem armazenamento local */ }
+  estadoCamada('btn-varrimento', varrimentoLigado); atualizarVarrimento(); atualizarFaixa();
+}
+async function marcarRua(nome) {
+  const ev = eventoAtivo(); if (!ev || !ev.varrimento || visitaSoSimula()) return;
+  const doPublico = !SESSAO && ev.publico;
+  if (!doPublico && !(SESSAO && podeEditarEm(SESSAO, FREG.id))) { aviso('Para marcar ruas, inicia sessão com uma conta desta freguesia.', 4500); return; }
+  if (!doPublico && !edicao) { aviso('Liga o modo de edição (lápis) para marcar ruas.', 4000); return; }
+  const novo = estadoRua(nome) ? 0 : 1, porGuardar = alterado;
+  C.varrimento = C.varrimento || {}; const r = C.varrimento[ev.id] = C.varrimento[ev.id] || {};
+  r[nome] = { e: novo, q: new Date().toISOString(), a: SESSAO ? SESSAO.utilizador : 'Membro do público' };
+  atualizarVarrimento(); atualizarFaixa(); grupoVarr.eachLayer(l => { if (l._rua === nome && l.isTooltipOpen()) l.closeTooltip(); }); // a etiqueta aberta dizia o estado antigo
+  aviso(`«${nome}» ${novo ? 'marcada como percorrida' : 'de volta a por percorrer'}.`, 3000);
+  if (doPublico) { await enviarPublico({ tipo: 'varrimento', evento: ev.id, preset: C.preset, rua: nome, estado: novo }); return; }
+  marcarAlterado(); guardar({ semTransferir: true, soEvento: !porGuardar }); // como um registo: segue logo, sem pisar o resto do preset
+}
 function atualizarNomesRuas() { // esconde nomes que não cabem no comprimento da rua ao zoom atual
   paneRuas.classList.toggle('z17', map.getZoom() >= 17);
   if (ruasSuspensas) return; // suspensa: mede-se quando voltar
@@ -1870,6 +1938,8 @@ const CAMADAS = [
   { id: 'btn-lotes', texto: 'Lotes do cadastro', nota: 'CML', acao: () => ligarLotes() },
   { id: 'btn-verdes', texto: 'Espaços verdes', nota: 'CML', acao: () => ligarVerdes() },
   { id: 'btn-mapa', texto: 'Mapa da cidade', nota: 'fundo', acao: () => ligarMapa() },
+  { id: 'btn-modo-evento', texto: 'Modo do evento', nota: 'só os registos', acao: () => ligarModoEvento() },
+  { id: 'btn-varrimento', texto: 'Varrimento das ruas', nota: 'evento', acao: () => ligarVarrimento() },
 ];
 const CtrlCamadas = L.Control.extend({ onAdd() {
   const box = L.DomUtil.create('div'); box.id = 'camadas';
@@ -1915,14 +1985,14 @@ const CtrlCriar = L.Control.extend({ onAdd() {
   b.title = 'Criar ponto, rua ou zona (entra no modo de edição)'; b.setAttribute('aria-label', 'Criar'); b.setAttribute('aria-expanded', 'false'); b.setAttribute('aria-controls', 'menu-criar');
   const menu = L.DomUtil.create('div', 'vidro', box); menu.id = 'menu-criar'; menu.setAttribute('role', 'menu'); menu.setAttribute('aria-label', 'Criar');
   L.DomEvent.disableClickPropagation(box); L.DomEvent.disableScrollPropagation(box);
-  b.addEventListener('click', () => { if (edicao) abrirCriar(); else pedirEdicao({ criar: true }); }); // fora da edição: entra (com sessão) e abre o menu
+  b.addEventListener('click', () => { if (edicao) abrirCriar(); else if (publicoPode()) levantamento(eventoAtivo(), null, { publico: true }); else pedirEdicao({ criar: true }); }); // fora da edição: entra (com sessão) e abre o menu; sem conta, num evento aberto ao público, regista
   menu.addEventListener('click', e => { const it = e.target.closest('[data-criar]'); if (!it) return; abrirCriar(false); criarDoMenu(it.dataset.criar); });
   return box;
 } });
 function abrirCriar(abrir, direto) { // com um evento ativo, abrir o «+» pergunta primeiro o que se quer registar (direto: o menu mesmo)
   const menu = $('#menu-criar'), b = $('#btn-criar'); if (!menu) return;
   if (abrir === undefined) abrir = !menu.classList.contains('aberto');
-  if (abrir && !direto && edicao && eventoAtivo()) { escolherRegisto(); return; }
+  if (abrir && !direto && edicao && eventoAtivo()) { if (modoEventoAtivo()) levantamento(eventoAtivo(), null, { outros: true }); else escolherRegisto(); return; } // no modo do evento, o «+» sugere logo os tipos do evento
   if (abrir) { // a localização só aparece em telemóveis e tablets
     const movel = matchMedia('(pointer: coarse)').matches || estreito();
     menu.innerHTML = '<h4>Criar</h4>' + CRIAR.filter(c => !c.movel).map(htmlCriar).join('') + (movel ? '<h4>Na minha localização</h4>' + CRIAR.filter(c => c.movel).map(htmlCriar).join('') : '');
@@ -2087,11 +2157,47 @@ const catPorId = id => C.categorias.find(c => c.id === id);
 const categoriasDe = el => C.categorias.filter(c => c.membros.includes(el.id));
 function todosElementos() { const t = []; (function rec(l) { for (const e of l) { t.push(e); rec(e.filhos); } })(ELEMENTOS); return t; } // declaração: usada também mais acima
 function visivelPorCategoria(el) {
+  if (modoEventoAtivo() && !doEventoAtivo(el)) return false; // o modo do evento mostra só os registos dele
   if (!categoriasAtivas.size) return true;
   const raiz = el.pai || el;
   return C.categorias.some(c => categoriasAtivas.has(c.id) && (c.membros.includes(el.id) || c.membros.includes(raiz.id) || (el.tipo === 'zona' && el.filhos.some(f => c.membros.includes(f.id)))));
 }
 // esconde no mapa e no índice os elementos fora das categorias ativas (nenhuma ativa = tudo visível)
+// O modo de visualização do evento: enquanto o evento está ativo (se o evento o tiver), o mapa, o índice e a pesquisa mostram
+// só os registos dele, e o «+» vai direto ao registo. Cada pessoa desliga-o nas Camadas (fica lembrado para este evento).
+const CHAVE_MODO_EVENTO = 'co-modo-evento:';
+const doEventoAtivo = el => { const ev = eventoAtivo(); return !!ev && (el.pai || el).evento === ev.id; };
+function modoEventoAtivo() {
+  const ev = eventoAtivo(); if (!ev || ev.modoEvento === false) return false;
+  try { return localStorage.getItem(CHAVE_MODO_EVENTO + ev.id) !== 'desligado'; } catch (err) { return true; }
+}
+function ligarModoEvento(ligar, porque) {
+  const ev = eventoAtivo(); if (!ev) return;
+  const on = ligar === undefined ? !modoEventoAtivo() : ligar;
+  try { localStorage.setItem(CHAVE_MODO_EVENTO + ev.id, on ? 'ligado' : 'desligado'); } catch (err) { /* sem armazenamento local */ }
+  aplicarModoEvento();
+  if (porque) aviso(porque, 5000);
+}
+function aplicarModoEvento() {
+  const ev = eventoAtivo(), on = modoEventoAtivo();
+  document.body.classList.toggle('modo-evento', on);
+  const bm = $('#btn-modo-evento'), bv = $('#btn-varrimento');
+  if (bm) { bm.hidden = !(ev && ev.modoEvento !== false); estadoCamada('btn-modo-evento', on); }
+  if (bv) { bv.hidden = !(ev && ev.varrimento); estadoCamada('btn-varrimento', varrimentoLigado); }
+  if (typeof vista === 'object') { aplicarFiltro(); atualizarVarrimento(); }
+  atualizarFaixa();
+}
+function atualizarFaixa() { // a faixa do modo do evento, no topo
+  const f = $('#faixa-evento'); if (!f) return;
+  const ev = eventoAtivo(), on = modoEventoAtivo(); f.hidden = !on;
+  if (!on) return;
+  const n = ELEMENTOS.filter(e => e.evento === ev.id).reduce((s, g) => s + g.pontos.length, 0), T = termosDe(ev);
+  let t = `${esc(ev.icone)} <b>${esc(ev.nome)}</b> · ${n} ${esc(n === 1 ? T.um : T.varios)}`;
+  const ruas = varrimentoVisivel() ? ruasDoVarrimento() : [], zonas = zonasDoEvento(ev);
+  if (zonas.length) t += ` · em ${esc(zonas.map(x => x.nome).join(', '))}`;
+  if (ruas.length) t += ` · ruas percorridas ${ruas.filter(r => estadoRua(r.nome)).length}/${ruas.length}`;
+  $('#faixa-txt').innerHTML = t;
+}
 function aplicarFiltro() {
   for (const el of ELEMENTOS) {
     const v = vista[el.id]; if (!v) continue;
@@ -2317,7 +2423,7 @@ document.addEventListener('keydown', e => {
     if (desmat.classList.contains('expandido')) { recolherDesmat(); return; }
     if (cidade) { if (!semFreguesia) abrirCidade(false); return; } // à entrada não há de onde voltar
     if (edicao && ferramenta !== 'mover') { porFerramenta('mover'); return; }
-    if (cartaoAberto()) { fecharCartao(); categoriaAtual = null; return; }
+    if (cartaoAberto()) { fecharComFoto().then(f => { if (f) categoriaAtual = null; }); return; }
     if (guiaoAberto()) { ligarGuiao(false); return; }
     if (selecionado || ruaDestaque) { desselecionar(); return; }
     if (categoriasAtivas.size) { categoriasAtivas.clear(); aplicarFiltro(); return; }
@@ -2605,7 +2711,7 @@ async function sairEdicao() {
   if (alterado) {
     const r = await perguntarGuardar('Sair do modo de edição', 'sair');
     if (r === 'cancelar') return;
-    if (r === 'guardar') { if ((await guardar()) === 'recusado') return; alterado = false; } // recusado: continua a editar (o trabalho está na gravação automática)
+    if (r === 'guardar') { if (!(await antesDeGuardar()) || (await guardar()) === 'recusado') return; alterado = false; } // recusado: continua a editar (o trabalho está na gravação automática)
     else { descartarAlteracoes(); aviso('Alterações descartadas.', 3000); }
   }
   entrarEdicao(false);
@@ -2651,7 +2757,7 @@ function entrarEdicao(ligar) {
   posicionarDesmat();
   visitaAoMudarEdicao();
   if (!edicao) { cancelarLevantamento(true); if (new URLSearchParams(location.search).has('editor')) { const qs = new URLSearchParams(location.search); qs.delete('editor'); history.replaceState(null, '', location.pathname + qsTexto(qs) + location.hash); } }
-  else if (eventoAtivo() && !entrandoPorCriar) setTimeout(() => { if (edicao && eventoAtivo() && !dialogoEl.classList.contains('aberto') && !levant) escolherRegisto(); }, 350); // ao entrar na edição: levantamento ou ocorrência?
+  else if (eventoAtivo() && !entrandoPorCriar) setTimeout(() => { if (edicao && eventoAtivo() && !dialogoEl.classList.contains('aberto') && !levant) { if (modoEventoAtivo()) levantamento(eventoAtivo(), null, { outros: true }); else escolherRegisto(); } }, 350); // ao entrar na edição: levantamento ou ocorrência?
 }
 let entrandoPorCriar = false;
 function porFerramenta(nome, alvo) {
@@ -2694,16 +2800,35 @@ const arredLL = ll => [+ll.lat.toFixed(6), +ll.lng.toFixed(6)];
 // aplicação para segundo plano e ao fechar, mesmo sem se ter gravado dados/conteudos.js. Cada rascunho é da conta que o
 // fez: volta quando essa conta entra no modo de edição, e quem só vê a apresentação vê sempre os ficheiros. «Repor do
 // ficheiro» descarta-o.
+// Várias janelas ao mesmo tempo: cada janela (separador) tem um id, guardado na sessão do separador, e os seus rascunhos e envios
+// são dela, para duas janelas da mesma conta não se pisarem. Cada janela diz de 5 em 5 segundos que está viva; o rascunho de
+// uma janela que fechou sem guardar fica para a próxima que abrir o mesmo preset com a mesma conta.
+const NONCE_ABA = Math.random().toString(36).slice(2, 10);
+const ABA = (() => { const novo = () => Math.random().toString(36).slice(2, 10);
+  try { let a = sessionStorage.getItem('co-aba'); const v = a && JSON.parse(localStorage.getItem('co-aba-viva:' + a) || 'null');
+    if (!a || (v && v.n !== NONCE_ABA && Date.now() - v.t < 12000)) { a = novo(); sessionStorage.setItem('co-aba', a); } // um separador duplicado traz a sessão do original: fica com um id seu
+    return a; } catch (err) { return novo(); } })();
+const sinalAba = () => { try { localStorage.setItem('co-aba-viva:' + ABA, JSON.stringify({ t: Date.now(), n: NONCE_ABA })); } catch (err) { /* sem armazenamento local */ } };
+sinalAba(); setInterval(sinalAba, 5000); addEventListener('pagehide', () => { try { localStorage.removeItem('co-aba-viva:' + ABA); } catch (err) { /* sem armazenamento local */ } });
+const abaViva = a => { try { const v = JSON.parse(localStorage.getItem('co-aba-viva:' + a) || 'null'); return !!v && Date.now() - v.t < 12000; } catch (err) { return false; } };
+let rascunhoAdotado = null; // o rascunho de uma janela fechada que esta retomou: sai quando esta gravar o seu
 const PREFIXO_ANTIGO = 'co-autosave:' + (CO ? '' : FREG.id + ':'); // os rascunhos de antes das contas (sem dono)
 const prefixoAuto = () => SESSAO ? 'co-autosave:' + normalizarUtilizador(SESSAO.utilizador) + '@' + (CO ? '' : FREG.id + ':') : PREFIXO_ANTIGO;
-const chaveAuto = id => prefixoAuto() + (id || C.preset);
+const chaveAuto = id => prefixoAuto() + (id || C.preset) + '#' + ABA; // o rascunho desta janela
 const CHAVE_ATIVO = CO ? 'co-preset-ativo' : 'co-preset-ativo:' + FREG.id;
-function lerAutosaveDe(id) { // só com sessão: o rascunho desta conta ou, se não houver, um de antes das contas
+function lerAutosaveDe(id) { // só com sessão: o desta janela; senão, o mais recente de uma janela que fechou (ou de antes das contas)
   if (!SESSAO) return null;
-  for (const k of [chaveAuto(id), PREFIXO_ANTIGO + (id || C.preset)]) { try { const r = JSON.parse(localStorage.getItem(k) || 'null'); if (r && r.dados) return r; } catch (err) { /* sem armazenamento local */ } }
-  return null;
+  const p = prefixoAuto() + (id || C.preset), ler = k => { try { const r = JSON.parse(localStorage.getItem(k) || 'null'); return r && r.dados ? Object.assign(r, { chave: k }) : null; } catch (err) { return null; } };
+  const meu = ler(p + '#' + ABA); if (meu) return meu;
+  let melhor = null; const melhorar = r => { if (r && (!melhor || r.quando > melhor.quando)) melhor = r; };
+  try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith(p + '#') && !abaViva(k.slice(p.length + 1))) melhorar(ler(k)); } } catch (err) { /* sem armazenamento local */ }
+  for (const k of [p, PREFIXO_ANTIGO + (id || C.preset)]) melhorar(ler(k)); // de versões anteriores
+  return melhor;
 }
-function apagarAutosave(id) { try { localStorage.removeItem(chaveAuto(id)); if (SESSAO) localStorage.removeItem(PREFIXO_ANTIGO + (id || C.preset)); } catch (err) { /* sem armazenamento local */ } }
+function apagarAutosave(id) { // o desta janela e os de janelas que já fecharam (o de uma janela aberta é dela)
+  try { const p = prefixoAuto() + (id || C.preset); localStorage.removeItem(chaveAuto(id)); localStorage.removeItem(p); if (SESSAO) localStorage.removeItem(PREFIXO_ANTIGO + (id || C.preset));
+    for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && k.startsWith(p + '#') && !abaViva(k.slice(p.length + 1))) localStorage.removeItem(k); } } catch (err) { /* sem armazenamento local */ }
+}
 function estado(txt, sujo) { estadoEl.textContent = txt; barra.classList.toggle('sujo', !!sujo); }
 let rascunhoEnviado = false; // o rascunho é o que seguiu para o servidor central: tem de aparecer, mas não está por guardar
 function autoGuardar() {
@@ -2711,6 +2836,7 @@ function autoGuardar() {
   try {
     localStorage.setItem(chaveAuto(), JSON.stringify({ quando: Date.now(), utilizador: SESSAO ? SESSAO.utilizador : '', enviado: rascunhoEnviado, consolidacoes, dados: serializar() }));
     if (SESSAO) localStorage.removeItem(PREFIXO_ANTIGO + C.preset); // um rascunho de antes das contas passa a ser desta conta
+    if (rascunhoAdotado && rascunhoAdotado !== chaveAuto()) { localStorage.removeItem(rascunhoAdotado); rascunhoAdotado = null; } // o que esta janela retomou já está no seu
     $('#estado-auto').textContent = 'rascunho guardado às ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5); autoFalhou = false;
   }
   catch (err) { $('#estado-auto').textContent = 'gravação automática indisponível'; if (!autoFalhou) { autoFalhou = true; aviso('A gravação automática no browser falhou (sem espaço, provavelmente por fotos embebidas). Guarda ou exporta para não perderes o trabalho.', 8000); } }
@@ -2765,7 +2891,7 @@ function acrescentarPresetsLocais() { // lista também os presets desta freguesi
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i), prefixo = k && [prefixoAuto(), PREFIXO_ANTIGO].find(p => k.startsWith(p)); if (!prefixo) continue;
-      const id = k.slice(prefixo.length); if (!/^[a-z0-9][a-z0-9-]*$/.test(id) || PRESETS.some(p => p.id === id)) continue; // «co-autosave:alcantara:x» não é de Campo de Ourique; «x@…» é de uma conta
+      const id = k.slice(prefixo.length).split('#')[0]; if (!/^[a-z0-9][a-z0-9-]*$/.test(id) || PRESETS.some(p => p.id === id)) continue; // «co-autosave:alcantara:x» não é de Campo de Ourique; «x@…» é de uma conta
       const r = lerAutosaveDe(id); if (!r) continue;
       PRESETS.push({ id, nome: r.dados.titulo || id, subtitulo: r.dados.subtitulo || '', elementos: (r.dados.elementos || []).length, local: true }); PRESETS_LOCAIS.add(id);
     }
@@ -2797,7 +2923,7 @@ async function mudarPreset(id, silencioso) {
   }
   autoGuardarJa(); // sem guardar, as alterações ficam na gravação automática deste preset
   let d = null; try { if (PRESETS_LOCAIS.has(id) && lerAutosaveDe(id)) throw new Error('só neste browser'); d = clonar(await carregarPresetFicheiro(id)); } catch (err) { if (!lerAutosaveDe(id)) { aviso('Não foi possível abrir o preset: ' + err.message, 5000); preencherPresets(); return; } }
-  let auto = lerAutosaveDe(id); const base = d || auto.dados;
+  let auto = lerAutosaveDe(id); const base = d || auto.dados; rascunhoAdotado = auto && auto.chave !== chaveAuto(id) ? auto.chave : null;
   if (!d) PRESETS_LOCAIS.add(id); // sem ficheiro: existe só neste browser
   if (auto && d && JSON.stringify(auto.dados) !== JSON.stringify(d) && !(await autosaveValido(id, auto))) auto = null;
   const usarAuto = !!auto && (!d || JSON.stringify(auto.dados) !== JSON.stringify(d));
@@ -2931,6 +3057,7 @@ function serializar(completo) {
   if (Array.isArray(C.visita)) d.visita = C.visita.filter(id => POR_ID[id]);
   if (C.removidosEvento && Object.keys(C.removidosEvento).length) d.removidosEvento = C.removidosEvento;
   if (C.conjuntosApagados && C.conjuntosApagados.length) d.conjuntosApagados = C.conjuntosApagados;
+  if (C.varrimento && Object.keys(C.varrimento).length) d.varrimento = C.varrimento;
   const mantidos = (C.duplicadosMantidos || []).filter(p => p.split('|').every(id => POR_ID[id])); if (mantidos.length) d.duplicadosMantidos = mantidos;
   if (C.categorias && C.categorias.length) d.categorias = C.categorias.map(c => ({ id: c.id, nome: c.nome, icone: c.icone || '', cor: c.cor, membros: c.membros.filter(id => POR_ID[id]) }));
   return d;
@@ -2947,7 +3074,7 @@ function carregar(d) {
   ELEMENTOS.length = 0; for (const k in POR_ID) delete POR_ID[k];
   C.titulo = d.titulo; C.subtitulo = d.subtitulo; consolidacoes = []; C.duplicadosMantidos = d.duplicadosMantidos;
   for (const e of d.elementos || []) { const p = preparar(e, null); if (p) ELEMENTOS.push(p); }
-  C.visita = d.visita; C.categorias = d.categorias || []; C.removidosEvento = d.removidosEvento; C.conjuntosApagados = d.conjuntosApagados; normalizarExtras(); categoriasAtivas.clear();
+  C.visita = d.visita; C.categorias = d.categorias || []; C.removidosEvento = d.removidosEvento; C.conjuntosApagados = d.conjuntosApagados; C.varrimento = d.varrimento || {}; normalizarExtras(); categoriasAtivas.clear();
   aplicarTitulo(); construir(); construirIndice(); construirPesquisa(); atualizarAvisosEdicao();
   if (edicao) { $('#ed-titulo').value = C.titulo || ''; $('#ed-subtitulo').value = C.subtitulo || ''; }
 }
@@ -2970,24 +3097,34 @@ async function guardar(opcoes = {}) {
   if (validar && r !== 'recusado') { consolidacoes = []; atualizarAvisosEdicao(); autoGuardar(); }
   return r;
 }
+let modJuntar = null; // comum/juntar.mjs: a mesma junção que os servidores usam
+const juntarMod = () => modJuntar || (modJuntar = import('./comum/juntar.mjs').catch(err => { modJuntar = null; throw err; }));
+function avisarConflitos(conflitos, onde) { // o que dois dispositivos mudaram ao mesmo tempo, no mesmo sítio
+  const nomes = [...new Set(conflitos.map(c => c.nome))].slice(0, 6);
+  aviso(`Ao mesmo tempo, noutro dispositivo ou janela, mudou-se também ${nomes.map(n => '«' + n + '»').join(', ')}${conflitos.length > nomes.length ? ' e mais' : ''}. Ficou o que acabaste de guardar; a outra versão ${onde === 'central' ? 'fica no histórico de revisões do servidor central' : 'fica em ' + BASE + 'presets/' + C.preset + '.anterior.js'}.`, 12000);
+}
 async function gravarPreset(opcoes) {
   const dados = serializar(), paraCentral = !opcoes.semCentral && CONFIG_CENTRAL.enviarAoGuardar !== false;
+  let base = null; try { if (FICHEIRO) base = (await juntarMod()).baseDe(FICHEIRO); } catch (err) { /* sem o módulo, o servidor junta sem apagar nada */ } // o que esta janela recebeu antes de mexer
   if (await verificarServidor()) {
     try {
-      const r = await postLocal('/guardar' + qsFreguesia, JSON.stringify(dados));
+      const r = await postLocal('/guardar' + qsFreguesia, JSON.stringify(base ? { ...dados, __base: base } : dados));
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw Object.assign(new Error(j.erro || r.statusText), { codigo: r.status });
-      alterado = false; FICHEIRO = clonar(dados); cancelarAuto(); autoGuardar(); PRESETS_LOCAIS.delete(C.preset);
+      alterado = false; FICHEIRO = clonar(dados);
+      if (j.juntou && j.dados) { carregar(clonar(j.dados)); FICHEIRO = clonar(serializar()); } // o que outro guardou ao mesmo tempo aparece já
+      cancelarAuto(); autoGuardar(); PRESETS_LOCAIS.delete(C.preset);
       if (j.presets) atualizarPresets(j.presets); else preencherPresets();
-      estado('Guardado em ' + BASE + 'presets/' + C.preset + '.js · ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5)); aviso('Preset guardado e ativo em ' + BASE + 'conteudos.js.', 2500);
-      if (paraCentral) enfileirarCentral(serializar(true)); // também para o servidor central, se houver (com fila, se não houver rede)
+      estado('Guardado em ' + BASE + 'presets/' + C.preset + '.js · ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5)); aviso('Preset guardado e ativo em ' + BASE + 'conteudos.js.', 2500); // o que juntou ou o conflito diz-se a seguir, para não ficar tapado
+      if (j.conflitos && j.conflitos.length) avisarConflitos(j.conflitos, 'local'); else if (j.juntou) aviso('Guardado, e juntado com o que foi guardado entretanto noutra janela ou dispositivo.', 6000);
+      if (paraCentral) enfileirarCentral(serializar(true), false, base); // também para o servidor central, se houver (com fila, se não houver rede)
       return 'servidor';
     } catch (err) {
       if (err.codigo === 401 || err.codigo === 403) { autoGuardarJa(); aviso('Não foi guardado: ' + (err.codigo === 403 && SESSAO ? `a conta ${SESSAO.utilizador} não pode editar ${FREG.nome}` : err.message) + '. O trabalho fica na gravação automática deste ' + (AMBIENTE.app ? 'computador' : 'browser') + '.', 7000); return 'recusado'; }
       aviso('Não foi possível guardar no servidor (' + err.message + '); a transferir o ficheiro.', 6000);
     }
   } else if (!podeEditarEm(SESSAO, FREG.id)) { autoGuardarJa(); aviso('Para guardar, inicia sessão com uma conta que edite ' + FREG.nome + '.', 6000); return 'recusado'; }
-  const naFila = paraCentral && enfileirarCentral(serializar(true), opcoes.soEvento);
+  const naFila = paraCentral && enfileirarCentral(serializar(true), opcoes.soEvento, base);
   if (naFila && (opcoes.semTransferir || !contasLocais())) {
     alterado = false; FICHEIRO = clonar(dados); rascunhoEnviado = false; cancelarAuto(); autoGuardar(); estado('Na fila do servidor central · ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5));
     PRESETS_LOCAIS.delete(C.preset); const e = PRESETS.find(p => p.id === C.preset); if (e) { e.nome = dados.titulo || e.nome; e.subtitulo = dados.subtitulo || ''; e.elementos = dados.elementos.length; } preencherPresets();
@@ -3058,16 +3195,21 @@ function envioConfirmado(x) { // só agora o rascunho deixa de ser trabalho por 
   try { const k = chaveAuto(x.preset), r = JSON.parse(localStorage.getItem(k) || 'null'); if (r && r.dados && r.quando <= x.quando + 5000) { r.enviado = true; localStorage.setItem(k, JSON.stringify(r)); } } catch (err) { /* sem armazenamento local */ }
   if (este) { rascunhoEnviado = true; estado('Enviado para o servidor central · ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5)); }
 }
-function enfileirarCentral(dados, soEvento) {
+function enfileirarCentral(dados, soEvento, base) {
   if (!urlCentral()) return false;
-  const eu = normalizarUtilizador(SESSAO ? SESSAO.utilizador : ''), meu = x => x.freguesia === FREG.id && x.preset === dados.preset && normalizarUtilizador(x.utilizador) === eu;
-  const fila = filaCentral(), antes = fila.find(meu), f = fila.filter(x => !meu(x)); // de cada preset, só a versão mais recente de cada conta
-  f.push({ freguesia: FREG.id, preset: dados.preset, quando: Date.now(), utilizador: SESSAO ? SESSAO.utilizador : '', soEvento: !!soEvento && (!antes || !!antes.soEvento), dados }); // um envio completo à espera não passa a ser só de registos
-  if (!gravarFila(f)) return false;
+  const eu = normalizarUtilizador(SESSAO ? SESSAO.utilizador : ''), meu = x => x.freguesia === FREG.id && x.preset === dados.preset && normalizarUtilizador(x.utilizador) === eu && x.aba === ABA;
+  const quando = Date.now();
+  for (let tentativa = 0; ; tentativa++) { // de cada preset, só a versão mais recente de cada janela; outra janela pode estar a escrever na fila ao mesmo tempo: confirma-se
+    const fila = filaCentral(), antes = fila.find(meu), f = fila.filter(x => !meu(x));
+    f.push({ freguesia: FREG.id, preset: dados.preset, quando, aba: ABA, utilizador: SESSAO ? SESSAO.utilizador : '', soEvento: !!soEvento && (!antes || !!antes.soEvento), base: antes ? antes.base || null : base || null, dados }); // um envio completo à espera não passa a ser só de registos; a base é a do primeiro envio por fazer
+    if (!gravarFila(f)) return false;
+    if (filaCentral().some(x => x.aba === ABA && x.quando === quando) || tentativa >= 3) break;
+  }
   atualizarEstadoCentral(); enviarFilaCentral(); return true;
 }
 // cada envio segue com a sessão de quem o fez: um envio de outra conta espera que essa conta entre outra vez
 function podeEnviar(x) {
+  if (x.publico) return true; // de um membro do público: segue sem sessão
   const s = lerSessaoCentral();
   if (s) return !x.utilizador || normalizarUtilizador(x.utilizador) === normalizarUtilizador(s.utilizador);
   return !!lerCentral().chave; // sem sessão, só com uma chave de acesso
@@ -3080,7 +3222,10 @@ async function enviarFilaCentral() {
     for (let f = filaCentral().filter(podeEnviar); f.length; f = filaCentral().filter(podeEnviar)) {
       const x = f[0];
       try {
-        await pedirCentral('/presets/' + encodeURIComponent(x.freguesia) + '/' + encodeURIComponent(x.preset), { method: 'POST', body: JSON.stringify({ dados: x.dados, soEvento: !!x.soEvento, origem: AMBIENTE.app ? 'aplicacao' : 'browser', versao: AMBIENTE.versao || '', quando: x.quando }) });
+        if (x.publico) { await pedirCentral('/publico/' + encodeURIComponent(x.freguesia) + '/' + encodeURIComponent(x.preset), { method: 'POST', body: JSON.stringify(x.pedido), semSessao: true }); gravarFila(filaCentral().filter(y => !(y.publico && y.quando === x.quando && y.aba === x.aba))); continue; }
+        const j = await pedirCentral('/presets/' + encodeURIComponent(x.freguesia) + '/' + encodeURIComponent(x.preset), { method: 'POST', body: JSON.stringify({ dados: x.dados, base: x.base || null, soEvento: !!x.soEvento, origem: AMBIENTE.app ? 'aplicacao' : 'browser', versao: AMBIENTE.versao || '', quando: x.quando }) });
+        if (j && j.conflitos && j.conflitos.length) avisarConflitos(j.conflitos, 'central');
+        else if (j && j.juntou && soCentral() && x.freguesia === FREG.id && x.preset === C.preset) aviso('O servidor central juntou o que guardaste com o que foi guardado noutro dispositivo. Recarrega a página para veres tudo.', 8000);
         estadoCentral = 'enviado às ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5); envioConfirmado(x);
       } catch (err) {
         // sem rede, servidor em baixo ou sessão terminada: fica na fila e tenta-se mais tarde; um preset recusado (400, 403 sem
@@ -3421,7 +3566,7 @@ async function gerirContas() {
 // e a morada confirmadas, num conjunto por freguesia) ou uma ocorrência normal. A visita guiada não arranca sozinha.
 // Cada evento traz o nome, o ícone, os tipos de registo e os termos («falha»/«falhas»): nada mais na página depende do tema.
 const EVENTOS = {
-  iluminacao: { id: 'iluminacao', nome: 'Levantamento Iluminação Pública', icone: '💡', origem: true, competenciaFixa: true, visita: { objetivo: 'assinalar, freguesia a freguesia, os candeeiros apagados ou fundidos e os que faltam', oQue: 'o candeeiro' }, termos: { um: 'falha', varios: 'falhas' }, descricao: 'Candeeiros apagados ou fundidos e zonas sem iluminação, registados pelas equipas no terreno com a localização e a morada de cada um.',
+  iluminacao: { id: 'iluminacao', nome: 'Levantamento Iluminação Pública', icone: '💡', origem: true, competenciaFixa: true, modoEvento: true, visita: { objetivo: 'assinalar, freguesia a freguesia, os candeeiros apagados ou fundidos e os que faltam', oQue: 'o candeeiro' }, termos: { um: 'falha', varios: 'falhas' }, descricao: 'Candeeiros apagados ou fundidos e zonas sem iluminação, registados pelas equipas no terreno com a localização e a morada de cada um.',
     conjunto: { id: 'levantamento-iluminacao-publica', nome: 'Levantamento Iluminação Pública', icone: '💡', prioridade: 'importante', competencia: 'camara', texto: 'Candeeiros apagados ou fundidos e zonas sem iluminação, registados pelas equipas no terreno com a localização e a morada de cada um.' },
     categorias: [{ id: 'fundido', nome: 'Candeeiro apagado/fundido', icone: '💡', cor: '#fdd835' }, { id: 'falta', nome: 'Candeeiro em falta/zona escura', icone: '🌑', cor: '#5c6bc0' }] },
 };
@@ -3450,7 +3595,12 @@ try { Object.assign(DEFINICOES, JSON.parse(localStorage.getItem(CHAVE_DEFINICOES
 const visitaInicialLigada = () => DEFINICOES.visitaInicial !== false;
 let EVENTO = null; // o que o servidor diz: { id, nome, ativo, desde, por } (em cache neste browser, para abrir sem rede)
 const agendaDecorre = (e, t = Date.now()) => !!(e && e.agenda) && Date.parse(e.agenda.inicio) <= t && t < Date.parse(e.agenda.fim);
-const eventoAtivo = () => { // como o servidor: um calendário a decorrer passa à frente. Faz as contas aqui para mudar à hora certa, mesmo sem rede
+// a abrangência (a mesma regra de comum/juntar.mjs): sem ela, toda a cidade; numa freguesia com zonas, só dentro delas
+const abrangeFreguesia = (ev, f) => { const a = ev && ev.abrangencia; return !a || !Array.isArray(a.freguesias) || !a.freguesias.length || a.freguesias.includes(f); };
+const zonasDoEvento = ev => { const a = ev && ev.abrangencia, z = a && a.zonas && a.zonas[FREG.id]; return Array.isArray(z) ? z : []; };
+const dentroDoEvento = (ev, ll) => { const z = zonasDoEvento(ev), p = L.latLng(ll); return !z.length || z.some(x => dentro(p, x.poligono)); };
+const eventoAtivo = () => { const e = eventoDaCidade(); return e && abrangeFreguesia(e, FREG.id) ? e : null; }; // o evento, se decorre nesta freguesia
+const eventoDaCidade = () => { // como o servidor: um calendário a decorrer passa à frente. Faz as contas aqui para mudar à hora certa, mesmo sem rede
   const c = Object.values(EVENTOS).find(e => agendaDecorre(e)); if (c) return c;
   const e = EVENTO && EVENTO.ativo && EVENTOS[EVENTO.id]; if (!e || e.agenda) return null;
   return EVENTO.calendarizado && !(Date.now() < Date.parse(EVENTO.ate)) ? null : e;
@@ -3469,6 +3619,7 @@ async function sincronizarConjuntos() {
   let dados; try { dados = (await pedirCentral('/presets/' + encodeURIComponent(FREG.id) + '/' + encodeURIComponent(presetPedido))).dados; } catch (err) { return; }
   if (!edicao || !dados || C.preset !== presetPedido) return; // entretanto saiu da edição ou trocou de preset
   const destes = x => (x.elementos || []).filter(e => e.tipo === 'grupo' && Array.isArray(e.detalhes)), remotos = destes(dados); let mudou = false;
+  if (dados.varrimento) { try { C.varrimento = (await juntarMod()).juntarVarrimento(C.varrimento, dados.varrimento) || {}; atualizarVarrimento(); } catch (err) { /* sem o módulo: fica o daqui */ } } // as ruas marcadas noutros dispositivos
   for (const [k, ids] of Object.entries(dados.removidosEvento || {})) { C.removidosEvento = C.removidosEvento || {}; C.removidosEvento[k] = [...new Set([...(C.removidosEvento[k] || []), ...ids])]; }
   for (const chave of new Set([...remotos.map(chaveConjunto), ...ELEMENTOS.filter(e => e.tipo === 'grupo').map(chaveConjunto)])) {
     const fora = new Set((C.removidosEvento || {})[chave] || []), la = remotos.find(e => chaveConjunto(e) === chave); let g = ELEMENTOS.find(e => e.tipo === 'grupo' && chaveConjunto(e) === chave);
@@ -3513,8 +3664,9 @@ function aplicarEvento() {
   const agora = Date.now(), proxima = Object.values(EVENTOS).flatMap(e => e.agenda ? [Date.parse(e.agenda.inicio), Date.parse(e.agenda.fim)] : []).filter(t => t > agora).sort((a, b) => a - b)[0];
   clearTimeout(timerAgenda); if (proxima) timerAgenda = setTimeout(() => { aplicarEvento(); lerEventoServidor(); }, Math.min(proxima - agora + 500, 2147483000));
   document.body.classList.toggle('com-evento', !!ev);
+  aplicarModoEvento();
   const be = $('#btn-visita-evento'); be.hidden = !(ev && ev.visita); if (ev) be.textContent = ev.icone + ' Visita do evento';
-  const bc = $('#btn-evento-cidade'); bc.hidden = !ev; if (ev) bc.textContent = ev.icone + ' Resumo da cidade';
+  const evc = eventoDaCidade(), bc = $('#btn-evento-cidade'); bc.hidden = !evc; if (evc) bc.textContent = evc.icone + ' Resumo da cidade'; // o resumo é da cidade: também onde o evento não chega
   $('#btn-criar').title = ev ? ev.nome + ' ou registar uma ocorrência' : edicao ? 'Criar ponto, rua ou zona' : 'Criar ponto, rua ou zona (entra no modo de edição)';
 }
 // administração: ligar e desligar (no servidor central e no local, onde houver sessão de administração)
@@ -3563,7 +3715,7 @@ async function gerirEvento() {
       aviso((feito.length ? 'Evento terminado ' + feito.join(' e ') + '.' : '') + (falhas.length ? ' Não mudou ' + falhas.join('; ') + '.' : ''), 6000);
     }
     else if (acao === 'ativar' || acao === 'desativar') {
-      if (acao === 'ativar' && eventoAtivo() && !(await confirmar('Mudar de evento', `Ao ativar «${esc(ev.nome)}», «${esc(eventoAtivo().nome)}» deixa de estar ativo. Os registos ficam guardados.`, 'Ativar'))) continue;
+      if (acao === 'ativar' && eventoDaCidade() && !(await confirmar('Mudar de evento', `Ao ativar «${esc(ev.nome)}», «${esc(eventoDaCidade().nome)}» deixa de estar ativo. Os registos ficam guardados.`, 'Ativar'))) continue;
       const { feito, falhas } = await paraTodasAsFontes(fontes, '/evento', { id: ev.id, nome: ev.nome, ativo: acao === 'ativar' });
       aviso((feito.length ? `Evento ${acao === 'ativar' ? 'ativado' : 'desativado'} ${feito.join(' e ')}.` : '') + (falhas.length ? ' Não mudou ' + falhas.join('; ') + '.' : ''), 6000);
     }
@@ -3574,12 +3726,15 @@ async function paraTodasAsFontes(fontes, caminho, corpo) {
   for (const fo of fontes) { try { await pedirAdmin(fo.valor, caminho, corpo); feito.push(fo.em); } catch (err) { falhas.push(fo.em + ': ' + err.message); } }
   return { feito, falhas };
 }
-const definicaoEvento = ev => ({ id: ev.id, nome: ev.nome, icone: ev.icone, descricao: ev.descricao || '', competencia: (ev.conjunto && ev.conjunto.competencia) || '', termos: termosDe(ev), categorias: ev.categorias, ...(ev.agenda ? { agenda: ev.agenda } : {}) });
+const definicaoEvento = ev => ({ id: ev.id, nome: ev.nome, icone: ev.icone, descricao: ev.descricao || '', competencia: (ev.conjunto && ev.conjunto.competencia) || '', termos: termosDe(ev), categorias: ev.categorias, modoEvento: ev.modoEvento !== false, varrimento: !!ev.varrimento, publico: !!ev.publico, ...(ev.abrangencia ? { abrangencia: ev.abrangencia } : {}), ...(ev.agenda ? { agenda: ev.agenda } : {}) });
 const paraCampoData = iso => { const d = new Date(iso); return isNaN(d) ? '' : new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); }; // o formato de datetime-local, na hora deste aparelho
 const CORES_TIPOS = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6']; // pela ordem: cada tipo novo fica com a seguinte
 async function editarEvento(ev, fontes) {
-  const v = { nome: ev ? ev.nome : '', icone: ev ? ev.icone : '📍', descricao: ev ? ev.descricao || '' : '', um: termosDe(ev).um, varios: termosDe(ev).varios, competencia: ev ? (ev.conjunto && ev.conjunto.competencia) || '' : 'camara', modo: ev && ev.agenda ? 'agenda' : 'manual', inicio: ev && ev.agenda ? paraCampoData(ev.agenda.inicio) : '', termino: ev && ev.agenda ? paraCampoData(ev.agenda.fim) : '' };
+  const v = { nome: ev ? ev.nome : '', icone: ev ? ev.icone : '📍', descricao: ev ? ev.descricao || '' : '', um: termosDe(ev).um, varios: termosDe(ev).varios, competencia: ev ? (ev.conjunto && ev.conjunto.competencia) || '' : 'camara', modo: ev && ev.agenda ? 'agenda' : 'manual', inicio: ev && ev.agenda ? paraCampoData(ev.agenda.inicio) : '', termino: ev && ev.agenda ? paraCampoData(ev.agenda.fim) : '', modoEvento: ev ? ev.modoEvento !== false : true, varrimento: !!(ev && ev.varrimento), publico: !!(ev && ev.publico) };
   let tipos = ev ? ev.categorias.map(c => ({ ...c })) : [{ id: '', nome: '', icone: '', cor: CORES_TIPOS[0] }], erro = '';
+  const ab = ev && ev.abrangencia && Array.isArray(ev.abrangencia.freguesias) && ev.abrangencia.freguesias.length ? ev.abrangencia : null;
+  let abF = new Set(ab ? ab.freguesias.filter(f => FREGUESIAS.some(x => x.id === f)) : FREGUESIAS.map(f => f.id)), abZ = JSON.parse(JSON.stringify((ab && ab.zonas) || {}));
+  const nZonas = f => (abZ[f] || []).length;
   const campo = (n, rotulo, ajuda) => `<label class="campo-dialogo">${esc(rotulo)}${ajuda ? ` <small>${esc(ajuda)}</small>` : ''}<input name="${n}" value="${esc(v[n])}" autocomplete="off"></label>`;
   for (;;) {
     const aberto = dialogo({ titulo: ev ? 'Editar evento' : 'Novo evento', largo: true, foco: 'nome', campos: [], alerta: erro,
@@ -3588,17 +3743,30 @@ async function editarEvento(ev, fontes) {
         <h3 class="titulo-tipos">Duração <small>à mão, com Ativar e Desativar, ou sozinho, às horas marcadas</small></h3>
         <div class="form-evento agenda-evento"><label class="campo-dialogo">Controlo<select class="seletor" name="modo"><option value="manual"${v.modo === 'manual' ? ' selected' : ''}>À mão</option><option value="agenda"${v.modo === 'agenda' ? ' selected' : ''}>Pelo calendário</option></select></label>
         <label class="campo-dialogo datas-agenda">Início<input type="datetime-local" name="inicio" value="${esc(v.inicio)}"></label><label class="campo-dialogo datas-agenda">Fim<input type="datetime-local" name="termino" value="${esc(v.termino)}"></label></div>
+        <h3 class="titulo-tipos">Abrangência <small>as freguesias onde decorre; nelas, se for o caso, só algumas zonas</small></h3>
+        <label class="campo-dialogo marca"><input type="checkbox" name="ab-todas"${abF.size === FREGUESIAS.length ? ' checked' : ''}><span><b>Toda a cidade</b></span></label>
+        <div class="lista-freguesias">${FREGUESIAS.map(f => `<label class="campo-dialogo marca"><input type="checkbox" name="ab-f-${esc(f.id)}"${abF.has(f.id) ? ' checked' : ''}><span>${esc(f.nome)}${nZonas(f.id) ? ` <small>· ${nZonas(f.id)} zona${nZonas(f.id) === 1 ? '' : 's'}</small>` : ''}</span></label>`).join('')}</div>
+        <div class="linha-zonas"><button type="button" class="btn" data-r="zonas">⬠ Só algumas zonas…</button><small>${Object.keys(abZ).length ? esc(Object.entries(abZ).map(([f, l]) => (FREGUESIAS.find(x => x.id === f) || { nome: f }).nome + ': ' + l.map(z => z.nome).join(', ')).join(' · ')) : 'sem zonas: a freguesia inteira'}</small></div>
+        <h3 class="titulo-tipos">Opções do evento</h3>
+        <label class="campo-dialogo marca"><input type="checkbox" name="op-modo"${v.modoEvento ? ' checked' : ''}><span>Modo de visualização do evento por omissão <small>enquanto o evento está ativo, o mapa mostra só os registos dele e o «+» vai direto ao registo; cada pessoa pode desligá-lo nas Camadas</small></span></label>
+        <label class="campo-dialogo marca"><input type="checkbox" name="op-varrimento"${v.varrimento ? ' checked' : ''}><span>Varrimento das ruas <small>toca numa rua para a marcar como percorrida (a azul) ou por percorrer (a vermelho)</small></span></label>
+        <label class="campo-dialogo marca"><input type="checkbox" name="op-publico"${v.publico ? ' checked' : ''}><span>Registos sem conta (membros do público) <small class="aviso-forte">desligado por norma: qualquer pessoa passa a poder registar, sem se identificar</small></span></label>
         <h3 class="titulo-tipos">Tipos de registo <small>opcional: com tipos, cada registo escolhe um, com a sua cor no mapa</small></h3>
         ${tipos.map((t, i) => `<div class="campo-dialogo tipo-evento"><input name="t-icone-${i}" value="${esc(t.icone)}" placeholder="Ícone" aria-label="Ícone do tipo"><input name="t-nome-${i}" value="${esc(t.nome)}" placeholder="Nome do tipo" aria-label="Nome do tipo"><input type="color" name="t-cor-${i}" value="${esc(t.cor)}" aria-label="Cor do tipo"><button type="button" class="btn" data-r="tirar:${i}" aria-label="Tirar este tipo">✕</button></div>`).join('')}
         <button type="button" class="btn" data-r="mais">+ Acrescentar tipo</button>`,
       botoes: [...(ev && !ev.origem ? [{ id: 'apagar', texto: 'Apagar evento', classe: 'perigo' }] : []), { id: 'cancelar', texto: 'Cancelar' }, { id: 'guardar', texto: 'Guardar', classe: 'on' }] });
     const modo = dialogoEl.querySelector('[name=modo]'), verDatas = () => dialogoEl.querySelectorAll('.datas-agenda').forEach(c => { c.hidden = modo.value !== 'agenda'; });
     modo.addEventListener('change', verDatas); verDatas();
+    const todas = dialogoEl.querySelector('[name=ab-todas]'), cada = [...dialogoEl.querySelectorAll('[name^="ab-f-"]')];
+    todas.addEventListener('change', () => cada.forEach(c => { c.checked = todas.checked; }));
+    cada.forEach(c => c.addEventListener('change', () => { todas.checked = cada.every(y => y.checked); }));
     const { r, valores: x } = await aberto;
     if (r === 'cancelar') return;
-    Object.assign(v, Object.fromEntries(['nome', 'icone', 'descricao', 'um', 'varios', 'competencia', 'modo', 'inicio'].map(k => [k, x[k]]).concat([['termino', x.termino]])));
+    Object.assign(v, Object.fromEntries(['nome', 'icone', 'descricao', 'um', 'varios', 'competencia', 'modo', 'inicio'].map(k => [k, x[k]]).concat([['termino', x.termino], ['modoEvento', !!x['op-modo']], ['varrimento', !!x['op-varrimento']], ['publico', !!x['op-publico']]])));
     tipos = tipos.map((t, i) => ({ ...t, icone: x['t-icone-' + i], nome: x['t-nome-' + i], cor: x['t-cor-' + i] }));
+    abF = new Set(FREGUESIAS.filter(f => x['ab-f-' + f.id]).map(f => f.id)); for (const f of Object.keys(abZ)) if (!abF.has(f)) delete abZ[f];
     erro = '';
+    if (r === 'zonas') { if (!abF.size) erro = 'Escolhe primeiro as freguesias.'; else await escolherZonasEvento(abF, abZ); continue; }
     if (r === 'mais' && tipos.length >= 12) { erro = 'Um evento tem no máximo 12 tipos.'; continue; }
     if (r === 'mais') { tipos.push({ id: '', nome: '', icone: '', cor: CORES_TIPOS[tipos.length % CORES_TIPOS.length] }); continue; }
     if (r.startsWith('tirar:')) { tipos.splice(+r.slice(6), 1); continue; }
@@ -3611,6 +3779,8 @@ async function editarEvento(ev, fontes) {
       const { feito, falhas } = await paraTodasAsFontes(fontes, '/eventos', { id: ev.id, apagar: true }); aviso((feito.length ? 'Evento apagado ' + feito.join(' e ') + '.' : '') + (falhas.length ? ' Não mudou ' + falhas.join('; ') + '.' : ''), 6000); return;
     }
     const nome = v.nome.trim(); if (!nome) { erro = 'O evento precisa de um nome.'; continue; }
+    if (!abF.size) { erro = 'Escolhe pelo menos uma freguesia (ou Toda a cidade).'; continue; }
+    const abrangencia = abF.size === FREGUESIAS.length && !Object.keys(abZ).length ? null : { freguesias: FREGUESIAS.filter(f => abF.has(f.id)).map(f => f.id), ...(Object.keys(abZ).length ? { zonas: abZ } : {}) }; // toda a cidade: sem abrangência
     const inicio = Date.parse(v.inicio), termino = Date.parse(v.termino), comAgenda = v.modo === 'agenda'; // as datas do formulário estão na hora deste aparelho
     if (comAgenda && !(inicio < termino)) { erro = 'O calendário precisa de um início e de um fim depois dele.'; continue; }
     const id = ev ? ev.id : (() => { const b = idDe(nome).slice(0, 36).replace(/-$/, ''); let k = b; for (let i = 2; EVENTOS[k]; i++) k = b + '-' + i; return k; })();
@@ -3623,9 +3793,37 @@ async function editarEvento(ev, fontes) {
       const presos = tirados.filter(c => freguesias.some(f => f.registos.some(r => r.c === c.id)));
       if (presos.length) { erro = esc(`Não se pode tirar «${presos.map(c => c.nome).join('», «')}»: há ${termosDe(ev).varios} desse tipo, e todos os registos têm de ter um tipo. Muda-lhe o nome, se for preciso.`); tipos = [...tipos, ...presos.map(c => ({ ...c }))]; continue; }
     }
-    const { feito, falhas } = await paraTodasAsFontes(fontes, '/eventos', { id, nome, icone: v.icone.trim(), descricao: v.descricao.trim(), competencia: v.competencia, termos: { um: v.um.trim(), varios: v.varios.trim() }, categorias, ...(comAgenda ? { agenda: { inicio: new Date(inicio).toISOString(), fim: new Date(termino).toISOString() } } : {}) });
+    if (v.publico && !(ev && ev.publico)) { // ligar os registos sem conta: só com o aviso lido
+      const T = termosDe(ev || { termos: { um: v.um, varios: v.varios } });
+      const sim = await confirmar('Permitir registos sem conta?', `Com esta opção, <b>qualquer pessoa</b> que abra a plataforma passa a poder registar ${esc(T.varios || 'registos')} e a marcar ruas, <b>sem iniciar sessão</b>. Cada registo fica como «Membro do público», sem forma de saber quem o fez.<br><br>Pode haver registos falsos ou repetidos, moradas erradas, fotos impróprias e envios em massa. Tudo isso entra no mapa que o público vê e nos relatórios. Revê os registos com frequência, tira os que não servem e desliga esta opção logo que deixe de ser precisa.`, 'Permitir, sabendo os riscos', true);
+      if (!sim) { v.publico = false; erro = 'Os registos sem conta ficaram desligados.'; continue; }
+    }
+    const { feito, falhas } = await paraTodasAsFontes(fontes, '/eventos', { id, nome, icone: v.icone.trim(), descricao: v.descricao.trim(), competencia: v.competencia, termos: { um: v.um.trim(), varios: v.varios.trim() }, categorias, modoEvento: v.modoEvento, varrimento: v.varrimento, publico: v.publico, ...(abrangencia ? { abrangencia } : {}), ...(comAgenda ? { agenda: { inicio: new Date(inicio).toISOString(), fim: new Date(termino).toISOString() } } : {}) });
     if (!feito.length) { erro = esc('Não foi guardado: ' + falhas.join('; ')); continue; }
     aviso('Evento guardado ' + feito.join(' e ') + '.' + (falhas.length ? ' Não mudou ' + falhas.join('; ') + '.' : ''), 6000); return;
+  }
+}
+// as zonas de cada freguesia escolhida (as do preset ativo; as desta, tal como estão agora): o evento pode ficar só nalgumas
+async function zonasDaFreguesia(f) {
+  if (f === FREG.id) return ELEMENTOS.filter(e => e.tipo === 'zona' && Array.isArray(e.poligono) && e.poligono.length >= 3);
+  try { const j = JSON.parse(jsonDoFicheiro(await (await fetch(baseFreguesia(f) + 'conteudos.js', { cache: 'no-store' })).text())); return (j.elementos || []).filter(e => e.tipo === 'zona' && Array.isArray(e.poligono) && e.poligono.length >= 3); }
+  catch (err) { return []; }
+}
+async function escolherZonasEvento(abF, abZ) {
+  aviso('A ler as zonas das freguesias…');
+  const lista = await Promise.all(FREGUESIAS.filter(f => abF.has(f.id)).map(async f => ({ f, zonas: await zonasDaFreguesia(f.id) })));
+  $('#aviso').classList.remove('aberto');
+  const com = lista.filter(x => x.zonas.length);
+  if (!com.length) { await dialogo({ titulo: 'Zonas do evento', texto: 'As freguesias escolhidas ainda não têm zonas desenhadas. Desenha-as primeiro no mapa de cada freguesia (ferramenta Zona), ou deixa o evento na freguesia inteira.', botoes: [{ id: 'ok', texto: 'Voltar', classe: 'on' }] }); return; }
+  const marcada = (f, z) => (abZ[f] || []).some(y => y.id === z.id);
+  const { r, valores } = await dialogo({ titulo: 'Zonas do evento', largo: true, campos: [],
+    texto: 'Numa freguesia com zonas marcadas, o evento só aceita registos dentro delas, e o varrimento fica só nas ruas dessas zonas. Sem nenhuma marcada, conta a freguesia inteira.',
+    corpo: com.map(({ f, zonas }) => `<h3 class="titulo-tipos">${esc(f.nome)}</h3><div class="lista-freguesias">${zonas.map(z => `<label class="campo-dialogo marca"><input type="checkbox" name="z|${esc(f.id)}|${esc(z.id)}"${marcada(f.id, z) ? ' checked' : ''}><span>${esc(z.icone || '⬠')} ${esc(z.nome)}</span></label>`).join('')}</div>`).join(''),
+    botoes: [{ id: 'cancelar', texto: 'Cancelar' }, { id: 'ok', texto: 'Usar estas zonas', classe: 'on' }] });
+  if (r !== 'ok') return;
+  for (const { f, zonas } of com) {
+    const l = zonas.filter(z => valores['z|' + f.id + '|' + z.id]).map(z => ({ id: z.id, nome: z.nome, poligono: z.poligono.map(p => [+(+p[0]).toFixed(6), +(+p[1]).toFixed(6)]) }));
+    if (l.length) abZ[f.id] = l; else delete abZ[f.id];
   }
 }
 // ---------- o relatório de um evento: junta os registos das 24 freguesias e passa-os a relatorios/evento.js ----------
@@ -3665,10 +3863,10 @@ async function recolherRegistos(ev) {
     } catch (err) { for (const l of presets.values()) l.length = 0; }
   }
   if (!fonte) { await Promise.all(FREGUESIAS.map(async f => { const l = await presetsLocais(f); presets.get(f.id).push(...l); if (l.semAcesso) semAcesso.push(f.nome); })); fonte = AMBIENTE.app ? 'dados desta aplicação' : 'ficheiros desta apresentação'; }
-  return { fonte, central, semAcesso, certo: !semAcesso.length && (central || !urlCentral()), freguesias: FREGUESIAS.map(f => ({ id: f.id, nome: f.nome, ha: f.ha, registos: registosDoEvento(presets.get(f.id), ev) })) };
+  return { fonte, central, semAcesso, certo: !semAcesso.length && (central || !urlCentral()), freguesias: FREGUESIAS.map(f => ({ id: f.id, nome: f.nome, ha: f.ha, registos: registosDoEvento(presets.get(f.id), ev) })).filter(f => abrangeFreguesia(ev, f.id) || f.registos.length || f.registos.excluidos) };
 }
 async function exportarRelatorio(ev) {
-  aviso('A juntar os registos das 24 freguesias…');
+  aviso('A juntar os registos do evento…');
   const { fonte, freguesias, central, semAcesso } = await recolherRegistos(ev), todos = freguesias.flatMap(f => f.registos), T = termosDe(ev), excluidos = freguesias.reduce((s, f) => s + f.registos.excluidos, 0), naFila = central ? filaCentral().length : 0;
   $('#aviso').classList.remove('aberto');
   if (!todos.length) { await dialogo({ titulo: 'Relatório · ' + ev.nome, texto: `Ainda não há ${esc(T.varios)} neste evento (fonte: ${esc(fonte)}).${excluidos ? ` ${excluidos} sem localização válida.` : ''}`, botoes: [{ id: 'ok', texto: 'Fechar', classe: 'on' }] }); return; }
@@ -3676,7 +3874,7 @@ async function exportarRelatorio(ev) {
   const nFotos = todos.reduce((s, r) => s + (r.fotos || []).length, 0), comRegistos = freguesias.filter(f => f.registos.length).length;
   const { r, valores } = await dialogo({ titulo: 'Relatório · ' + ev.nome, texto: `<b>${todos.length}</b> ${esc(todos.length === 1 ? T.um : T.varios)} em ${comRegistos} freguesia${comRegistos === 1 ? '' : 's'}, com ${nFotos} foto${nFotos === 1 ? '' : 's'} (fonte: ${esc(fonte)}). O PDF começa pelo resumo da cidade e segue por freguesia, com o mapa e a ficha de cada registo.`,
     alerta: [tipos.some(t => t.id === 'sem') && ev.categorias.length ? `Registos sem tipo, de antes desta regra: ${conta({ id: 'sem' })}. Aparecem à parte; para os corrigir, escolhe o tipo no cartão de cada um.` : '', excluidos ? `${excluidos} ${esc(excluidos === 1 ? T.um : T.varios)} sem localização válida ${excluidos === 1 ? 'fica' : 'ficam'} de fora.` : '', urlCentral() && !central ? 'Sem acesso ao servidor central: estes são só os dados deste aparelho.' : '', semAcesso.length ? `Não consegui ler ${esc(semAcesso.join(', '))}: o relatório sai sem essas freguesias.` : '', naFila ? `Há ${naFila} envio${naFila === 1 ? '' : 's'} à espera na fila deste aparelho, que ainda não entram.` : ''].filter(Boolean).join('<br>'),
-    campos: [...(tipos.length > 1 ? tipos.map(t => ({ tipo: 'checkbox', nome: 'tipo:' + t.id, rotulo: `${t.nome} (${conta(t)})`, valor: true })) : []), { tipo: 'checkbox', nome: 'fotos', rotulo: 'Incluir as fotos', valor: true }],
+    campos: [{ nome: 'formato', rotulo: 'Relatório', valor: 'extensivo', opcoes: [{ valor: 'extensivo', texto: 'Extensivo: o resumo e a ficha de cada registo, com mapa, fotos e notas' }, { valor: 'resumo', texto: 'Resumo: totais, mapa e tabela da cidade, por freguesia' }] }, ...(tipos.length > 1 ? tipos.map(t => ({ tipo: 'checkbox', nome: 'tipo:' + t.id, rotulo: `${t.nome} (${conta(t)})`, valor: true })) : []), { tipo: 'checkbox', nome: 'fotos', rotulo: 'Incluir as fotos', valor: true }],
     botoes: [{ id: 'cancelar', texto: 'Cancelar' }, { id: 'exportar', texto: 'Exportar PDF', classe: 'on' }] });
   if (r !== 'exportar') return;
   const escolhidos = tipos.length > 1 ? tipos.filter(t => valores['tipo:' + t.id]).map(t => t.id) : null;
@@ -3687,8 +3885,9 @@ async function exportarRelatorio(ev) {
     // a imagem de cada freguesia e o sítio dela: estão no geo.js de cada uma
     await Promise.all(freguesias.filter(f => f.registos.length).map(async f => { try { f.imagem = JSON.parse(jsonDoFicheiro(await (await fetch(baseFreguesia(f.id) + 'geo.js')).text())).imagem; } catch (err) { f.imagem = null; } }));
     const nomeComp = (COMP[ev.conjunto && ev.conjunto.competencia] || {}).nome || '';
-    const blob = await window.RelatorioEvento.gerar({ evento: ev, competencia: nomeComp, freguesias, limites: window.LIMITES_FREGUESIAS, tipos: escolhidos, fotos: valores.fotos, fonte, aoProgresso: (n, total) => aviso(`A preparar o relatório: ${n} de ${total}…`, 600000) });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `relatorio-${ev.id}-${new Date().toISOString().slice(0, 10)}.pdf`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    const extensivo = valores.formato !== 'resumo';
+    const blob = await window.RelatorioEvento.gerar({ evento: ev, competencia: nomeComp, extensivo, freguesias, limites: window.LIMITES_FREGUESIAS, tipos: escolhidos, fotos: valores.fotos, fonte, aoProgresso: (n, total) => aviso(`A preparar o relatório: ${n} de ${total}…`, 600000) });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `relatorio-${ev.id}${extensivo ? '' : '-resumo'}-${new Date().toISOString().slice(0, 10)}.pdf`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);
     aviso(`Relatório transferido: ${a.download} (${(blob.size / 1048576).toLocaleString('pt-PT', { maximumFractionDigits: 1 })} MB).`, 8000);
   } catch (err) { aviso('Não foi possível gerar o relatório: ' + err.message, 8000); }
 }
@@ -3699,23 +3898,30 @@ async function escolherRegisto() {
     botoes: [{ id: 'evento', texto: ev.icone + ' ' + ev.nome, classe: 'on' }, { id: 'ocorrencia', texto: '📍 Outros Problemas' }, { id: 'cancelar', texto: 'Cancelar' }] });
   if (r === 'evento') levantamento(ev); else if (r === 'ocorrencia') abrirCriar(true, true);
 }
+const publicoPode = () => { const ev = eventoAtivo(); return !!(ev && ev.publico && !SESSAO); }; // um evento aberto ao público, sem sessão
+function semModoParaOutros() { // «Outros problemas» no modo do evento: o que se cria tem de se ver
+  if (modoEventoAtivo()) ligarModoEvento(false, 'Modo do evento desligado, para veres o que vais criar. Volta a ligá-lo nas Camadas.');
+}
 // ---- o levantamento: tipo → localização → confirmar a morada → acrescentar ao conjunto ----
 let levant = null, levantClique = null, levantGps = null; // o registo em curso { ev, cat, m (marcador), loc, morada }; quem espera um toque no mapa; cancelar a espera pelo GPS
 const fonteRegisto = g => ({ id: chaveConjunto(g), nome: g.nome, icone: g.icone || '📍', categorias: tiposDe(g), grupo: g }); // o registo com localização, em qualquer conjunto
-async function levantamento(ev, catId) {
+let levantPublico = false; // o registo em curso é de um membro do público
+async function levantamento(ev, catId, opcoes = {}) {
+  if (opcoes.publico && !publicoPode()) return; levantPublico = !!opcoes.publico;
   porFerramenta('mover'); fecharCartao(); abrirCriar(false, true);
   let cat = catId || null; try { if (!cat) cat = localStorage.getItem('co-evento-cat:' + ev.id); } catch (err) { /* sem armazenamento local */ }
   let categoria = { id: '', nome: ev.nome, icone: ev.icone, cor: '#9aa3ad' }; // sem tipos, não há nada a perguntar
   if (ev.categorias.length) {
-    const r = await dialogo({ titulo: ev.icone + ' ' + ev.nome, texto: 'O que encontraste? A seguir procuro a tua localização e sugiro a morada, que confirmas antes de registar.', classe: 'opcoes',
-      botoes: [...ev.categorias.map(c => ({ id: c.id, texto: c.icone + ' ' + c.nome, classe: c.id === cat ? 'on' : '' })), { id: 'cancelar', texto: 'Cancelar' }] });
+    const r = await dialogo({ titulo: ev.icone + ' ' + ev.nome, texto: 'O que encontraste? A seguir procuro a tua localização e sugiro a morada, que confirmas antes de registar.' + (levantPublico ? '<br><small>Registas como <b>membro do público</b>, sem conta.</small>' : ''), classe: 'opcoes',
+      botoes: [...ev.categorias.map(c => ({ id: c.id, texto: c.icone + ' ' + c.nome, classe: c.id === cat ? 'on' : '' })), ...(opcoes.outros ? [{ id: 'outros', texto: '📍 Outros problemas' }] : []), { id: 'cancelar', texto: 'Cancelar' }] });
+    if (r === 'outros') { semModoParaOutros(); abrirCriar(true, true); return; }
     categoria = ev.categorias.find(c => c.id === r); if (!categoria) return;
     try { localStorage.setItem('co-evento-cat:' + ev.id, r); } catch (err) { /* sem armazenamento local */ }
   }
   if (levant && levant.m) { levant.cat = categoria; mostrarLevantamento(); return; } // só mudou o tipo
   let loc = null;
   try { loc = await localizarPrecisa(); } catch (err) { if (err.cancelado) return; aviso('Sem localização (' + err.message + '). Toca no mapa no sítio exato.', 7000); }
-  if (!edicao) return; // saiu da edição enquanto esperava
+  if (!edicao && !levantPublico) return; // saiu da edição enquanto esperava
   if (!loc) { loc = await esperarCliqueNoMapa(); if (!loc) return; }
   abrirLevantamento(ev, categoria, loc);
 }
@@ -3751,7 +3957,7 @@ function encherListaRuas() { if (!$('#lista-ruas').children.length) $('#lista-ru
 function abrirLevantamento(ev, cat, loc) {
   cancelarLevantamento(true);
   const m = L.marker(loc.ll, { draggable: true, zIndexOffset: 1000, keyboard: false, icon: L.divIcon({ className: 'mk-levant', html: '<div class="levant-ico"></div>', iconSize: [36, 36], iconAnchor: [18, 32] }) }).addTo(map);
-  levant = { ev, cat, m, loc, morada: moradaSugerida(loc.ll), manual: false };
+  levant = { ev, cat, m, loc, morada: moradaSugerida(loc.ll), manual: false, publico: levantPublico, fotos: [] }; $('#lev-notas').value = ''; $('#lev-foto').textContent = '📷 Foto';
   m.on('dragend', () => { levant.loc = { ll: m.getLatLng(), precisao: null }; levant.morada = moradaSugerida(m.getLatLng()); levant.manual = false; mostrarLevantamento(); });
   encherListaRuas();
   document.body.classList.add('a-levantar');
@@ -3770,7 +3976,7 @@ function mostrarLevantamento() {
   $('#lev-titulo').innerHTML = `${esc(levant.ev.icone)} Registar <span class="cat" style="--c:${cat.cor}"><i></i>${esc(cat.nome)}</span>`;
   $('#lev-nota').textContent = (loc.precisao != null ? `Localização com ±${Math.round(loc.precisao)} m. ` : '') + 'Arrasta o marcador para o sítio exato: a morada sugerida acompanha-o. Podes também corrigi-la à mão.';
   if (!manual) { $('#lev-rua').value = morada.rua || ''; $('#lev-numero').value = morada.numero || ''; }
-  $('#lev-fonte').textContent = manual ? 'Morada escrita à mão.' : 'Sugestão: ' + morada.fonte + '.';
+  $('#lev-fonte').textContent = (manual ? 'Morada escrita à mão.' : 'Sugestão: ' + morada.fonte + '.') + (levant.publico ? ' Registas como membro do público.' : '');
   el.classList.add('aberto');
 }
 function cancelarLevantamento(silencioso) {
@@ -3782,21 +3988,38 @@ function cancelarLevantamento(silencioso) {
   if (!silencioso) aviso('Registo cancelado.', 2000);
 }
 async function confirmarLevantamento() { if (visitaSoSimula()) return;
-  if (!levant || !SESSAO || !edicao) return;
+  if (!levant || (!levant.publico && (!SESSAO || !edicao))) return;
+  if (!dentroDoEvento(levant.ev, levant.m.getLatLng())) { const z = zonasDoEvento(levant.ev); aviso(`Fora das zonas do evento: arrasta o marcador para dentro de «${z.map(x => x.nome).join('», «')}».`, 6000); return; }
   const rua = $('#lev-rua').value.trim(), numero = $('#lev-numero').value.trim();
   if (!rua) { aviso('Falta a rua.', 3000); $('#lev-rua').focus(); return; }
   if (!numero && !(await confirmar('Sem número de porta', 'Não há número de porta. Registar na mesma, só com a rua?', 'Registar'))) { $('#lev-numero').focus(); return; }
-  const { ev, cat, m, loc } = levant;
+  if (!levant.fotos.length) { // sem foto: pergunta antes de registar
+    const q = await dialogo({ titulo: 'Registo sem foto', texto: 'Não acrescentaste nenhuma foto a este registo. Queres acrescentar uma? Podes sempre fazê-lo mais tarde, ao editar o ponto.', botoes: [{ id: 'nao', texto: 'Não, obrigado' }, { id: 'foto', texto: '📷 Adicionar fotografia', classe: 'on' }] });
+    if (q === 'cancelar' || !levant) return;
+    if (q === 'foto') { const l = await escolherFotos(); if (!levant || !l.length) return; levant.fotos.push(...l); $('#lev-foto').textContent = '📷 Foto (' + levant.fotos.length + ')'; }
+  }
+  const { ev, cat, m, loc } = levant, notas = $('#lev-notas').value.trim(), escolhidas = levant.fotos.slice();
   if (ev.grupo && POR_ID[ev.grupo.id] !== ev.grupo) { cancelarLevantamento(true); aviso(`O conjunto «${ev.grupo.nome}» já não existe: o registo não foi feito.`, 6000); return; }
   const b = new Uint8Array(6); crypto.getRandomValues(b); // o id deixa juntar os registos de vários dispositivos no servidor central
   const d = { i: [...b].map(x => x.toString(16).padStart(2, '0')).join(''), c: cat.id, rua, numero, quando: new Date().toISOString(), autor: SESSAO ? SESSAO.utilizador : '', moradaManual: true }; if (loc.precisao != null) d.precisao = Math.round(loc.precisao); // a morada foi confirmada: arrastar depois não a muda
+  if (notas) d.texto = notas;
+  if (levant.publico) { // um membro do público: o servidor valida e acrescenta; aqui só se mostra
+    const pos = arredLL(m.getLatLng()); cancelarLevantamento(true);
+    aviso('A enviar o registo…');
+    const fotos = []; for (const f of escolhidas) { try { fotos.push({ src: await redimensionar(f, 1280) }); } catch (err) { /* foto ilegível */ } }
+    const r = await enviarPublico({ tipo: 'registo', evento: ev.id, preset: C.preset, conjunto: { id: ev.conjunto.id, nome: ev.conjunto.nome, icone: ev.conjunto.icone }, registo: { pos, c: cat.id, rua, numero, texto: notas, fotos, precisao: loc.precisao } });
+    if (r === 'enviado' || r === 'fila') registarNoConjunto(ev, pos, { ...d, autor: 'Membro do público', publico: true, fotos: fotos.map(f => ({ src: f.src, legenda: '' })) }, { semAlterar: true });
+    if (r === 'enviado') aviso(`${cat.icone} Registado: ${moradaTexto(d)}. Obrigado!`, 6000); else if (r === 'fila') aviso('Sem ligação: o registo segue logo que houver rede.', 6000);
+    return;
+  }
+  if (escolhidas.length) d.fotos = await fotosDoRegisto(escolhidas);
   const soEvento = !alterado; // sem mais nada por guardar, o envio só mexe no conjunto do evento: não pisa o que outro dispositivo mudou no resto do preset
   const g = registarNoConjunto(ev, arredLL(m.getLatLng()), d);
   cancelarLevantamento(true);
   const total = g.pontos.length, r = await guardar({ semTransferir: true, soEvento });
   aviso(`${cat.icone} Registado: ${moradaTexto(d)} · ${total} registo${total === 1 ? '' : 's'} em ${FREG.nome}${r === 'servidor' ? ' (guardado)' : r === 'central' ? ' (a enviar)' : r === 'recusado' ? ' (por guardar)' : ''}.`, 6000);
 }
-function registarNoConjunto(ev, pos, d) { if (visitaSoSimula()) return; // o conjunto do evento nesta freguesia (criado no primeiro registo)
+function registarNoConjunto(ev, pos, d, opcoes = {}) { if (visitaSoSimula()) return; // o conjunto do evento nesta freguesia (criado no primeiro registo)
   let g = ev.grupo && POR_ID[ev.grupo.id] === ev.grupo ? ev.grupo : ELEMENTOS.find(e => e.tipo === 'grupo' && e.evento === ev.id);
   if (g) {
     if (!Array.isArray(g.detalhes)) g.detalhes = []; while (g.detalhes.length < g.pontos.length) g.detalhes.push({});
@@ -3809,7 +4032,8 @@ function registarNoConjunto(ev, pos, d) { if (visitaSoSimula()) return; // o con
     g = preparar({ id, tipo: 'grupo', nome: c.nome, icone: c.icone, prioridade: c.prioridade, competencia: c.competencia, texto: c.texto, fotos: [], evento: ev.id, pontos: [pos], detalhes: [d] }, null);
     ELEMENTOS.push(g); construir(); construirIndice(); construirPesquisa();
   }
-  marcarAlterado();
+  if (!opcoes.semAlterar) marcarAlterado();
+  atualizarFaixa();
   return g;
 }
 function htmlResumoConjunto(el) { // no cartão de qualquer conjunto: a tabela por tipo e a lista dos pontos
@@ -3870,13 +4094,13 @@ async function resumoConjuntos() {
   }
 }
 async function resumoCidadeEvento() {
-  const ev = eventoAtivo(); if (!ev) return;
-  aviso('A juntar os registos das 24 freguesias…');
+  const ev = eventoDaCidade(); if (!ev) return;
+  aviso('A juntar os registos do evento…');
   let dados = null, fonte = '';
   if (urlCentral()) { try { dados = await pedirCentral('/evento/resumo?id=' + ev.id); fonte = 'servidor central'; } catch (err) { dados = null; } }
   if (!dados) { dados = await resumoLocalEvento(ev); fonte = AMBIENTE.app ? 'dados desta aplicação' : 'ficheiros desta apresentação'; }
   $('#aviso').classList.remove('aberto');
-  const linhas = FREGUESIAS.map(f => ({ f, r: dados.freguesias[f.id] })).filter(x => x.r && x.r.total);
+  const linhas = FREGUESIAS.filter(f => abrangeFreguesia(ev, f.id) || (dados.freguesias[f.id] && dados.freguesias[f.id].total)).map(f => ({ f, r: dados.freguesias[f.id] })).filter(x => x.r && x.r.total);
   const tot = {}; for (const x of linhas) for (const c of ev.categorias) tot[c.id] = (tot[c.id] || 0) + (x.r.contagens[c.id] || 0);
   const cab = ev.categorias.map(c => `<th class="num" title="${esc(c.nome)}">${esc(c.icone)} ${esc(c.nome)}</th>`).join('');
   const corpo = linhas.map(x => `<tr><td>${esc(x.f.nome)}</td>${ev.categorias.map(c => `<td class="num">${x.r.contagens[c.id] || 0}</td>`).join('')}<td class="num"><b>${x.r.total}</b></td></tr>`).join('');
@@ -3886,6 +4110,30 @@ async function resumoCidadeEvento() {
     botoes: [{ id: 'ok', texto: 'Fechar', classe: 'on' }] });
 }
 $('#lev-ok').addEventListener('click', confirmarLevantamento);
+$('#lev-foto').addEventListener('click', async () => { if (!levant) return; const l = await escolherFotos(); if (!levant || !l.length) return; levant.fotos.push(...l); $('#lev-foto').textContent = '📷 Foto (' + levant.fotos.length + ')'; });
+$('#faixa-ver-tudo').addEventListener('click', () => ligarModoEvento(false, 'Modo do evento desligado. Volta a ligá-lo nas Camadas.'));
+async function fotosDoRegisto(ficheiros) { // as fotos de um registo: no servidor local, como ficheiros; sem ele, reduzidas dentro do registo
+  const comServidor = await verificarServidor(), out = [];
+  for (const f of ficheiros) {
+    try {
+      if (comServidor) { const r = await postLocal('/guardar-foto/' + encodeURIComponent(f.name || 'foto.jpg'), f, null), j = await r.json(); if (!r.ok) throw new Error(j.erro || r.statusText); out.push({ src: j.caminho, legenda: '' }); }
+      else out.push({ src: await redimensionar(f, 1600), legenda: '' });
+    } catch (err) { aviso('Foto não acrescentada: ' + err.message, 4000); }
+  }
+  return out;
+}
+// o envio de um membro do público: ao servidor central (com fila, sem rede) ou ao servidor local
+async function enviarPublico(pedido) {
+  try {
+    if (urlCentral()) await pedirCentral('/publico/' + encodeURIComponent(FREG.id) + '/' + encodeURIComponent(pedido.preset), { method: 'POST', body: JSON.stringify(pedido), semSessao: true });
+    else { const r = await fetch('/publico' + qsFreguesia, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(pedido) }), j = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(j.erro || r.statusText), { codigo: r.status }); }
+    return 'enviado';
+  } catch (err) {
+    if (err.codigo && err.codigo < 500) { aviso('O registo não foi aceite: ' + err.message + '.', 8000); return 'recusado'; }
+    if (urlCentral()) { const f = filaCentral(); f.push({ publico: true, freguesia: FREG.id, preset: pedido.preset, quando: Date.now(), aba: ABA, pedido }); if (gravarFila(f)) { atualizarEstadoCentral(); return 'fila'; } }
+    aviso('Sem ligação: o registo não foi enviado.', 6000); return 'falhou';
+  }
+}
 $('#lev-cancelar').addEventListener('click', () => cancelarLevantamento());
 $('#lev-tipo').addEventListener('click', () => { if (levant) levantamento(levant.ev); });
 $('#lev-gps').addEventListener('click', async () => { if (!levant) return; try { const loc = await localizarPrecisa(); levant.m.setLatLng(loc.ll); levant.loc = loc; levant.morada = moradaSugerida(loc.ll); levant.manual = false; mostrarLevantamento(); centrarLevantamento(loc.ll); } catch (err) { aviso('Sem localização: ' + err.message + '.', 5000); } });
@@ -3903,7 +4151,8 @@ function transferir(dados) {
 function idDe(nome) { return normalizar(nome).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50).replace(/-$/, '') || 'elemento'; } // até 50 caracteres (o servidor aceita até 61)
 function acrescentar(el, pai) {
   const reservados = new Set(consolidacoes.flatMap(x => [x.fica, x.sai])); // o que ainda se pode reverter guarda o seu id
-  let id = idDe(el.nome); for (let k = 2; POR_ID[id] || reservados.has(id); k++) id = idDe(el.nome) + '-' + k;
+  const raiz = idDe(el.nome).slice(0, 44).replace(/-$/, '') + '-' + Math.random().toString(36).slice(2, 6); // o sufixo: dois dispositivos a criar «Novo ponto 1» ao mesmo tempo não dão o mesmo id
+  let id = raiz; for (let k = 2; POR_ID[id] || reservados.has(id); k++) id = raiz + '-' + k;
   el.id = id; el.fotos = el.fotos || []; el.texto = el.texto || '';
   const p = preparar(el, pai); if (!p) { aviso('Não foi possível criar o elemento.', 3000); return; }
   if (pai) pai.filhos.push(p); else ELEMENTOS.push(p);
@@ -3912,7 +4161,7 @@ function acrescentar(el, pai) {
   setTimeout(() => { const i = modalConteudo.querySelector('input[name=nome]'); if (i) { i.focus(); i.select(); } }, 60);
   return p;
 }
-function novoPonto(ll) { if (visitaSoSimula()) return; criados++; const z = zonaEm(ll, null), p = acrescentar({ tipo: 'ponto', nome: 'Novo ponto ' + criados, icone: '📍', pos: arredLL(ll) }, z && !z.oculto ? z : null); verificarDuplicado(p); return p; }
+function novoPonto(ll) { if (visitaSoSimula()) return; criados++; const z = zonaEm(ll, null), p = acrescentar({ tipo: 'ponto', nome: 'Novo ponto ' + criados, icone: '📍', pos: arredLL(ll) }, z && !z.oculto ? z : null); if (p) novosSemFoto.set(p, null); verificarDuplicado(p); return p; }
 function terminarZona(pts) { if (visitaSoSimula()) return;
   cancelarDesenho();
   if (pts.length < 3) return;
@@ -3940,12 +4189,43 @@ function novoDetalhe(pos) { // o que fica registado de cada ponto: quando, quem 
 }
 function pontoDeGrupo(ll) { if (visitaSoSimula()) return;
   if (grupoEmCurso && POR_ID[grupoEmCurso.id] === grupoEmCurso) {
-    grupoEmCurso.pontos.push(arredLL(ll)); subPonto(grupoEmCurso, 0); grupoEmCurso.detalhes[grupoEmCurso.pontos.length - 1] = novoDetalhe(arredLL(ll)); construir(); marcarAlterado(); selecionar(grupoEmCurso, false);
+    grupoEmCurso.pontos.push(arredLL(ll)); subPonto(grupoEmCurso, 0); const d = grupoEmCurso.detalhes[grupoEmCurso.pontos.length - 1] = novoDetalhe(arredLL(ll)); novosSemFoto.set(d, grupoEmCurso); construir(); marcarAlterado(); selecionar(grupoEmCurso, false);
     aviso(`«${grupoEmCurso.nome}»: ${grupoEmCurso.pontos.length} pontos.`, 1800); return;
   }
   criados++;
   const g = acrescentar({ tipo: 'grupo', nome: 'Novo conjunto ' + criados, icone: '⁘', pontos: [arredLL(ll)], detalhes: [novoDetalhe(arredLL(ll))] }, null);
-  if (g) { grupoEmCurso = g; $('#dica').textContent = `Clica no mapa para acrescentar pontos a «${g.nome}» · Esc termina`; }
+  if (g) { novosSemFoto.set(g.detalhes[0], g); grupoEmCurso = g; $('#dica').textContent = `Clica no mapa para acrescentar pontos a «${g.nome}» · Esc termina`; }
+}
+// registos novos sem foto: antes de os dar por feitos (fechar o cartão, «Concluído», «Guardar»), pergunta-se uma vez se não se quer juntar uma
+const novosSemFoto = new Map(); // ponto (elemento) → null; ponto de um conjunto (o seu detalhe) → o conjunto
+const semFoto = (x, g) => !(Array.isArray(x.fotos) && x.fotos.length) && (g ? POR_ID[g.id] === g && Array.isArray(g.detalhes) && g.detalhes.includes(x) : POR_ID[x.id] === x);
+function porFotografar(el, sub) { // os que faltam: todos, os de um elemento (e dos seus pontos) ou só o ponto aberto de um conjunto
+  const l = [];
+  for (const [x, g] of novosSemFoto) {
+    if (!semFoto(x, g)) { novosSemFoto.delete(x); continue; }
+    if (el === undefined || (sub ? x === sub : g ? g === el : x === el || x.pai === el)) l.push([x, g]);
+  }
+  return l;
+}
+async function pedirFoto(l) { // 'nao' (segue sem foto), 'foto' (acrescentou, ou foi escolher) ou 'cancelar'
+  if (!l.length || !edicao) return 'nao';
+  const n = l.length, [x, g] = l[0];
+  const r = await dialogo({ titulo: n === 1 ? 'Registo sem foto' : 'Registos sem foto',
+    texto: (n === 1 ? 'Não acrescentaste nenhuma foto a este registo.' : `Há ${n} registos novos sem foto.`) + ' Queres acrescentar uma? Podes sempre fazê-lo mais tarde, ao editar o ponto.',
+    botoes: [{ id: 'nao', texto: 'Não, obrigado' }, { id: 'foto', texto: '📷 Adicionar fotografia', classe: 'on' }] });
+  if (r === 'nao') { for (const [y] of l) novosSemFoto.delete(y); return 'nao'; }
+  if (r !== 'foto') return 'cancelar';
+  if (g) abrirSub(g, g.detalhes.indexOf(x), false); else selecionar(x, false); // o cartão desse registo, para se ver a foto a entrar
+  const f = await escolherFotos(); if (f.length) await adicionarFicheiros(g || x, f, g ? x : undefined);
+  return 'foto';
+}
+async function antesDeGuardar() { // «Guardar»: os registos novos sem foto, de uma vez; acrescentada uma, pergunta pelos que faltam
+  for (let i = 0; i < 50; i++) { const l = porFotografar(); if (!l.length) return true; const r = await pedirFoto(l); if (r === 'nao') return true; if (r === 'cancelar') return false; if (!semFoto(...l[0])) continue; return false; }
+  return true;
+}
+async function fecharComFoto() { // fechar o cartão de um registo acabado de criar
+  if (edicao && cartaoAberto() && selecionado) { const l = porFotografar(selecionado, haSub(selecionado) ? subPonto(selecionado, subAtual) : null); if (l.length && (await pedirFoto(l)) !== 'nao') return false; }
+  fecharCartao(); return true;
 }
 function emConjunto(el) { // um ponto passa a conjunto (com esse ponto como primeiro)
   if (el.pai) { aviso('Um ponto dentro de uma zona não pode ser conjunto.', 3000); return; }
@@ -4140,6 +4420,34 @@ function envolver(ta, antes, depois, defeito) {
   const i = ta.selectionStart, j = ta.selectionEnd, sel = ta.value.slice(i, j) || defeito;
   ta.setRangeText(antes + sel + depois, i, j, 'end'); ta.dispatchEvent(new Event('input', { bubbles: true })); ta.focus();
 }
+// «Adicionar foto»: num telemóvel ou tablet, pergunta se é da galeria ou da câmara (e a foto tirada só fica depois de a
+// confirmar); num computador, abre uma caixa para largar a imagem, com um botão para a escolher. Devolve os ficheiros escolhidos.
+async function escolherFotos() {
+  const ler = ({ multiplas, camara }) => new Promise(ok => {
+    const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; if (multiplas) i.multiple = true; if (camara) i.setAttribute('capture', 'environment');
+    i.style.display = 'none'; document.body.appendChild(i);
+    const fim = l => { i.remove(); ok(l); }; i.addEventListener('change', () => fim([...i.files])); i.addEventListener('cancel', () => fim([])); i.click();
+  });
+  if (aparelhoMovel()) {
+    const r = await dialogo({ titulo: 'Adicionar foto', texto: 'De onde vem a foto?', classe: 'opcoes', botoes: [{ id: 'camara', texto: '📷 Tirar uma foto', classe: 'on' }, { id: 'galeria', texto: '🖼 Escolher da galeria' }, { id: 'cancelar', texto: 'Cancelar' }] });
+    if (r === 'galeria') return ler({ multiplas: true });
+    if (r !== 'camara') return [];
+    for (;;) {
+      const [f] = await ler({ camara: true }); if (!f) return [];
+      const url = URL.createObjectURL(f);
+      const q = await dialogo({ titulo: 'Usar esta foto?', corpo: `<img class="pre-foto" src="${url}" alt="A foto que acabaste de tirar">`, botoes: [{ id: 'outra', texto: 'Tirar outra' }, { id: 'cancelar', texto: 'Cancelar' }, { id: 'usar', texto: 'Usar esta foto', classe: 'on' }] });
+      URL.revokeObjectURL(url); if (q === 'usar') return [f]; if (q !== 'outra') return [];
+    }
+  }
+  let escolhidos = [];
+  const espera = dialogo({ titulo: 'Adicionar foto', corpo: '<div class="zona-largar"><b>Arrasta para aqui a tua imagem</b><small>ou</small><button type="button" class="btn on" data-escolher>Escolher ficheiro…</button><span data-r="feito" hidden></span></div>', botoes: [{ id: 'cancelar', texto: 'Cancelar' }] });
+  const z = dialogoEl.querySelector('.zona-largar'), fim = l => { escolhidos = l.filter(f => /^image\//.test(f.type)); if (escolhidos.length) z.querySelector('[data-r=feito]').click(); else aviso('Só imagens (JPEG, PNG, WebP…).', 3500); };
+  z.querySelector('[data-escolher]').addEventListener('click', async () => { const l = await ler({ multiplas: true }); if (l.length) fim(l); });
+  for (const t of ['dragenter', 'dragover']) z.addEventListener(t, e => { e.preventDefault(); z.classList.add('por-cima'); });
+  for (const t of ['dragleave', 'drop']) z.addEventListener(t, e => { e.preventDefault(); z.classList.remove('por-cima'); });
+  z.addEventListener('drop', e => fim([...((e.dataTransfer && e.dataTransfer.files) || [])]));
+  return (await espera) === 'feito' ? escolhidos : [];
+}
 function redimensionar(file, max) { // devolve data URL da imagem reduzida (só quando não há servidor para a guardar)
   return new Promise((resolve, reject) => {
     const img = new Image(); const url = URL.createObjectURL(file);
@@ -4235,6 +4543,7 @@ modalConteudo.addEventListener('click', async e => {
   else if (ac === 'negrito') envolver(ta, '<b>', '</b>', 'texto');
   else if (ac === 'italico') envolver(ta, '<i>', '</i>', 'texto');
   else if (ac === 'foto-remover') { dono.fotos.splice(+b.dataset.i, 1); if (dono !== el) tocado(dono); marcarAlterado(); mostrarInfo(el, modal.classList.contains('lado') ? 'lado' : 'baixo'); }
+  else if (ac === 'foto-adicionar') { const l = await escolherFotos(); if (l.length) adicionarFicheiros(el, l, dono); }
   else if (ac === 'foto-ficheiro' || ac === 'foto-camara') { const inp = form.querySelector(ac === 'foto-camara' ? 'input[name=camara]' : 'input[name=ficheiros]'); inp.onchange = () => adicionarFicheiros(el, [...inp.files], dono); inp.click(); }
   else if (ac === 'foto-url') { const u = await perguntarTexto('Foto por endereço', 'Endereço ou caminho da imagem (por exemplo assets/fotos/nome.jpg)', '', 'Acrescentar'); if (u && u.trim()) { dono.fotos.push({ src: u.trim(), legenda: '' }); if (dono !== el) tocado(dono); marcarAlterado(); mostrarInfo(el, modal.classList.contains('lado') ? 'lado' : 'baixo'); } }
   else if (ac === 'grupo-tirar') {
@@ -4251,7 +4560,7 @@ modalConteudo.addEventListener('click', async e => {
   else if (ac === 'sub-morada') { const k = subAtual; carregarCamadas().then(() => { const d = subPonto(el, k), s = moradaSugerida(el.pontos[k]); d.rua = s.rua || ''; d.numero = s.numero || ''; d.moradaManual = false; tocado(d); marcarAlterado(); mostrarInfo(el, modal.classList.contains('lado') ? 'lado' : 'baixo'); aviso('Sugestão: ' + s.fonte + '.', 3500); }); }
   else if (ac === 'tipo-mais') { const l = el.tiposPonto = el.tiposPonto || []; l.push({ id: idRegisto(), nome: 'Novo tipo', icone: '📍', cor: PALETA[l.length % PALETA.length] }); marcarAlterado(); mostrarInfo(el, modal.classList.contains('lado') ? 'lado' : 'baixo'); }
   else if (ac === 'tipo-tirar') { const t = el.tiposPonto.splice(+b.dataset.i, 1)[0]; for (const d of el.detalhes) if (d.c === t.id) { d.c = ''; tocado(d); } marcarAlterado(); construir(); selecionar(el, false); }
-  else if (ac === 'ao-conjunto') selecionar(el, false);
+  else if (ac === 'ao-conjunto') { const l = porFotografar(el, subPonto(el, subAtual)); if (l.length && (await pedirFoto(l)) !== 'nao') return; selecionar(el, false); }
   else if (ac === 'grupo-mais') { porFerramenta('grupo', el); selecionar(el, false); aviso(`Clica no mapa para acrescentar pontos a «${el.nome}». Esc termina.`, 4000); }
   else if (ac === 'em-conjunto') emConjunto(el);
   else if (ac === 'desmaterializar') desmaterializar(el);
@@ -4299,7 +4608,7 @@ $('#btn-sair-edicao').addEventListener('click', sairEdicao);
 $('#btn-mais').addEventListener('click', () => { const mais = barra.classList.toggle('mais'); $('#btn-mais').setAttribute('aria-expanded', String(mais)); $('#btn-mais').classList.toggle('on', mais); posicionarDesmat(); });
 if (window.ResizeObserver) new ResizeObserver(posicionarDesmat).observe(barra);
 window.addEventListener('resize', posicionarDesmat);
-$('#btn-guardar').addEventListener('click', guardar);
+$('#btn-guardar').addEventListener('click', async () => { if (await antesDeGuardar()) guardar(); });
 $('#btn-transferir').addEventListener('click', () => transferir());
 $('#btn-novo-preset').addEventListener('click', novoPreset);
 $('#btn-apagar-preset').addEventListener('click', apagarPreset);
@@ -4345,7 +4654,7 @@ if (EDITOR || idInicial) semFreguesia = false; // ?editor e #id abrem logo a fre
 if (window.ENTRA_NA_CIDADE) map.whenReady(() => abrirCidade(true)); else quandoLivre(() => carregarCamadas());
 if (EDITOR) pedirEdicao({ criar: PARAMS.has('criar') }); // ?editor abre logo em modo de edição (depois de iniciar sessão); ?criar abre também o «+»
 sessaoPronta.then(lerEventoServidor).finally(() => map.whenReady(() => setTimeout(arrancarVisitaGuiada, 1400))); // depois de o mapa se acomodar (o voo até Lisboa dura 1,1 s)
-window.__mapa = { get RUAS_CIDADE() { return window.RUAS_CIDADE; }, get alteradoAgora() { return alterado; }, alternarVisitaInicial, visitaInicialLigada, menuConta, eventoComVisita, recolherRegistos, exportarRelatorio, EVENTOS, carregarIndiceCidade, procurar, irParaLugar, fonteRegisto, resumoConjuntos, juntarLinhasConjuntos, sincronizarConjuntos, tiposDe, aplicarTema, temaAtual, abrirSub, subPonto, agregarPonto, desagregarPonto, get subAtual() { return subAtual; }, quarteiroesDe, alternarQuarteirao, frasePedacos, paresDuplicados, perguntarDuplicado, consolidar, reverterConsolidacao, verConsolidacoes, get consolidacoes() { return consolidacoes; }, semelhancaNomes, novaCategoria, criarCategoria, gerirCategorias, categoriasConhecidas, map, C, FREG, ELEMENTOS, POR_ID, RUAS_VISTA, atualizarInstalar, instalarApp, podeInstalar, get satVisivel() { return satVisivel; }, EVENTOS, get EVENTO() { return EVENTO; }, get levant() { return levant; }, lerEventoServidor, aplicarEvento, gerirEvento, escolherRegisto, levantamento, abrirLevantamento, mostrarLevantamento, confirmarLevantamento, cancelarLevantamento, moradaSugerida, registarNoConjunto, resumoCidadeEvento, localizarPrecisa, iniciarVisita, sairVisita, terminarVisita, irPassoVisita, seguinteVisita, visitaAberta, lerEstadoVisita, get visitaPasso() { return visitaPassos[visitaI] && visitaPassos[visitaI].id; }, get visitaPassos() { return visitaPassos; }, pedirEdicao, entrarConta, lerSessao, terminarSessao, menuConta, verHistorico, gerirContas, mudarPalavraPasse, dialogoEntrar, get SESSAO() { return SESSAO; }, lerSessaoCentral, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, ligarVerdes, ligarMapa, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva, entrarEdicao, porFerramenta, serializar, guardar, carregar, lerPreset, novoPreset, apagarPreset, mudarPreset, PRESETS, importarPreset, reporDoFicheiro, largarPonto, novoPonto, criarRua, criarDeLote, painelCentral, abrirDoCentral, enviarFilaCentral, copiarCentral, estadoCopia, filaCentral, lerCentral, gravarCentral, get AMBIENTE() { return AMBIENTE; }, confirmar, perguntarTexto, abrirCidade, irParaFreguesia, sairEdicao, descartarAlteracoes, dialogo, construirDesmat, expandirDesmat, pontoDeGrupo, emConjunto, novoDesmaterializado, desmaterializar, colocarNoMapa, criarAqui, ruaMaisProxima, abrirCriar, acrescentarPresetImportado, PRESETS_LOCAIS, get cidade() { return cidade; }, get alterado() { return alterado; }, novaCategoria, definirMembro, alternarCategoria, editarVisita, mostrarCategoria, categoriasAtivas, get edicao() { return edicao; }, get ferramenta() { return ferramenta; }, get passos() { return passos; } };
+window.__mapa = { get RUAS_CIDADE() { return window.RUAS_CIDADE; }, eventoAtivo, eventoDaCidade, zonasDoEvento, dentroDoEvento, porFotografar, antesDeGuardar, fecharComFoto, get contornoZonas() { return contornoZonas; }, ligarModoEvento, modoEventoAtivo, marcarRua, estadoRua, escolherFotos, enviarPublico, get C() { return C; }, ABA, filaCentral, get FICHEIRO() { return FICHEIRO; }, get alteradoAgora() { return alterado; }, alternarVisitaInicial, visitaInicialLigada, menuConta, eventoComVisita, recolherRegistos, exportarRelatorio, EVENTOS, carregarIndiceCidade, procurar, irParaLugar, fonteRegisto, resumoConjuntos, juntarLinhasConjuntos, sincronizarConjuntos, tiposDe, aplicarTema, temaAtual, abrirSub, subPonto, agregarPonto, desagregarPonto, get subAtual() { return subAtual; }, quarteiroesDe, alternarQuarteirao, frasePedacos, paresDuplicados, perguntarDuplicado, consolidar, reverterConsolidacao, verConsolidacoes, get consolidacoes() { return consolidacoes; }, semelhancaNomes, novaCategoria, criarCategoria, gerirCategorias, categoriasConhecidas, map, C, FREG, ELEMENTOS, POR_ID, RUAS_VISTA, atualizarInstalar, instalarApp, podeInstalar, get satVisivel() { return satVisivel; }, EVENTOS, get EVENTO() { return EVENTO; }, get levant() { return levant; }, lerEventoServidor, aplicarEvento, gerirEvento, escolherRegisto, levantamento, abrirLevantamento, mostrarLevantamento, confirmarLevantamento, cancelarLevantamento, moradaSugerida, registarNoConjunto, resumoCidadeEvento, localizarPrecisa, iniciarVisita, sairVisita, terminarVisita, irPassoVisita, seguinteVisita, visitaAberta, lerEstadoVisita, get visitaPasso() { return visitaPassos[visitaI] && visitaPassos[visitaI].id; }, get visitaPassos() { return visitaPassos; }, pedirEdicao, entrarConta, lerSessao, terminarSessao, menuConta, verHistorico, gerirContas, mudarPalavraPasse, dialogoEntrar, get SESSAO() { return SESSAO; }, lerSessaoCentral, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, ligarVerdes, ligarMapa, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva, entrarEdicao, porFerramenta, serializar, guardar, carregar, lerPreset, novoPreset, apagarPreset, mudarPreset, PRESETS, importarPreset, reporDoFicheiro, largarPonto, novoPonto, criarRua, criarDeLote, painelCentral, abrirDoCentral, enviarFilaCentral, copiarCentral, estadoCopia, filaCentral, lerCentral, gravarCentral, get AMBIENTE() { return AMBIENTE; }, confirmar, perguntarTexto, abrirCidade, irParaFreguesia, sairEdicao, descartarAlteracoes, dialogo, construirDesmat, expandirDesmat, pontoDeGrupo, emConjunto, novoDesmaterializado, desmaterializar, colocarNoMapa, criarAqui, ruaMaisProxima, abrirCriar, acrescentarPresetImportado, PRESETS_LOCAIS, get cidade() { return cidade; }, get alterado() { return alterado; }, novaCategoria, definirMembro, alternarCategoria, editarVisita, mostrarCategoria, categoriasAtivas, get edicao() { return edicao; }, get ferramenta() { return ferramenta; }, get passos() { return passos; } };
 });
 </script>
 </body>
