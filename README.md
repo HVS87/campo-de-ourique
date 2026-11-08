@@ -247,6 +247,9 @@ Em menu da conta → **Eventos**, o `System.Admin` vê todos os eventos e pode:
   local, e a página junta-o aos que traz de origem. Nenhum outro código depende do tema do evento.
 - **Conjunto sem pontos:** ao contrário dos outros conjuntos, o de um evento pode ficar vazio. Qualquer conta acrescenta e tira pontos, um a um, e o conjunto fica à espera dos próximos registos da freguesia. Só o `System.Admin` tira todos os registos de uma vez («Tirar todos os registos») e apaga o conjunto por completo. O servidor central aplica a mesma regra: um envio de uma freguesia sem o conjunto não o apaga, e um conjunto apagado pela administração só volta com um registo novo.
 - **Competência:** a do Levantamento Iluminação Pública é sempre a Câmara Municipal e não se muda nem no evento nem no conjunto.
+- **Sempre com tipo:** num evento com tipos (no Levantamento Iluminação Pública, candeeiro apagado/fundido ou em falta/zona escura),
+  nenhum registo fica sem tipo. Os que existam de antes desta regra não contam nos totais, no cartão, no resumo da cidade nem nos
+  relatórios: aparecem com ⚠ na lista do conjunto, e o diálogo do relatório diz quantos são e onde, até se lhes escolher o tipo.
 - **Calendário, em alternativa ao controlo manual:** ao editar o evento, escolhe-se «Pelo calendário», com o início e o fim. O evento liga-se e desliga-se sozinho a essas horas, mesmo com a página aberta ou sem rede, e o painel deixa de oferecer «Ativar»; «Terminar agora» encurta-o. Os calendários não se podem sobrepor. Enquanto um decorre, passa à frente do que estiver ligado à mão e não se liga outro.
 - **Abrangência:** as freguesias onde o evento decorre («Toda a cidade» marca as 24) e, se for o caso, só algumas zonas delas
   («⬠ Só algumas zonas…» lista as zonas do preset ativo de cada freguesia escolhida). Fora das freguesias, o evento não aparece
@@ -257,12 +260,19 @@ Em menu da conta → **Eventos**, o `System.Admin` vê todos os eventos e pode:
   faixa no topo dá o total e o «+» vai direto aos tipos do evento, com «📍 Outros problemas» para o menu habitual. Cada pessoa
   pode desligá-lo nas Camadas ou em «Ver tudo», na faixa.
 - **Varrimento das ruas** (desligado por omissão): cada rua fica a vermelho (por percorrer) ou a azul (percorrida), em traço fino
-  e transparente ao longe. Um toque numa rua muda-a, e a marca guarda-se e junta-se entre dispositivos como um registo.
+  e transparente ao longe. Com o rato, um clique numa rua muda-a. No telemóvel e no tablet é preciso um toque longo (2,5 s), para
+  evitar toques acidentais: a rua realça-se enquanto se carrega e depois surge uma bolha, «Marcar como vista» ou «Marcar como não
+  vista»; tocar na bolha muda o estado, tocar fora dela fecha-a sem mudar nada. A marca guarda-se e junta-se entre dispositivos
+  como um registo.
 - **Registos sem conta** (desligado por omissão, com um aviso sério ao ligar): qualquer pessoa regista e marca ruas sem iniciar
   sessão; o autor fica «Membro do público». O servidor só aceita acrescentar um registo ao conjunto do evento, com até 3 fotos.
 - **Ativar ou desativar:** só há um ativo de cada vez. Os registos ficam guardados ao mudar de evento.
-- **Exportar PDF:** funciona também com o evento inativo. Escolhe-se o formato (extensivo, com a ficha de cada registo, ou só o
-  resumo da cidade), os tipos a incluir e se levam fotos. O relatório
+- **Exportar PDF:** funciona também com o evento inativo. Escolhe-se o âmbito (toda a cidade ou uma freguesia), o formato
+  (detalhado, com a ficha de cada registo, ou resumido), os tipos a incluir e se levam fotos. O relatório de uma freguesia tem a
+  sua capa e os seus números (total, com fotografia, por km² e período), o mapa numerado, a lista dos registos (número, morada,
+  tipo, data, fotos e notas), as ruas com mais registos e, no detalhado, a ficha de cada um. As densidades vêm em km². No detalhado,
+  a lista de cada freguesia (também em cada capítulo do relatório da cidade) é um índice: cada linha leva à ficha do registo e diz
+  a página; na tabela da cidade, o nome de cada freguesia leva ao seu capítulo. O relatório
   (`relatorios/evento.js`, com a biblioteca `vendor/jspdf`) começa pelo resumo da cidade: totais, tipos, mapa e tabela por
   freguesia, e ruas com mais registos. Segue com cada freguesia: o mapa dos registos e a ficha de cada um, com a morada, o tipo, a
   data, as coordenadas, um mapa do sítio exato, as notas e as fotos. Os nomes de quem registou não saem no relatório.

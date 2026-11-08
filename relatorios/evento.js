@@ -2,7 +2,8 @@
 // Não sabe nada sobre nenhum evento em particular: recebe o evento (nome, tipos, termos) e os registos já juntos. Só se carrega
 // quando se exporta, tal como a biblioteca de PDF (vendor/jspdf). Os mapas são desenhados em canvas: as imagens das freguesias
 // vêm da apresentação e, com rede, o detalhe de cada ficha vem do satélite em direto da DGT (sem rede, recorta-se a imagem guardada).
-//   RelatorioEvento.gerar({ evento, freguesias, limites, tipos, fotos, fonte, aoProgresso }) → Promise<Blob>
+// Com freguesia, o relatório é só dessa freguesia: a capa, os números, o mapa, a lista dos registos e (extensivo) as fichas.
+//   RelatorioEvento.gerar({ evento, freguesias, freguesia, limites, tipos, fotos, fonte, aoProgresso }) → Promise<Blob>
 //     freguesias: [{ id, nome, ha, imagem: { ficheiro, bounds }, registos: [{ lat, lon, c, rua, numero, nome, texto, fotos, quando, precisao }] }]
 //     extensivo: false para só o resumo da cidade; competencia: quem tem de resolver (o nome, opcional); limites: window.LIMITES_FREGUESIAS; tipos: ids dos tipos a incluir (omitido: todos); fotos: incluir as fotos (omitido: sim)
 window.RelatorioEvento = (function () {
@@ -10,7 +11,7 @@ window.RelatorioEvento = (function () {
   const FERRAMENTA = 'PS Lisboa - Repositório da Cidade', LOGO = 'assets/icones/ps-logotipo.png';
   const WMS = 'https://ortos.dgterritorio.gov.pt/wms/ortosat2023?service=WMS&request=GetMap&layers=ortoSat2023-CorVerdadeira&styles=&format=image/jpeg&version=1.3.0&crs=EPSG:3857';
   const LARG = 210, ALT = 297, MARGEM = 15, UTIL = LARG - 2 * MARGEM, FUNDO_PAGINA = ALT - 16;
-  const TINTA = '#1b2129', SUAVE = '#555d68', LINHA = '#d5dae0', TINTA_FRACA = '#eef0f2';
+  const TINTA = '#1b2129', SUAVE = '#555d68', LINHA = '#d5dae0', TINTA_FRACA = '#eef0f2', LIGACAO = '#205daa';
   const RAMPA = ['#cde2fb', '#9bc4f5', '#5d9eea', '#2a78d6', '#184f96']; // magnitude: um só tom, do claro para o escuro
   const SEM_TIPO = { id: 'sem', nome: 'Sem tipo', cor: '#8a929c' };
 
@@ -45,10 +46,11 @@ window.RelatorioEvento = (function () {
     const ev = o.evento, termos = ev.termos || {}, base = (ev.categorias || []).map(c => ({ ...c, cor: corSegura(c.cor) }));
     const pedidos = o.tipos ? new Set(o.tipos) : null;
     const tipoDe = r => base.find(t => t.id === r.c) || SEM_TIPO;
-    const freguesias = o.freguesias.map(f => ({ ...f, registos: f.registos.filter(r => !pedidos || pedidos.has(tipoDe(r).id)).map(r => ({ ...r, tipo: tipoDe(r) })) }));
+    const comTipos = base.length > 0, valido = r => !comTipos || base.some(t => t.id === r.c); // num evento com tipos, cada registo é de um deles: os de antes da regra, sem tipo, ficam de fora
+    const freguesias = o.freguesias.map(f => ({ ...f, registos: f.registos.filter(r => valido(r) && (!pedidos || pedidos.has(tipoDe(r).id))).map(r => ({ ...r, tipo: tipoDe(r) })) }));
     const com = freguesias.filter(f => f.registos.length), todos = com.flatMap(f => f.registos);
     for (const f of com) f.registos.forEach((r, i) => { r.n = i + 1; });
-    const tipos = [...base, SEM_TIPO].filter(t => (!pedidos || pedidos.has(t.id)) && (t.id !== 'sem' || todos.some(r => r.tipo.id === 'sem')));
+    const tipos = comTipos ? base.filter(t => !pedidos || pedidos.has(t.id)) : [SEM_TIPO]; // sem tipos no evento, um só (que não aparece)
     return { ev: { nome: limpo(ev.nome), um: limpo(termos.um) || 'registo', varios: limpo(termos.varios) || 'registos', descricao: limpo(ev.descricao), competencia: limpo(o.competencia) }, freguesias, com, todos, tipos, fotos: o.fotos !== false };
   }
 
@@ -119,7 +121,7 @@ window.RelatorioEvento = (function () {
   // ---------- a escrita ----------
   function escritor(R) {
     const doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', compress: true }); let y = MARGEM, secao = '';
-    doc.setProperties({ title: R.ev.nome + ' - relatório da cidade', subject: 'Relatório de evento', creator: FERRAMENTA });
+    doc.setProperties({ title: R.ev.nome + (R.ambito ? ' - relatório de ' + R.ambito : ' - relatório da cidade'), subject: 'Relatório de evento', creator: FERRAMENTA });
     const cor = (h, fundo) => { const [a, b, c] = rgb(h); if (fundo) doc.setFillColor(a, b, c); else doc.setTextColor(a, b, c); };
     const letra = (t, estilo, c) => { doc.setFont('helvetica', estilo || 'normal'); doc.setFontSize(t); cor(c || TINTA); };
     const altLinha = t => t * .3528 * 1.28;
@@ -135,33 +137,49 @@ window.RelatorioEvento = (function () {
     };
     return { doc, cor, letra, altLinha, garantir, pagina, linhaH, pinta, titulo, paragrafos, get y() { return y; }, set y(v) { y = v; }, set secao(v) { secao = v; } };
   }
-  function escreverResumo(E, R, logo, mapa) {
-    const { doc, letra, pinta, cor, linhaH } = E, t = R.todos, n = t.length;
+  function cabecalho(E, R, logo, subtitulo) {
+    const { doc, letra, linhaH } = E;
     if (logo) doc.addImage(logo, 'PNG', MARGEM, MARGEM - 1, 15, 15);
     letra(9, 'normal', SUAVE); doc.text(FERRAMENTA, MARGEM + 19, MARGEM + 3);
     letra(19, 'bold'); const tit = doc.splitTextToSize(R.ev.nome, UTIL - 19); doc.text(tit[0], MARGEM + 19, MARGEM + 10.5);
-    letra(9.5, 'normal', SUAVE); doc.text('Relatório da cidade de Lisboa · gerado a ' + data(new Date().toISOString()), MARGEM + 19, MARGEM + 15.5);
+    letra(9.5, 'normal', SUAVE); doc.text(doc.splitTextToSize(subtitulo + ' · gerado a ' + data(new Date().toISOString()), UTIL - 19)[0], MARGEM + 19, MARGEM + 15.5);
     E.y = MARGEM + 21; linhaH(E.y); E.y += 5;
     if (R.ev.descricao) { E.paragrafos(R.ev.descricao, MARGEM, UTIL, 9.5, SUAVE); E.y += 1; }
     if (R.ev.competencia) { letra(9.5, 'bold'); doc.text('Competência: ' + R.ev.competencia, MARGEM, E.y + 3); E.y += 5; }
     E.y += 2;
-    // os números principais
-    const datas = t.map(r => r.quando).filter(Boolean).sort(), comFoto = t.filter(r => (r.fotos || []).length).length, de = datas[0], ate = datas[datas.length - 1];
-    const quadros = [[num(n), R.ev.varios + ' no total'], [`${R.com.length} de ${R.freguesias.length}`, 'freguesias com ' + R.ev.varios], [num(comFoto), 'com fotografia'], [de ? (dataCurta(de) === dataCurta(ate) ? dataCurta(de) : dataCurta(de) + ' a ' + dataCurta(ate)) : '-', 'período dos registos']];
-    const lq = (UTIL - 9) / 4;
+  }
+  function quadrosNumeros(E, quadros) { // os números principais, em quatro caixas
+    const { doc, letra, cor } = E, lq = (UTIL - 9) / 4;
     quadros.forEach(([a, b], i) => { const x = MARGEM + i * (lq + 3); cor(TINTA_FRACA, true); doc.roundedRect(x, E.y, lq, 20, 1.5, 1.5, 'F'); letra(a.length > 12 ? 11 : 18, 'bold'); doc.text(a, x + 3, E.y + (a.length > 12 ? 9 : 10)); letra(8.5, 'normal', SUAVE); doc.text(doc.splitTextToSize(b, lq - 6).slice(0, 2), x + 3, E.y + 14.5); });
     E.y += 26;
-    if (R.tipos.length > 1) { // por tipo
-      letra(10.5, 'bold'); doc.text('Por tipo', MARGEM, E.y + 3); E.y += 7;
-      const maior = Math.max(1, ...R.tipos.map(k => t.filter(r => r.tipo.id === k.id).length));
-      for (const k of R.tipos) {
-        const q = t.filter(r => r.tipo.id === k.id).length; pinta(MARGEM + 1.4, E.y + 1.7, k.cor);
-        letra(9.5); doc.text(doc.splitTextToSize(limpo(k.nome), 72)[0], MARGEM + 5, E.y + 2.8);
-        cor(k.cor, true); if (q) doc.roundedRect(MARGEM + 80, E.y + .5, 76 * q / maior, 2.6, .6, .6, 'F');
-        letra(9.5, 'bold'); doc.text(num(q), LARG - MARGEM, E.y + 2.8, { align: 'right' }); E.y += 5.6;
-      }
-      E.y += 3;
+  }
+  const periodo = t => { const d = t.map(r => r.quando).filter(Boolean).sort(), de = d[0], ate = d[d.length - 1]; return de ? (dataCurta(de) === dataCurta(ate) ? dataCurta(de) : dataCurta(de) + ' a ' + dataCurta(ate)) : '-'; };
+  function porTipo(E, R, t) {
+    const { doc, letra, pinta, cor } = E; if (R.tipos.length < 2) return;
+    letra(10.5, 'bold'); doc.text('Por tipo', MARGEM, E.y + 3); E.y += 7;
+    const maior = Math.max(1, ...R.tipos.map(k => t.filter(r => r.tipo.id === k.id).length));
+    for (const k of R.tipos) {
+      const q = t.filter(r => r.tipo.id === k.id).length; pinta(MARGEM + 1.4, E.y + 1.7, k.cor);
+      letra(9.5); doc.text(doc.splitTextToSize(limpo(k.nome), 72)[0], MARGEM + 5, E.y + 2.8);
+      cor(k.cor, true); if (q) doc.roundedRect(MARGEM + 80, E.y + .5, 76 * q / maior, 2.6, .6, .6, 'F');
+      letra(9.5, 'bold'); doc.text(num(q), LARG - MARGEM, E.y + 2.8, { align: 'right' }); E.y += 5.6;
     }
+    E.y += 3;
+  }
+  function ruasComMais(E, R, freguesias, comFreguesia) {
+    const { doc, letra } = E, ruas = new Map(); for (const f of freguesias) for (const r of f.registos) if (r.rua) { const k = r.rua + '|' + f.id, x2 = ruas.get(k) || { rua: r.rua, f: f.nome, n: 0 }; x2.n++; ruas.set(k, x2); }
+    const top = [...ruas.values()].sort((a, b) => b.n - a.n || a.rua.localeCompare(b.rua, 'pt')).slice(0, 10).filter(x2 => x2.n > 1);
+    if (!top.length) return;
+    E.y += 5; E.garantir(10 + top.length * 5.4); E.titulo('Ruas com mais ' + R.ev.varios);
+    for (const x2 of top) { letra(9, 'bold'); doc.text(num(x2.n), MARGEM + 6, E.y + 3, { align: 'right' }); letra(9); doc.text(doc.splitTextToSize(limpo(x2.rua), 105)[0], MARGEM + 10, E.y + 3); if (comFreguesia) { letra(9, 'normal', SUAVE); doc.text(limpo(x2.f), LARG - MARGEM, E.y + 3, { align: 'right' }); } E.y += 5.4; }
+  }
+  function escreverResumo(E, R, logo, mapa) {
+    const { doc, letra, pinta, cor, linhaH } = E, t = R.todos, n = t.length;
+    cabecalho(E, R, logo, 'Relatório da cidade de Lisboa');
+    // os números principais
+    const comFoto = t.filter(r => (r.fotos || []).length).length;
+    quadrosNumeros(E, [[num(n), R.ev.varios + ' no total'], [`${R.com.length} de ${R.freguesias.length}`, 'freguesias com ' + R.ev.varios], [num(comFoto), 'com fotografia'], [periodo(t), 'período dos registos']]);
+    porTipo(E, R, t);
     // o mapa da cidade
     letra(10.5, 'bold'); doc.text('Por freguesia, no mapa', MARGEM, E.y + 3); E.y += 6;
     const livre = FUNDO_PAGINA - E.y - 9; let h = Math.min(livre, UTIL * mapa.proporcao), w = h / mapa.proporcao;
@@ -175,25 +193,19 @@ window.RelatorioEvento = (function () {
     letra(7.5, 'bold', SUAVE); const cab = colTipos.map(k => doc.splitTextToSize(limpo(k.nome).replace(/\//g, '/ '), 16.5).slice(0, 4)), altCab = Math.max(1, ...cab.map(l => l.length)); E.y += (altCab - 1) * E.altLinha(7.5);
     doc.text('Freguesia', MARGEM, E.y);
     colTipos.forEach((k, i) => { const xd = 62 + i * 18 + 8, l = cab[i]; l.forEach((tx, j) => doc.text(tx, xd, E.y - (l.length - 1 - j) * E.altLinha(7.5), { align: 'right' })); pinta(xd - 15.2, E.y - (l.length - 1) * E.altLinha(7.5) - 1, k.cor, 1); });
-    doc.text('Total', xTotal, E.y, { align: 'right' }); doc.text('/100 ha', xDens, E.y, { align: 'right' }); doc.text('Pág.', xPag, E.y, { align: 'right' });
+    doc.text('Total', xTotal, E.y, { align: 'right' }); doc.text('/km²', xDens, E.y, { align: 'right' }); doc.text('Pág.', xPag, E.y, { align: 'right' });
     E.y += 1.8; linhaH(E.y); E.y += 1;
     const ordem = [...R.freguesias].sort((a, b) => b.registos.length - a.registos.length || a.nome.localeCompare(b.nome, 'pt')), maior = Math.max(1, ...ordem.map(f => f.registos.length)), ligacoes = [];
     for (const f of ordem) {
       const q = f.registos.length, fraca = q ? TINTA : SUAVE; E.garantir(6.3); const yb = E.y + 4;
-      letra(9, q ? 'bold' : 'normal', fraca); doc.text(limpo(f.nome), MARGEM, yb);
+      letra(9, q ? 'bold' : 'normal', q && R.extensivo ? LIGACAO : fraca); doc.text(limpo(f.nome), MARGEM, yb); // no detalhado, leva ao capítulo da freguesia
       letra(9, 'normal', fraca); colTipos.forEach((k, i) => doc.text(num(f.registos.filter(r => r.tipo.id === k.id).length), 62 + i * 18 + 8, yb, { align: 'right' }));
       letra(9, 'bold', fraca); doc.text(num(q), xTotal, yb, { align: 'right' });
       letra(9, 'normal', fraca); doc.text(f.ha ? (q / f.ha * 100).toLocaleString('pt-PT', { maximumFractionDigits: 1, minimumFractionDigits: 1 }) : '-', xDens, yb, { align: 'right' });
       if (q) { let bx = xBarra; const larg = 22 * q / maior; for (const k of R.tipos) { const s = f.registos.filter(r => r.tipo.id === k.id).length; if (!s) continue; const w2 = larg * s / q; cor(k.cor, true); doc.rect(bx, yb - 2.5, Math.max(.4, w2 - .25), 2.8, 'F'); bx += w2; } ligacoes.push({ f, pagina: doc.getCurrentPageInfo().pageNumber, y: E.y, xPag, yb }); }
       E.y += 5.2; linhaH(E.y); E.y += 1.1;
     }
-    // as ruas com mais registos
-    const ruas = new Map(); for (const f of R.com) for (const r of f.registos) if (r.rua) { const k = r.rua + '|' + f.id, x2 = ruas.get(k) || { rua: r.rua, f: f.nome, n: 0 }; x2.n++; ruas.set(k, x2); }
-    const top = [...ruas.values()].sort((a, b) => b.n - a.n || a.rua.localeCompare(b.rua, 'pt')).slice(0, 10).filter(x2 => x2.n > 1);
-    if (top.length) {
-      E.y += 5; E.garantir(10 + top.length * 5.4); E.titulo('Ruas com mais ' + R.ev.varios);
-      for (const x2 of top) { letra(9, 'bold'); doc.text(num(x2.n), MARGEM + 6, E.y + 3, { align: 'right' }); letra(9); doc.text(doc.splitTextToSize(limpo(x2.rua), 105)[0], MARGEM + 10, E.y + 3); letra(9, 'normal', SUAVE); doc.text(limpo(x2.f), LARG - MARGEM, E.y + 3, { align: 'right' }); E.y += 5.4; }
-    }
+    ruasComMais(E, R, R.com, true);
     return ligacoes;
   }
   async function escreverFreguesia(E, R, f, limite, avancar) {
@@ -205,19 +217,67 @@ window.RelatorioEvento = (function () {
     const mapa = await mapaFreguesia(f, limite), hm = Math.min(120, UTIL * mapa.proporcao), wm = hm / mapa.proporcao;
     doc.addImage(mapa.url, 'JPEG', MARGEM + (UTIL - wm) / 2, E.y, wm, hm); E.y += hm + 1.5;
     if (!mapa.numerados) { letra(8, 'normal', SUAVE); doc.text(`Com ${num(n)} ${R.ev.varios}, o mapa mostra só os pontos; a localização de cada um está na sua ficha.`, MARGEM, E.y + 2.5); E.y += 4.5; }
-    E.y += 3; linhaH(E.y); E.y += 4; E.secao = limpo(f.nome) + ' (continuação)';
-    // fichas: o detalhe do mapa fica pronto antes de escrever, para pedir vários ao mesmo tempo
+    E.y += 3; linhaH(E.y); E.y += 4;
+    const linhas = escreverLista(E, R, f, true);
+    E.pagina(); E.titulo('Ficha de cada ' + R.ev.um); E.secao = limpo(f.nome) + ' (continuação)';
+    await escreverFichas(E, R, f, avancar); ligarLista(E, linhas);
+    f.foto = null;
+    return inicio;
+  }
+  async function escreverFichas(E, R, f, avancar) { // o detalhe do mapa fica pronto antes de escrever, para pedir vários ao mesmo tempo
     const denso = R.todos.length > 200, W = denso ? 300 : 460, H = Math.round(W * 44 / 64);
     await emLotes(f.registos, 6, async r => { r.mapa = await mapaFicha(r, f, W, H); });
     for (const r of f.registos) { await escreverFicha(E, R, r); delete r.mapa; await avancar(); }
+  }
+  // o relatório de uma só freguesia: a capa com os números, o mapa, a lista dos registos e, no detalhado, as fichas
+  async function escreverRelatorioFreguesia(E, R, f, limite, logo, detalhado, avancar) {
+    const { doc, letra, pinta, linhaH } = E, t = f.registos, n = t.length, nome = limpo(f.nome);
+    cabecalho(E, R, logo, 'Relatório da freguesia: ' + nome);
+    const comFoto = t.filter(r => (r.fotos || []).length).length, dens = f.ha /* 100 ha = 1 km² */ ? (n / f.ha * 100).toLocaleString('pt-PT', { maximumFractionDigits: 1, minimumFractionDigits: 1 }) : '-';
+    quadrosNumeros(E, [[num(n), R.ev.varios + ' em ' + nome], [num(comFoto), 'com fotografia'], [dens, R.ev.varios + ' por km²'], [periodo(t), 'período dos registos']]);
+    porTipo(E, R, t);
+    const mapa = await mapaFreguesia(f, limite);
+    let hm = Math.min(120, UTIL * mapa.proporcao); if (FUNDO_PAGINA - E.y - 12 < Math.min(hm, 80)) E.pagina(); hm = Math.min(hm, FUNDO_PAGINA - E.y - 12); const wm = hm / mapa.proporcao;
+    letra(10.5, 'bold'); doc.text('No mapa', MARGEM, E.y + 3); E.y += 6;
+    doc.addImage(mapa.url, 'JPEG', MARGEM + (UTIL - wm) / 2, E.y, wm, hm); E.y += hm + 1.5;
+    if (!mapa.numerados) { letra(8, 'normal', SUAVE); doc.text(`Com ${num(n)} ${R.ev.varios}, o mapa mostra só os pontos; os números estão na lista.`, MARGEM, E.y + 2.5); E.y += 4.5; }
+    // a lista dos registos: no detalhado, um índice que leva à ficha de cada um
+    E.pagina(); const linhas = escreverLista(E, R, f, detalhado);
+    E.secao = ''; ruasComMais(E, R, [f], false);
+    if (detalhado) { E.pagina(); E.titulo('Ficha de cada ' + R.ev.um); E.secao = nome + ' · fichas (continuação)'; await escreverFichas(E, R, f, avancar); ligarLista(E, linhas); }
     f.foto = null;
-    return inicio;
+  }
+  function escreverLista(E, R, f, indice) { // devolve onde ficou cada linha, para a ligar à ficha depois de as fichas estarem escritas
+    const { doc, letra, pinta, linhaH } = E, nome = limpo(f.nome), comTipo = R.tipos.length > 1, xPag = LARG - MARGEM, xFotos = indice ? xPag - 12 : xPag, xData = xFotos - 30, xTipo = xData - 48, linhas = [];
+    E.titulo('Lista de ' + R.ev.varios + (indice ? ' (toca numa linha para ir à ficha)' : '')); E.secao = nome + ' · lista de ' + R.ev.varios + ' (continuação)';
+    letra(7.5, 'bold', SUAVE); doc.text('N.º', MARGEM, E.y); doc.text('Morada', MARGEM + 10, E.y); if (comTipo) doc.text('Tipo', xTipo, E.y); doc.text('Data', xData, E.y); doc.text('Fotos', xFotos, E.y, { align: 'right' }); if (indice) doc.text('Pág.', xPag, E.y, { align: 'right' });
+    E.y += 1.8; linhaH(E.y); E.y += 1;
+    for (const r of f.registos) {
+      const morada = limpo(r.rua ? r.rua + (r.numero ? ', ' + r.numero : '') : (r.nome || 'Sem morada')), notas = textoDe(r.texto);
+      const lm = (letra(9), doc.splitTextToSize(morada, (comTipo ? xTipo : xData) - MARGEM - 13).slice(0, 2)), ln = notas ? (letra(8), doc.splitTextToSize(notas, xFotos - MARGEM - 14).slice(0, 2)) : [];
+      const h = lm.length * E.altLinha(9) + ln.length * E.altLinha(8) + 2.6; E.garantir(h + 1); const yb = E.y + 3.6;
+      pinta(MARGEM + 2.2, yb - 1.1, r.tipo.cor, 2.1); letra(6.5, 'bold', clara(r.tipo.cor) ? '#0b0b0b' : '#ffffff'); doc.text(String(r.n), MARGEM + 2.2, yb - .2, { align: 'center' });
+      letra(9, 'bold', indice ? LIGACAO : TINTA); doc.text(lm, MARGEM + 10, yb);
+      if (comTipo) { letra(8.5, 'normal', SUAVE); doc.text(doc.splitTextToSize(limpo(r.tipo.nome), xData - xTipo - 3)[0], xTipo, yb); }
+      letra(8.5, 'normal', SUAVE); doc.text(r.quando ? dataCurta(r.quando) : '-', xData, yb); doc.text(num((r.fotos || []).length), xFotos, yb, { align: 'right' });
+      if (ln.length) { letra(8, 'normal', SUAVE); doc.text(ln, MARGEM + 10, yb + lm.length * E.altLinha(9)); }
+      linhas.push({ r, pagina: doc.getCurrentPageInfo().pageNumber, y: E.y, h, yb, xPag });
+      E.y += h; linhaH(E.y); E.y += 1.1;
+    }
+    E.secao = '';
+    return linhas;
+  }
+  function ligarLista(E, linhas) { // já com as fichas escritas: cada linha leva à sua, e mostra a página
+    const { doc } = E, ultima = doc.getNumberOfPages();
+    for (const l of linhas) { if (!l.r.pagina) continue; doc.setPage(l.pagina); E.letra(8.5, 'normal', LIGACAO); doc.text(String(l.r.pagina), l.xPag, l.yb, { align: 'right' }); doc.link(MARGEM, l.y, UTIL, l.h, { pageNumber: l.r.pagina, top: Math.max(0, l.r.yFicha - 4) }); }
+    doc.setPage(ultima);
   }
   async function escreverFicha(E, R, r) {
     const { doc, letra, pinta, linhaH } = E, wm = 64, hm = 44, xt = MARGEM + wm + 5, lt = UTIL - wm - 5;
     const titulo = limpo(r.rua ? r.rua + (r.numero ? ', ' + r.numero : '') : (r.nome || 'Sem morada')), linhasT = (letra(11, 'bold'), doc.splitTextToSize(titulo, UTIL - 12));
     const texto = textoDe(r.texto);
     E.garantir(linhasT.length * E.altLinha(11) + hm + 4 + (R.fotos && (r.fotos || []).length ? 46 : 0)); // a ficha não se separa da primeira fila de fotos
+    r.pagina = doc.getCurrentPageInfo().pageNumber; r.yFicha = E.y; // para o índice da lista
     pinta(MARGEM + 3, E.y + 2.4, r.tipo.cor, 3); letra(8, 'bold', clara(r.tipo.cor) ? '#0b0b0b' : '#ffffff'); doc.text(String(r.n), MARGEM + 3, E.y + 3.4, { align: 'center' });
     letra(11, 'bold'); doc.text(linhasT, MARGEM + 8, E.y + 3.6); E.y += linhasT.length * E.altLinha(11) + 2;
     const y0 = E.y; doc.addImage(r.mapa, 'JPEG', MARGEM, y0, wm, hm);
@@ -252,21 +312,26 @@ window.RelatorioEvento = (function () {
 
   async function gerar(o) {
     if (!window.jspdf) throw new Error('a biblioteca de PDF não carregou');
-    const R = preparar(o); if (!R.todos.length) throw new Error('não há registos para incluir');
+    const so = o.freguesia ? o.freguesias.find(f => f.id === o.freguesia) : null; if (o.freguesia && !so) throw new Error('freguesia sem registos');
+    const R = preparar(so ? { ...o, freguesias: [so] } : o); if (!R.todos.length) throw new Error('não há registos para incluir'); if (so) R.ambito = limpo(so.nome); R.extensivo = o.extensivo !== false;
     satelite = !(navigator.onLine === false); falhasSat = 0;
     const porLimite = Object.fromEntries(o.limites.map(l => [l.id, l])), progresso = o.aoProgresso || (() => {});
     const logo = await carregarImagem(LOGO), E = escritor(R), { doc } = E, mapa = mapaCidade(R, o.limites);
     let logoUrl = null; if (logo) { const c = canvasDe(180, 180); c.getContext('2d').drawImage(logo, 0, 0, 180, 180); logoUrl = c.toDataURL('image/png'); }
-    const ligacoes = escreverResumo(E, R, logoUrl, mapa);
     let feitos = 0; const total = R.todos.length, avancar = async () => { feitos++; if (feitos % 5 === 0 || feitos === total) { progresso(feitos, total); await aoFolego(); } };
     const paginaDe = {};
+    if (so) { await escreverRelatorioFreguesia(E, R, R.com[0], porLimite[so.id], logoUrl, o.extensivo !== false, avancar); return rodape(E, R, o); }
+    const ligacoes = escreverResumo(E, R, logoUrl, mapa);
     if (o.extensivo !== false) for (const f of R.com) { paginaDe[f.id] = await escreverFreguesia(E, R, f, porLimite[f.id], avancar); doc.outline.add(null, limpo(f.nome) + ' (' + f.registos.length + ')', { pageNumber: paginaDe[f.id] }); } // o resumo fica pelas páginas da cidade
     // o índice da tabela e o rodapé só se sabem no fim
-    for (const l of ligacoes) { if (!paginaDe[l.f.id]) continue; doc.setPage(l.pagina); E.letra(9, 'normal', '#205daa'); const p = paginaDe[l.f.id]; doc.text(String(p), l.xPag, l.yb, { align: 'right' }); doc.link(MARGEM, l.y, UTIL, 5.2, { pageNumber: p }); }
-    const n = doc.getNumberOfPages();
+    for (const l of ligacoes) { if (!paginaDe[l.f.id]) continue; doc.setPage(l.pagina); E.letra(9, 'normal', LIGACAO); const p = paginaDe[l.f.id]; doc.text(String(p), l.xPag, l.yb, { align: 'right' }); doc.link(MARGEM, l.y, UTIL, 5.2, { pageNumber: p }); }
+    return rodape(E, R, o);
+  }
+  function rodape(E, R, o) { // o rodapé de cada página só se sabe no fim
+    const { doc } = E, n = doc.getNumberOfPages();
     for (let p = 1; p <= n; p++) {
       doc.setPage(p); E.linhaH(ALT - 13); E.letra(7.5, 'normal', SUAVE);
-      doc.text(`${R.ev.nome} · ${FERRAMENTA}`, MARGEM, ALT - 9.5); doc.text(`Página ${p} de ${n}`, LARG - MARGEM, ALT - 9.5, { align: 'right' });
+      doc.text(`${R.ev.nome}${R.ambito ? ' · ' + R.ambito : ''} · ${FERRAMENTA}`, MARGEM, ALT - 9.5); doc.text(`Página ${p} de ${n}`, LARG - MARGEM, ALT - 9.5, { align: 'right' });
       doc.text(`Dados: ${limpo(o.fonte || '')}. Ortoimagens © DGT 2023 (CC BY 4.0). Limites © Câmara Municipal de Lisboa.`, MARGEM, ALT - 6.5);
     }
     return doc.output('blob');

@@ -88,8 +88,15 @@
   .form-evento { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; } .form-evento .campo-dialogo:first-child { grid-column: 1 / -1; }
   #dialogo .form-evento .campo-dialogo[hidden] { display: none; } .agenda-evento .campo-dialogo:first-child { grid-column: 1 / -1; }
   @media (max-width: 480px) { .form-evento { grid-template-columns: 1fr; } }
+  .bolha-varr-ancora { width: 0; height: 0; }
+  .bolha-varr { position: absolute; left: 0; bottom: 16px; transform: translateX(-50%); white-space: nowrap; border: 0; border-radius: 16px; padding: 10px 16px; background: #2f7de1; color: #fff; font: 600 15px/1.25 system-ui, sans-serif; box-shadow: 0 6px 22px rgba(0,0,0,.35); cursor: pointer; animation: bolha-varr .32s cubic-bezier(.2, 1.5, .4, 1) both; touch-action: manipulation; }
+  .bolha-varr.feita { background: #e5484d; } .bolha-varr small { display: block; font-weight: 400; font-size: 11.5px; opacity: .88; margin-bottom: 2px; }
+  .bolha-varr::after { content: ''; position: absolute; left: 50%; bottom: -7px; margin-left: -8px; border: 8px solid transparent; border-bottom: 0; border-top-color: #2f7de1; } .bolha-varr.feita::after { border-top-color: #e5484d; }
+  @keyframes bolha-varr { 0% { opacity: 0; transform: translate(-50%, 10px) scale(.55); } 100% { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+  @media (prefers-reduced-motion: reduce) { .bolha-varr { animation-duration: .01s; } }
+  .leaflet-container { -webkit-touch-callout: none; } .com-bolha .leaflet-tooltip { display: none; }
   #dialogo .lista-freguesias { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 0 10px; max-height: 210px; overflow: auto; padding: 2px 0; }
-  #dialogo .lista-freguesias .campo-dialogo.marca { margin: 3px 0; } #dialogo .linha-zonas { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 6px 0 4px; } #dialogo .linha-zonas small { opacity: .75; }
+  #dialogo .lista-freguesias .campo-dialogo.marca { margin: 3px 0; } .aviso-tipo { color: #f0b429; } #dialogo .linha-zonas { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 6px 0 4px; } #dialogo .linha-zonas small { opacity: .75; }
   .titulo-tipos { font-size: 13px; margin: 12px 0 6px; } .titulo-tipos small, .form-evento small { font-weight: 400; color: var(--ink-dim); }
   #dialogo .campo-dialogo.tipo-evento { display: flex; gap: 6px; align-items: center; margin: 0 0 6px; }
   #dialogo .campo-dialogo.tipo-evento input { margin: 0; } #dialogo .campo-dialogo.tipo-evento input[name^=t-icone] { width: 58px; flex: none; text-align: center; } #dialogo .campo-dialogo.tipo-evento input[name^=t-nome] { flex: 1; min-width: 0; width: auto; } #dialogo .campo-dialogo.tipo-evento input[type=color] { width: 40px; height: 36px; flex: none; padding: 2px; cursor: pointer; }
@@ -1781,15 +1788,15 @@ function atualizarZonasEvento() { // o contorno tracejado das zonas onde o event
 const estadoRua = nome => { const ev = eventoAtivo(), v = ev && C.varrimento && C.varrimento[ev.id] && C.varrimento[ev.id][nome]; return v && v.e ? 1 : 0; };
 const estiloVarr = feita => { const z = map.getZoom(), perto = z >= 16.5, meio = z >= 15.25; return { renderer: rendVarr, pane: 'varrimento', color: feita ? '#2f7de1' : '#e5484d', weight: perto ? 7 : meio ? 3.5 : 1.6, opacity: perto ? .5 : meio ? .32 : .24, lineCap: 'round', lineJoin: 'round', interactive: true, bubblingMouseEvents: false }; }; // ao longe, um traço fino e transparente que não tapa o mapa
 function atualizarVarrimento() {
-  atualizarZonasEvento();
+  atualizarZonasEvento(); if (!varrimentoVisivel()) fecharBolhaVarr();
   const chaveVarr = JSON.stringify(zonasDoEvento(eventoAtivo()).map(x => x.id)); if (grupoVarr && grupoVarr._chave !== chaveVarr) { if (map.hasLayer(grupoVarr)) map.removeLayer(grupoVarr); grupoVarr = null; } // as zonas mudaram: outras ruas
   if (!varrimentoVisivel()) { if (grupoVarr && map.hasLayer(grupoVarr)) map.removeLayer(grupoVarr); return; }
   if (!grupoVarr) {
     grupoVarr = L.layerGroup(); grupoVarr._chave = chaveVarr;
     for (const rua of ruasDoVarrimento()) for (const t of rua.trocos) {
       const l = L.polyline(t, estiloVarr(false)); l._rua = rua.nome;
-      l.bindTooltip(() => esc(rua.nome) + ' · ' + (estadoRua(rua.nome) ? 'percorrida' : 'por percorrer') + '<small> · toca para mudar</small>', { sticky: true, className: 'rotulo', opacity: 1 });
-      l.on('click', e => { L.DomEvent.stop(e); marcarRua(rua.nome); });
+      l.bindTooltip(() => esc(rua.nome) + ' · ' + (estadoRua(rua.nome) ? 'percorrida' : 'por percorrer') + (toqueRecente() ? '<small> · mantém o dedo para mudar</small>' : '<small> · clica para mudar</small>'), { sticky: true, className: 'rotulo', opacity: 1 });
+      l.on('click', e => { L.DomEvent.stop(e); if (toqueRecente()) { if (cliqueDoToqueLongo()) return; if (bolhaVarr) fecharBolhaVarr(); else aviso('Para marcar a rua, mantém o dedo em cima dela.', 3000); return; } marcarRua((ruaSobPonto(e.containerPoint) || l)._rua); }); // a rua mais perto do clique (onde duas se cruzam, o canvas daria a de cima) // ao toque, só o toque longo muda: um toque acidental não marca nada
       grupoVarr.addLayer(l);
     }
   }
@@ -1802,11 +1809,52 @@ function ligarVarrimento(ligar) {
   try { localStorage.setItem('co-varrimento', varrimentoLigado ? 'ligado' : 'desligado'); } catch (err) { /* sem armazenamento local */ }
   estadoCamada('btn-varrimento', varrimentoLigado); atualizarVarrimento(); atualizarFaixa();
 }
+function porQueNaoMarca() { // '' quando pode marcar ruas; senão, a razão
+  const ev = eventoAtivo(); if (!ev || !ev.varrimento || visitaSoSimula()) return 'O varrimento não está ativo.';
+  if (!SESSAO && ev.publico) return '';
+  if (!(SESSAO && podeEditarEm(SESSAO, FREG.id))) return 'Para marcar ruas, inicia sessão com uma conta desta freguesia.';
+  return edicao ? '' : 'Liga o modo de edição (lápis) para marcar ruas.';
+}
+// No telemóvel e no tablet, só um toque longo (2,5 s) numa rua a muda: a rua realça-se enquanto se carrega e depois surge uma bolha;
+// tocar na bolha muda o estado, tocar fora dela fecha-a sem mudar nada. Com o rato, um clique continua a bastar.
+const TOQUE_LONGO = 2500; let ultimoToque = 0, toqueVarr = null, bolhaVarr = null, dedoDaBolha = null, ignorarCliqueAte = 0;
+const cliqueDoToqueLongo = () => Date.now() < ignorarCliqueAte || dedoDaBolha != null;
+const toqueRecente = () => Date.now() - ultimoToque < 1500;
+function ruaSobPonto(pt) { // a rua do varrimento mais perto de um ponto do mapa (em píxeis), até 18 px
+  if (!grupoVarr || !map.hasLayer(grupoVarr)) return null;
+  const caixa = L.latLngBounds(map.containerPointToLatLng(pt.subtract([18, 18])), map.containerPointToLatLng(pt.add([18, 18]))); let melhor = null, d = 18;
+  grupoVarr.eachLayer(l => { if (!l.getBounds().intersects(caixa)) return; const ll = l.getLatLngs(); for (let i = 1; i < ll.length; i++) { const x = L.LineUtil.pointToSegmentDistance(pt, map.latLngToContainerPoint(ll[i - 1]), map.latLngToContainerPoint(ll[i])); if (x < d) { d = x; melhor = l; } } });
+  return melhor;
+}
+function realcarRua(nome, ligar) { if (grupoVarr) grupoVarr.eachLayer(l => { if (l._rua !== nome) return; const s = estiloVarr(estadoRua(nome)); l.setStyle(ligar ? { weight: s.weight + 6, opacity: .85 } : s); }); }
+function cancelarToqueVarr() { if (!toqueVarr) return; clearTimeout(toqueVarr.t); realcarRua(toqueVarr.nome, false); toqueVarr = null; }
+function fecharBolhaVarr() { if (bolhaVarr) { map.removeLayer(bolhaVarr); bolhaVarr = null; } map.getContainer().classList.remove('com-bolha'); }
+function abrirBolhaVarr(nome, ll) {
+  fecharBolhaVarr(); const feita = estadoRua(nome); if (grupoVarr) grupoVarr.eachLayer(l => l.closeTooltip()); // a etiqueta da rua não fica por cima da bolha
+  const html = `<button type="button" class="bolha-varr${feita ? ' feita' : ''}"><small>${esc(nome)}</small>${feita ? 'Marcar como não vista' : 'Marcar como vista'}</button>`;
+  bolhaVarr = L.marker(ll, { icon: L.divIcon({ className: 'bolha-varr-ancora', html, iconSize: [0, 0] }), keyboard: false, zIndexOffset: 10000 }).addTo(map); map.getContainer().classList.add('com-bolha');
+  const b = bolhaVarr.getElement().querySelector('.bolha-varr'); L.DomEvent.disableClickPropagation(b);
+  b.addEventListener('click', e => { e.stopPropagation(); fecharBolhaVarr(); marcarRua(nome); });
+  if (navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) try { navigator.vibrate(25); } catch (err) { /* sem vibração */ }
+}
+{
+  const cont = map.getContainer(), noMapa = e => { const r = cont.getBoundingClientRect(); return L.point(e.clientX - r.left, e.clientY - r.top); };
+  cont.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse') return; ultimoToque = Date.now(); dedoDaBolha = null;
+    if (toqueVarr) { cancelarToqueVarr(); return; } // um segundo dedo: é um gesto de zoom
+    if (!varrimentoVisivel() || e.target.closest('.bolha-varr')) return;
+    const pt = noMapa(e), l = ruaSobPonto(pt); if (!l) return;
+    const nome = l._rua; realcarRua(nome, true);
+    toqueVarr = { nome, id: e.pointerId, x: e.clientX, y: e.clientY, t: setTimeout(() => { toqueVarr = null; realcarRua(nome, false); dedoDaBolha = e.pointerId; const porque = porQueNaoMarca(); if (porque) { aviso(porque, 4500); return; } abrirBolhaVarr(nome, map.containerPointToLatLng(pt)); }, TOQUE_LONGO) };
+  }, { passive: true });
+  cont.addEventListener('pointermove', e => { if (toqueVarr && e.pointerId === toqueVarr.id && Math.hypot(e.clientX - toqueVarr.x, e.clientY - toqueVarr.y) > 12) cancelarToqueVarr(); }, { passive: true });
+  for (const t of ['pointerup', 'pointercancel']) cont.addEventListener(t, e => { if (e.pointerType !== 'mouse') ultimoToque = Date.now(); if (toqueVarr && e.pointerId === toqueVarr.id) cancelarToqueVarr(); if (e.pointerId === dedoDaBolha) { dedoDaBolha = null; ignorarCliqueAte = Date.now() + 600; } }, { passive: true });
+  cont.addEventListener('contextmenu', e => { if (varrimentoVisivel() && toqueRecente()) e.preventDefault(); }); // o toque longo não abre o menu do sistema
+  map.on('click', () => { if (!cliqueDoToqueLongo()) fecharBolhaVarr(); }); map.on('zoomstart', cancelarToqueVarr);
+}
 async function marcarRua(nome) {
   const ev = eventoAtivo(); if (!ev || !ev.varrimento || visitaSoSimula()) return;
-  const doPublico = !SESSAO && ev.publico;
-  if (!doPublico && !(SESSAO && podeEditarEm(SESSAO, FREG.id))) { aviso('Para marcar ruas, inicia sessão com uma conta desta freguesia.', 4500); return; }
-  if (!doPublico && !edicao) { aviso('Liga o modo de edição (lápis) para marcar ruas.', 4000); return; }
+  const doPublico = !SESSAO && ev.publico, porque = porQueNaoMarca(); if (porque) { aviso(porque, 4500); return; }
   const novo = estadoRua(nome) ? 0 : 1, porGuardar = alterado;
   C.varrimento = C.varrimento || {}; const r = C.varrimento[ev.id] = C.varrimento[ev.id] || {};
   r[nome] = { e: novo, q: new Date().toISOString(), a: SESSAO ? SESSAO.utilizador : 'Membro do público' };
@@ -2191,7 +2239,7 @@ function atualizarFaixa() { // a faixa do modo do evento, no topo
   const f = $('#faixa-evento'); if (!f) return;
   const ev = eventoAtivo(), on = modoEventoAtivo(); f.hidden = !on;
   if (!on) return;
-  const n = ELEMENTOS.filter(e => e.evento === ev.id).reduce((s, g) => s + g.pontos.length, 0), T = termosDe(ev);
+  const n = ELEMENTOS.filter(e => e.evento === ev.id).reduce((s, g) => s + g.pontos.filter((p, i) => !ev.categorias.length || tipoDoPonto(g, detalheDe(g, i))).length, 0), T = termosDe(ev); // os sem tipo, de antes da regra, não contam
   let t = `${esc(ev.icone)} <b>${esc(ev.nome)}</b> · ${n} ${esc(n === 1 ? T.um : T.varios)}`;
   const ruas = varrimentoVisivel() ? ruasDoVarrimento() : [], zonas = zonasDoEvento(ev);
   if (zonas.length) t += ` · em ${esc(zonas.map(x => x.nome).join(', '))}`;
@@ -3641,7 +3689,7 @@ async function sincronizarConjuntos() {
   }
   if (mudou) { construir(); construirIndice(); construirPesquisa(); if (selecionado && POR_ID[selecionado.id] === selecionado) selecionar(selecionado, false, !cartaoAberto()); }
 }
-const contagensDe = el => (el.detalhes || []).reduce((m, d) => { const t = tipoDoPonto(el, d), c = t ? t.id : 'sem'; m[c] = (m[c] || 0) + 1; return m; }, {});
+const contagensDe = el => (el.detalhes || []).slice(0, el.pontos.length).reduce((m, d) => { const t = tipoDoPonto(el, d), c = t ? t.id : 'sem'; m[c] = (m[c] || 0) + 1; return m; }, {});
 async function lerEventoServidor() { // o servidor central, senão o local; a última resposta fica em cache
   try { EVENTO = JSON.parse(localStorage.getItem(CHAVE_EVENTO) || 'null'); } catch (err) { EVENTO = null; }
   aplicarEvento();
@@ -3867,14 +3915,19 @@ async function recolherRegistos(ev) {
 }
 async function exportarRelatorio(ev) {
   aviso('A juntar os registos do evento…');
-  const { fonte, freguesias, central, semAcesso } = await recolherRegistos(ev), todos = freguesias.flatMap(f => f.registos), T = termosDe(ev), excluidos = freguesias.reduce((s, f) => s + f.registos.excluidos, 0), naFila = central ? filaCentral().length : 0;
+  const { fonte, freguesias, central, semAcesso } = await recolherRegistos(ev);
+  const valido = r => !ev.categorias.length || ev.categorias.some(c => c.id === r.c); // num evento com tipos, todos os registos têm um: os de antes da regra não contam
+  for (const f of freguesias) { const ex = f.registos.excluidos; f.semTipo = f.registos.filter(r => !valido(r)).length; f.registos = Object.assign(f.registos.filter(valido), { excluidos: ex }); }
+  const semTipo = freguesias.filter(f => f.semTipo), nSemTipo = semTipo.reduce((s, f) => s + f.semTipo, 0);
+  const todos = freguesias.flatMap(f => f.registos), T = termosDe(ev), excluidos = freguesias.reduce((s, f) => s + f.registos.excluidos, 0), naFila = central ? filaCentral().length : 0;
   $('#aviso').classList.remove('aberto');
-  if (!todos.length) { await dialogo({ titulo: 'Relatório · ' + ev.nome, texto: `Ainda não há ${esc(T.varios)} neste evento (fonte: ${esc(fonte)}).${excluidos ? ` ${excluidos} sem localização válida.` : ''}`, botoes: [{ id: 'ok', texto: 'Fechar', classe: 'on' }] }); return; }
+  if (!todos.length) { await dialogo({ titulo: 'Relatório · ' + ev.nome, texto: `Ainda não há ${esc(T.varios)} neste evento (fonte: ${esc(fonte)}).${excluidos ? ` ${excluidos} sem localização válida.` : ''}${nSemTipo ? ` ${nSemTipo} sem tipo: escolhe o tipo no cartão de cada um para ${nSemTipo === 1 ? 'o' : 'os'} incluir.` : ''}`, botoes: [{ id: 'ok', texto: 'Fechar', classe: 'on' }] }); return; }
   const tipos = [...ev.categorias, ...(todos.some(r => !ev.categorias.some(c => c.id === r.c)) ? [{ id: 'sem', nome: 'Sem tipo' }] : [])], conta = t => todos.filter(r => t.id === 'sem' ? !ev.categorias.some(c => c.id === r.c) : r.c === t.id).length;
   const nFotos = todos.reduce((s, r) => s + (r.fotos || []).length, 0), comRegistos = freguesias.filter(f => f.registos.length).length;
-  const { r, valores } = await dialogo({ titulo: 'Relatório · ' + ev.nome, texto: `<b>${todos.length}</b> ${esc(todos.length === 1 ? T.um : T.varios)} em ${comRegistos} freguesia${comRegistos === 1 ? '' : 's'}, com ${nFotos} foto${nFotos === 1 ? '' : 's'} (fonte: ${esc(fonte)}). O PDF começa pelo resumo da cidade e segue por freguesia, com o mapa e a ficha de cada registo.`,
-    alerta: [tipos.some(t => t.id === 'sem') && ev.categorias.length ? `Registos sem tipo, de antes desta regra: ${conta({ id: 'sem' })}. Aparecem à parte; para os corrigir, escolhe o tipo no cartão de cada um.` : '', excluidos ? `${excluidos} ${esc(excluidos === 1 ? T.um : T.varios)} sem localização válida ${excluidos === 1 ? 'fica' : 'ficam'} de fora.` : '', urlCentral() && !central ? 'Sem acesso ao servidor central: estes são só os dados deste aparelho.' : '', semAcesso.length ? `Não consegui ler ${esc(semAcesso.join(', '))}: o relatório sai sem essas freguesias.` : '', naFila ? `Há ${naFila} envio${naFila === 1 ? '' : 's'} à espera na fila deste aparelho, que ainda não entram.` : ''].filter(Boolean).join('<br>'),
-    campos: [{ nome: 'formato', rotulo: 'Relatório', valor: 'extensivo', opcoes: [{ valor: 'extensivo', texto: 'Extensivo: o resumo e a ficha de cada registo, com mapa, fotos e notas' }, { valor: 'resumo', texto: 'Resumo: totais, mapa e tabela da cidade, por freguesia' }] }, ...(tipos.length > 1 ? tipos.map(t => ({ tipo: 'checkbox', nome: 'tipo:' + t.id, rotulo: `${t.nome} (${conta(t)})`, valor: true })) : []), { tipo: 'checkbox', nome: 'fotos', rotulo: 'Incluir as fotos', valor: true }],
+  const { r, valores } = await dialogo({ titulo: 'Relatório · ' + ev.nome, texto: `<b>${todos.length}</b> ${esc(todos.length === 1 ? T.um : T.varios)} em ${comRegistos} freguesia${comRegistos === 1 ? '' : 's'}, com ${nFotos} foto${nFotos === 1 ? '' : 's'} (fonte: ${esc(fonte)}). Escolhe o âmbito: a cidade toda (o resumo da cidade e cada freguesia) ou uma só freguesia, resumido ou detalhado.`,
+    alerta: [nSemTipo ? `${nSemTipo} ${esc(nSemTipo === 1 ? T.um : T.varios)} sem tipo, de antes desta regra, não ${nSemTipo === 1 ? 'entra' : 'entram'} no relatório nem nos totais (${esc(semTipo.map(f => f.nome + ': ' + f.semTipo).join(', '))}). Para ${nSemTipo === 1 ? 'o' : 'os'} incluir, abre o cartão de cada um e escolhe o tipo.` : '', excluidos ? `${excluidos} ${esc(excluidos === 1 ? T.um : T.varios)} sem localização válida ${excluidos === 1 ? 'fica' : 'ficam'} de fora.` : '', urlCentral() && !central ? 'Sem acesso ao servidor central: estes são só os dados deste aparelho.' : '', semAcesso.length ? `Não consegui ler ${esc(semAcesso.join(', '))}: o relatório sai sem essas freguesias.` : '', naFila ? `Há ${naFila} envio${naFila === 1 ? '' : 's'} à espera na fila deste aparelho, que ainda não entram.` : ''].filter(Boolean).join('<br>'),
+    campos: [{ nome: 'ambito', rotulo: 'Âmbito', valor: 'cidade', opcoes: [{ valor: 'cidade', texto: `Toda a cidade (${todos.length})` }, ...freguesias.filter(f => f.registos.length).map(f => ({ valor: f.id, texto: `${f.nome} (${f.registos.length})` }))] },
+      { nome: 'formato', rotulo: 'Relatório', valor: 'extensivo', opcoes: [{ valor: 'extensivo', texto: 'Detalhado: o resumo e a ficha de cada registo, com mapa, fotos e notas' }, { valor: 'resumo', texto: 'Resumido: os totais, o mapa e a tabela (numa freguesia, a lista dos registos)' }] }, ...(tipos.length > 1 ? tipos.map(t => ({ tipo: 'checkbox', nome: 'tipo:' + t.id, rotulo: `${t.nome} (${conta(t)})`, valor: true })) : []), { tipo: 'checkbox', nome: 'fotos', rotulo: 'Incluir as fotos', valor: true }],
     botoes: [{ id: 'cancelar', texto: 'Cancelar' }, { id: 'exportar', texto: 'Exportar PDF', classe: 'on' }] });
   if (r !== 'exportar') return;
   const escolhidos = tipos.length > 1 ? tipos.filter(t => valores['tipo:' + t.id]).map(t => t.id) : null;
@@ -3883,11 +3936,12 @@ async function exportarRelatorio(ev) {
     aviso('A preparar o relatório…', 600000);
     await Promise.all([window.jspdf || carregarScript('vendor/jspdf/jspdf.umd.min.js'), window.RelatorioEvento || carregarScript('relatorios/evento.js'), carregarLimitesCidade()]);
     // a imagem de cada freguesia e o sítio dela: estão no geo.js de cada uma
-    await Promise.all(freguesias.filter(f => f.registos.length).map(async f => { try { f.imagem = JSON.parse(jsonDoFicheiro(await (await fetch(baseFreguesia(f.id) + 'geo.js')).text())).imagem; } catch (err) { f.imagem = null; } }));
+    const ambito = valores.ambito && valores.ambito !== 'cidade' ? valores.ambito : null;
+    await Promise.all(freguesias.filter(f => f.registos.length && (!ambito || f.id === ambito)).map(async f => { try { f.imagem = JSON.parse(jsonDoFicheiro(await (await fetch(baseFreguesia(f.id) + 'geo.js')).text())).imagem; } catch (err) { f.imagem = null; } }));
     const nomeComp = (COMP[ev.conjunto && ev.conjunto.competencia] || {}).nome || '';
     const extensivo = valores.formato !== 'resumo';
-    const blob = await window.RelatorioEvento.gerar({ evento: ev, competencia: nomeComp, extensivo, freguesias, limites: window.LIMITES_FREGUESIAS, tipos: escolhidos, fotos: valores.fotos, fonte, aoProgresso: (n, total) => aviso(`A preparar o relatório: ${n} de ${total}…`, 600000) });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `relatorio-${ev.id}${extensivo ? '' : '-resumo'}-${new Date().toISOString().slice(0, 10)}.pdf`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    const blob = await window.RelatorioEvento.gerar({ evento: ev, competencia: nomeComp, extensivo, freguesias, freguesia: ambito, limites: window.LIMITES_FREGUESIAS, tipos: escolhidos, fotos: valores.fotos, fonte, aoProgresso: (n, total) => aviso(`A preparar o relatório: ${n} de ${total}…`, 600000) });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `relatorio-${ev.id}${ambito ? '-' + ambito : ''}${extensivo ? '' : '-resumo'}-${new Date().toISOString().slice(0, 10)}.pdf`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);
     aviso(`Relatório transferido: ${a.download} (${(blob.size / 1048576).toLocaleString('pt-PT', { maximumFractionDigits: 1 })} MB).`, 8000);
   } catch (err) { aviso('Não foi possível gerar o relatório: ' + err.message, 8000); }
 }
@@ -3999,6 +4053,7 @@ async function confirmarLevantamento() { if (visitaSoSimula()) return;
     if (q === 'foto') { const l = await escolherFotos(); if (!levant || !l.length) return; levant.fotos.push(...l); $('#lev-foto').textContent = '📷 Foto (' + levant.fotos.length + ')'; }
   }
   const { ev, cat, m, loc } = levant, notas = $('#lev-notas').value.trim(), escolhidas = levant.fotos.slice();
+  if (ev.categorias.length && !ev.categorias.some(c => c.id === cat.id)) { aviso('Escolhe o tipo do registo («Mudar o tipo»).', 4000); return; } // num evento com tipos, nenhum registo fica sem tipo
   if (ev.grupo && POR_ID[ev.grupo.id] !== ev.grupo) { cancelarLevantamento(true); aviso(`O conjunto «${ev.grupo.nome}» já não existe: o registo não foi feito.`, 6000); return; }
   const b = new Uint8Array(6); crypto.getRandomValues(b); // o id deixa juntar os registos de vários dispositivos no servidor central
   const d = { i: [...b].map(x => x.toString(16).padStart(2, '0')).join(''), c: cat.id, rua, numero, quando: new Date().toISOString(), autor: SESSAO ? SESSAO.utilizador : '', moradaManual: true }; if (loc.precisao != null) d.precisao = Math.round(loc.precisao); // a morada foi confirmada: arrastar depois não a muda
@@ -4039,9 +4094,9 @@ function registarNoConjunto(ev, pos, d, opcoes = {}) { if (visitaSoSimula()) ret
 function htmlResumoConjunto(el) { // no cartão de qualquer conjunto: a tabela por tipo e a lista dos pontos
   const ev = EVENTOS[el.evento], tipos = tiposDe(el), cont = contagensDe(el), n = el.pontos.length, sem = cont.sem || 0;
   const tabela = !tipos.length ? '' : `<table><thead><tr><th>${esc(ev ? ev.nome : el.nome)} · ${esc(FREG.nome)}</th><th>${ev ? 'Registos' : 'Pontos'}</th></tr></thead><tbody>
-    ${tipos.map(c => `<tr><td><span class="pinta" style="--c:${c.cor}"></span>${esc(c.icone)} ${esc(c.nome)}</td><td>${cont[c.id] || 0}</td></tr>`).join('')}${sem ? `<tr><td><span class="pinta" style="--c:#9aa3ad"></span>Sem tipo</td><td>${sem}</td></tr>` : ''}
-    <tr class="total"><td>${ev ? 'Total de ' + esc(termosDe(ev).varios) : 'Total de pontos'}</td><td>${n}</td></tr></tbody></table>`;
-  return `<div class="evento-resumo">${tabela}<h3>${ev ? 'Registos' : 'Pontos deste conjunto'} (${n})</h3><ol class="evento-lista">${el.pontos.map((p, i) => { const d = lerSub(el, i), c = tipoDoPonto(el, d), f = (d.fotos || []).length; return `<li><button type="button" data-sub="${i}" title="Abrir o cartão deste ponto">${esc(c ? c.icone : d.icone || el.icone || '•')} ${esc(nomeSub(el, i))}${f ? ' 📷' + f : ''}<small>${d.nome && d.rua ? esc(moradaTexto(d)) + ' · ' : ''}${d.quando ? esc(dataHora(d.quando)) : ''}${d.autor && SESSAO && SESSAO.papel === 'admin' ? ' · ' + esc(d.autor) : ''}</small></button></li>`; }).join('')}</ol></div>`;
+    ${tipos.map(c => `<tr><td><span class="pinta" style="--c:${c.cor}"></span>${esc(c.icone)} ${esc(c.nome)}</td><td>${cont[c.id] || 0}</td></tr>`).join('')}${sem && !ev ? `<tr><td><span class="pinta" style="--c:#9aa3ad"></span>Sem tipo</td><td>${sem}</td></tr>` : ''}
+    <tr class="total"><td>${ev ? 'Total de ' + esc(termosDe(ev).varios) : 'Total de pontos'}</td><td>${ev ? n - sem : n}</td></tr></tbody></table>${ev && sem ? `<p class="nota aviso-tipo">⚠ ${sem} sem tipo, de antes desta regra: não ${sem === 1 ? 'conta' : 'contam'} nos totais nem no relatório. Abre ${sem === 1 ? 'o registo' : 'cada um'} (⚠ na lista) e escolhe o tipo.</p>` : ''}`;
+  return `<div class="evento-resumo">${tabela}<h3>${ev ? 'Registos' : 'Pontos deste conjunto'} (${n})</h3><ol class="evento-lista">${el.pontos.map((p, i) => { const d = lerSub(el, i), c = tipoDoPonto(el, d), f = (d.fotos || []).length; return `<li><button type="button" data-sub="${i}" title="${ev && !c ? 'Sem tipo: abre e escolhe o tipo' : 'Abrir o cartão deste ponto'}">${ev && !c ? '⚠' : esc(c ? c.icone : d.icone || el.icone || '•')} ${esc(nomeSub(el, i))}${ev && !c ? ' <small>· sem tipo</small>' : ''}${f ? ' 📷' + f : ''}<small>${d.nome && d.rua ? esc(moradaTexto(d)) + ' · ' : ''}${d.quando ? esc(dataHora(d.quando)) : ''}${d.autor && SESSAO && SESSAO.papel === 'admin' ? ' · ' + esc(d.autor) : ''}</small></button></li>`; }).join('')}</ol></div>`;
 }
 // o resumo da cidade: do servidor central (que junta as 24 freguesias) ou, sem ele, dos ficheiros de cada freguesia
 async function resumoLocalEvento(ev) {
@@ -4101,11 +4156,14 @@ async function resumoCidadeEvento() {
   if (!dados) { dados = await resumoLocalEvento(ev); fonte = AMBIENTE.app ? 'dados desta aplicação' : 'ficheiros desta apresentação'; }
   $('#aviso').classList.remove('aberto');
   const linhas = FREGUESIAS.filter(f => abrangeFreguesia(ev, f.id) || (dados.freguesias[f.id] && dados.freguesias[f.id].total)).map(f => ({ f, r: dados.freguesias[f.id] })).filter(x => x.r && x.r.total);
+  if (ev.categorias.length) for (const x of linhas) { const t = ev.categorias.reduce((s, c) => s + (x.r.contagens[c.id] || 0), 0); x.semTipo = x.r.total - t; x.r = { ...x.r, total: t }; } // os sem tipo, de antes da regra, não contam
+  const semTipoCidade = linhas.reduce((s, x) => s + (x.semTipo || 0), 0); for (let i = linhas.length - 1; i >= 0; i--) if (!linhas[i].r.total) linhas.splice(i, 1);
+  dados.total = linhas.reduce((s, x) => s + x.r.total, 0);
   const tot = {}; for (const x of linhas) for (const c of ev.categorias) tot[c.id] = (tot[c.id] || 0) + (x.r.contagens[c.id] || 0);
   const cab = ev.categorias.map(c => `<th class="num" title="${esc(c.nome)}">${esc(c.icone)} ${esc(c.nome)}</th>`).join('');
   const corpo = linhas.map(x => `<tr><td>${esc(x.f.nome)}</td>${ev.categorias.map(c => `<td class="num">${x.r.contagens[c.id] || 0}</td>`).join('')}<td class="num"><b>${x.r.total}</b></td></tr>`).join('');
   await dialogo({ titulo: ev.icone + ' ' + ev.nome + ' · Lisboa', largo: true,
-    texto: `<b>${dados.total}</b> ${esc(dados.total === 1 ? termosDe(ev).um : termosDe(ev).varios)} em ${linhas.length} freguesia${linhas.length === 1 ? '' : 's'} (fonte: ${esc(fonte)}).`,
+    texto: `<b>${dados.total}</b> ${esc(dados.total === 1 ? termosDe(ev).um : termosDe(ev).varios)} em ${linhas.length} freguesia${linhas.length === 1 ? '' : 's'} (fonte: ${esc(fonte)}).`, alerta: semTipoCidade ? `${semTipoCidade} sem tipo, de antes desta regra, não ${semTipoCidade === 1 ? 'conta' : 'contam'}: escolhe o tipo no cartão de cada um.` : '',
     corpo: `<div class="tabela-dialogo"><table><thead><tr><th>Freguesia</th>${cab}<th class="num">Total</th></tr></thead><tbody>${corpo || '<tr><td colspan="${ev.categorias.length + 2}" class="nota">Ainda não há registos.</td></tr>'}</tbody>${linhas.length ? `<tfoot><tr class="total"><th>Lisboa</th>${ev.categorias.map(c => `<th class="num">${tot[c.id] || 0}</th>`).join('')}<th class="num">${dados.total}</th></tr></tfoot>` : ''}</table></div>`,
     botoes: [{ id: 'ok', texto: 'Fechar', classe: 'on' }] });
 }
@@ -4397,7 +4455,7 @@ function htmlFormLugar(el) { // pontos do conjunto; tirar do mapa ou pôr no map
   if (el.tipo === 'grupo') {
     const p = priDe(el), aAcrescentar = ferramenta === 'grupo' && grupoEmCurso === el;
     return `<div class="fotos-ed"><h3>Pontos do conjunto (${el.pontos.length})</h3>
-      ${el.pontos.map((q, i) => { const d = detalheDe(el, i), cat = d && tipoDoPonto(el, d); return `<div class="membro"><span class="pinta" style="--c:${cat ? cat.cor : p.cor}"></span><span class="abrir-sub" role="button" tabindex="0" data-sub="${i}" title="Abrir o cartão deste ponto">${cat ? esc(cat.icone) + ' ' + esc(moradaTexto(d)) : esc(nomeSub(el, i))} <small class="nota">${cat && d.quando ? esc(dataHora(d.quando)) : q[0].toFixed(5) + ', ' + q[1].toFixed(5)}</small></span><button type="button" class="fechar" data-ac="grupo-tirar" data-i="${i}" aria-label="Tirar o ponto ${i + 1}">✕</button></div>`; }).join('')}
+      ${el.pontos.map((q, i) => { const d = detalheDe(el, i), cat = d && tipoDoPonto(el, d); return `<div class="membro"><span class="pinta" style="--c:${cat ? cat.cor : p.cor}"></span><span class="abrir-sub" role="button" tabindex="0" data-sub="${i}" title="Abrir o cartão deste ponto">${cat ? esc(cat.icone) + ' ' + esc(moradaTexto(d)) : el.evento ? '⚠ ' + esc(moradaTexto(d)) + ' <small>· sem tipo: escolhe-o</small>' : esc(nomeSub(el, i))} <small class="nota">${cat && d.quando ? esc(dataHora(d.quando)) : q[0].toFixed(5) + ', ' + q[1].toFixed(5)}</small></span><button type="button" class="fechar" data-ac="grupo-tirar" data-i="${i}" aria-label="Tirar o ponto ${i + 1}">✕</button></div>`; }).join('')}
       ${el.evento ? '' : `<div class="linha"><button type="button" class="btn" data-ac="grupo-registar" title="Procura a tua localização e sugere a morada, que confirmas antes de registar">📍 Registar na minha localização</button><button type="button" class="btn${aAcrescentar ? ' on' : ''}" data-ac="grupo-mais">＋ Acrescentar pontos no mapa</button>${(s => s.length ? `<select name="agregar-solto" class="seletor" aria-label="Agregar um ponto solto"><option value="">⁘ Agregar um ponto solto…</option>${s.map(x => `<option value="${esc(x.id)}">${esc(x.nome)}</option>`).join('')}</select>` : '')(pontosComLugar())}</div>`}
       ${el.evento ? (el.pontos.length ? (daAdministracao() ? '<div class="linha"><button type="button" class="btn perigo" data-ac="grupo-tirar-todos" title="Só a administração">Tirar todos os registos</button></div>' : '') : '<div class="nota">Ainda sem registos nesta freguesia: o próximo registo do evento entra aqui.</div>') : ''}
       <div class="nota">Toca num ponto para abrir o seu cartão. Arrasta os pontos no mapa para os mudar de sítio; ${el.evento ? '' : 'largar um ponto solto em cima de um ponto do conjunto agrega-o.'}</div></div>${el.evento ? '' : htmlTiposPonto(el)}`;
@@ -4654,7 +4712,7 @@ if (EDITOR || idInicial) semFreguesia = false; // ?editor e #id abrem logo a fre
 if (window.ENTRA_NA_CIDADE) map.whenReady(() => abrirCidade(true)); else quandoLivre(() => carregarCamadas());
 if (EDITOR) pedirEdicao({ criar: PARAMS.has('criar') }); // ?editor abre logo em modo de edição (depois de iniciar sessão); ?criar abre também o «+»
 sessaoPronta.then(lerEventoServidor).finally(() => map.whenReady(() => setTimeout(arrancarVisitaGuiada, 1400))); // depois de o mapa se acomodar (o voo até Lisboa dura 1,1 s)
-window.__mapa = { get RUAS_CIDADE() { return window.RUAS_CIDADE; }, eventoAtivo, eventoDaCidade, zonasDoEvento, dentroDoEvento, porFotografar, antesDeGuardar, fecharComFoto, get contornoZonas() { return contornoZonas; }, ligarModoEvento, modoEventoAtivo, marcarRua, estadoRua, escolherFotos, enviarPublico, get C() { return C; }, ABA, filaCentral, get FICHEIRO() { return FICHEIRO; }, get alteradoAgora() { return alterado; }, alternarVisitaInicial, visitaInicialLigada, menuConta, eventoComVisita, recolherRegistos, exportarRelatorio, EVENTOS, carregarIndiceCidade, procurar, irParaLugar, fonteRegisto, resumoConjuntos, juntarLinhasConjuntos, sincronizarConjuntos, tiposDe, aplicarTema, temaAtual, abrirSub, subPonto, agregarPonto, desagregarPonto, get subAtual() { return subAtual; }, quarteiroesDe, alternarQuarteirao, frasePedacos, paresDuplicados, perguntarDuplicado, consolidar, reverterConsolidacao, verConsolidacoes, get consolidacoes() { return consolidacoes; }, semelhancaNomes, novaCategoria, criarCategoria, gerirCategorias, categoriasConhecidas, map, C, FREG, ELEMENTOS, POR_ID, RUAS_VISTA, atualizarInstalar, instalarApp, podeInstalar, get satVisivel() { return satVisivel; }, EVENTOS, get EVENTO() { return EVENTO; }, get levant() { return levant; }, lerEventoServidor, aplicarEvento, gerirEvento, escolherRegisto, levantamento, abrirLevantamento, mostrarLevantamento, confirmarLevantamento, cancelarLevantamento, moradaSugerida, registarNoConjunto, resumoCidadeEvento, localizarPrecisa, iniciarVisita, sairVisita, terminarVisita, irPassoVisita, seguinteVisita, visitaAberta, lerEstadoVisita, get visitaPasso() { return visitaPassos[visitaI] && visitaPassos[visitaI].id; }, get visitaPassos() { return visitaPassos; }, pedirEdicao, entrarConta, lerSessao, terminarSessao, menuConta, verHistorico, gerirContas, mudarPalavraPasse, dialogoEntrar, get SESSAO() { return SESSAO; }, lerSessaoCentral, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, ligarVerdes, ligarMapa, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva, entrarEdicao, porFerramenta, serializar, guardar, carregar, lerPreset, novoPreset, apagarPreset, mudarPreset, PRESETS, importarPreset, reporDoFicheiro, largarPonto, novoPonto, criarRua, criarDeLote, painelCentral, abrirDoCentral, enviarFilaCentral, copiarCentral, estadoCopia, filaCentral, lerCentral, gravarCentral, get AMBIENTE() { return AMBIENTE; }, confirmar, perguntarTexto, abrirCidade, irParaFreguesia, sairEdicao, descartarAlteracoes, dialogo, construirDesmat, expandirDesmat, pontoDeGrupo, emConjunto, novoDesmaterializado, desmaterializar, colocarNoMapa, criarAqui, ruaMaisProxima, abrirCriar, acrescentarPresetImportado, PRESETS_LOCAIS, get cidade() { return cidade; }, get alterado() { return alterado; }, novaCategoria, definirMembro, alternarCategoria, editarVisita, mostrarCategoria, categoriasAtivas, get edicao() { return edicao; }, get ferramenta() { return ferramenta; }, get passos() { return passos; } };
+window.__mapa = { get RUAS_CIDADE() { return window.RUAS_CIDADE; }, ruaSobPonto, abrirBolhaVarr, fecharBolhaVarr, get bolhaVarr() { return bolhaVarr; }, porQueNaoMarca, TOQUE_LONGO, eventoAtivo, eventoDaCidade, zonasDoEvento, dentroDoEvento, porFotografar, antesDeGuardar, fecharComFoto, get contornoZonas() { return contornoZonas; }, ligarModoEvento, modoEventoAtivo, marcarRua, estadoRua, escolherFotos, enviarPublico, get C() { return C; }, ABA, filaCentral, get FICHEIRO() { return FICHEIRO; }, get alteradoAgora() { return alterado; }, alternarVisitaInicial, visitaInicialLigada, menuConta, eventoComVisita, recolherRegistos, exportarRelatorio, EVENTOS, carregarIndiceCidade, procurar, irParaLugar, fonteRegisto, resumoConjuntos, juntarLinhasConjuntos, sincronizarConjuntos, tiposDe, aplicarTema, temaAtual, abrirSub, subPonto, agregarPonto, desagregarPonto, get subAtual() { return subAtual; }, quarteiroesDe, alternarQuarteirao, frasePedacos, paresDuplicados, perguntarDuplicado, consolidar, reverterConsolidacao, verConsolidacoes, get consolidacoes() { return consolidacoes; }, semelhancaNomes, novaCategoria, criarCategoria, gerirCategorias, categoriasConhecidas, map, C, FREG, ELEMENTOS, POR_ID, RUAS_VISTA, atualizarInstalar, instalarApp, podeInstalar, get satVisivel() { return satVisivel; }, EVENTOS, get EVENTO() { return EVENTO; }, get levant() { return levant; }, lerEventoServidor, aplicarEvento, gerirEvento, escolherRegisto, levantamento, abrirLevantamento, mostrarLevantamento, confirmarLevantamento, cancelarLevantamento, moradaSugerida, registarNoConjunto, resumoCidadeEvento, localizarPrecisa, iniciarVisita, sairVisita, terminarVisita, irPassoVisita, seguinteVisita, visitaAberta, lerEstadoVisita, get visitaPasso() { return visitaPassos[visitaI] && visitaPassos[visitaI].id; }, get visitaPassos() { return visitaPassos; }, pedirEdicao, entrarConta, lerSessao, terminarSessao, menuConta, verHistorico, gerirContas, mudarPalavraPasse, dialogoEntrar, get SESSAO() { return SESSAO; }, lerSessaoCentral, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, ligarVerdes, ligarMapa, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva, entrarEdicao, porFerramenta, serializar, guardar, carregar, lerPreset, novoPreset, apagarPreset, mudarPreset, PRESETS, importarPreset, reporDoFicheiro, largarPonto, novoPonto, criarRua, criarDeLote, painelCentral, abrirDoCentral, enviarFilaCentral, copiarCentral, estadoCopia, filaCentral, lerCentral, gravarCentral, get AMBIENTE() { return AMBIENTE; }, confirmar, perguntarTexto, abrirCidade, irParaFreguesia, sairEdicao, descartarAlteracoes, dialogo, construirDesmat, expandirDesmat, pontoDeGrupo, emConjunto, novoDesmaterializado, desmaterializar, colocarNoMapa, criarAqui, ruaMaisProxima, abrirCriar, acrescentarPresetImportado, PRESETS_LOCAIS, get cidade() { return cidade; }, get alterado() { return alterado; }, novaCategoria, definirMembro, alternarCategoria, editarVisita, mostrarCategoria, categoriasAtivas, get edicao() { return edicao; }, get ferramenta() { return ferramenta; }, get passos() { return passos; } };
 });
 </script>
 </body>
