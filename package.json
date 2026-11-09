@@ -27,7 +27,8 @@
     "central:publicar": "node tools/preparar-site.mjs && wrangler deploy --config servidor-central/cloudflare/wrangler.toml"
   },
   "dependencies": {
-    "electron-updater": "6.8.10"
+    "electron-updater": "6.8.10",
+    "npm": "^12.2.2"
   },
   "devDependencies": {
     "electron": "44.7.1",
