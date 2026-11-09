@@ -164,9 +164,9 @@ cidade toda:
 | `System.Admin` | todas as freguesias | vê o histórico de alterações e gere as contas |
 
 - **Ao chegar a uma freguesia:** a ferramenta abre no mapa de Lisboa, com a visita. Na primeira vez que se desce a uma
-  freguesia (em cada janela), pede-se a sessão; «Mais tarde» não volta a perguntar até se fechar a janela, e o lápis e as ruas
-  do varrimento continuam a pedi-la. Sem servidor local nem central, não se pergunta nada. Com sessão, as ruas do varrimento
-  marcam-se sem o modo de edição.
+  freguesia (em cada janela), pede-se a sessão; «Mais tarde» não volta a perguntar até se fechar a janela, e o lápis continua
+  a pedi-la. Sem servidor local nem central, não se pergunta nada. O varrimento das ruas só aparece com sessão, e marca-se sem
+  o modo de edição.
 - **Entrar:** o utilizador escreve-se como se quiser («Campo de Ourique», «campodeourique» e «CampoDeOurique» são o
   mesmo). As palavras-passe iniciais foram entregues a cada pessoa e não estão neste repositório (só os
   verificadores, em `servidor-central/contas-iniciais.mjs`). Muda-as logo: são fáceis de adivinhar.
@@ -266,8 +266,9 @@ Em menu da conta → **Eventos**, o `System.Admin` vê todos os eventos e pode:
 - **Varrimento das ruas** (ligado de origem no Levantamento Iluminação Pública, desligado nos eventos novos): cada rua fica a vermelho (por percorrer) ou a azul (percorrida), em traço fino
   e transparente ao longe. Enquanto está ligado, uma legenda fixa no topo (por baixo da faixa do evento; em edição, no fundo ou,
   no telemóvel, por baixo do painel) diz as cores, como se muda uma rua e que se desliga em **Camadas**. Passar o rato por cima
-  mostra o nome e o estado, centrados por cima do cursor. Com sessão iniciada numa conta da freguesia, marca-se **sem o modo de
-  edição**; sem sessão, carregar numa rua pede-a ali mesmo. Com o rato, um clique muda a rua; no telemóvel e no tablet é preciso
+  mostra o nome e o estado, centrados por cima do cursor. Só aparece **com sessão iniciada** (as ruas, a legenda, o botão nas
+  Camadas e a contagem na faixa), exceto num evento com «Registos sem conta», onde qualquer pessoa marca. Com uma conta da
+  freguesia, marca-se **sem o modo de edição**. Com o rato, um clique muda a rua; no telemóvel e no tablet é preciso
   um toque longo (2,5 s), para evitar toques acidentais: a rua realça-se enquanto se carrega e muda no fim, com uma vibração
   curta. A marca guarda-se e junta-se entre dispositivos como um registo.
 - **Registos sem conta** (desligado por omissão, com um aviso sério ao ligar): qualquer pessoa regista e marca ruas sem iniciar

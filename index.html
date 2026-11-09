@@ -1784,7 +1784,8 @@ function ruaSobre(r) {
 // Cada rua da freguesia a vermelho (por percorrer) ou a azul (percorrida), em traço suave para não tapar o mapa ao longe.
 // Um toque numa rua marca-a, ou volta a pô-la por percorrer. Guarda-se logo, como um registo, e junta-se entre dispositivos.
 let varrimentoLigado = true; try { varrimentoLigado = localStorage.getItem('co-varrimento') !== 'desligado'; } catch (err) { /* sem armazenamento local */ }
-const varrimentoVisivel = () => { const ev = eventoAtivo(); return !!(ev && ev.varrimento && varrimentoLigado && !cidade); };
+const varrimentoDisponivel = () => { const ev = eventoAtivo(); return !!(ev && ev.varrimento && (SESSAO || ev.publico)); }; // só com sessão (ou num evento aberto ao público, onde qualquer pessoa marca)
+const varrimentoVisivel = () => varrimentoDisponivel() && varrimentoLigado && !cidade;
 map.createPane('varrimento').style.zIndex = 394;
 const rendVarr = L.canvas({ pane: 'varrimento', padding: .3, tolerance: 8 });
 let grupoVarr = null;
@@ -1843,8 +1844,8 @@ const ecraTatil = () => matchMedia('(hover: none)').matches || toqueRecente();
 function atualizarLegendaVarr() { // sempre à vista com o varrimento ligado (desliga-se nas Camadas)
   const el = $('#legenda-varr'); if (!el) return;
   const on = varrimentoVisivel(); el.hidden = !on; if (!on) return;
-  const curto = innerWidth <= 480, semSessao = !SESSAO && !(eventoAtivo() && eventoAtivo().publico); // no telemóvel, cabe em duas linhas
-  const como = (ecraTatil() ? 'Mantém o dedo numa rua' : 'Clica numa rua') + (curto ? '' : ' para a mudar') + (semSessao && !curto ? ' (com sessão)' : ''), chave = como + curto;
+  const curto = innerWidth <= 480; // no telemóvel, cabe em duas linhas
+  const como = (ecraTatil() ? 'Mantém o dedo numa rua' : 'Clica numa rua') + (curto ? '' : ' para a mudar'), chave = como + curto;
   if (el.dataset.chave === chave) return; el.dataset.chave = chave;
   el.innerHTML = `<span><i class="traco" style="--c:#e5484d"></i>por percorrer</span><span><i class="traco" style="--c:#2f7de1"></i>percorrida</span><span>${como}</span><span class="nota">Desliga-se em <button type="button" data-camadas>Camadas</button></span>`;
 }
@@ -2265,7 +2266,7 @@ function aplicarModoEvento() {
   document.body.classList.toggle('modo-evento', on);
   const bm = $('#btn-modo-evento'), bv = $('#btn-varrimento');
   if (bm) { bm.hidden = !(ev && ev.modoEvento !== false); estadoCamada('btn-modo-evento', on); }
-  if (bv) { bv.hidden = !(ev && ev.varrimento); estadoCamada('btn-varrimento', varrimentoLigado); }
+  if (bv) { bv.hidden = !varrimentoDisponivel(); estadoCamada('btn-varrimento', varrimentoLigado); }
   if (typeof vista === 'object') { aplicarFiltro(); atualizarVarrimento(); }
   atualizarFaixa();
 }
@@ -3427,7 +3428,7 @@ function mostrarSessao() {
   b.title = SESSAO ? `${SESSAO.utilizador} (${PAPEL_CONTA[SESSAO.papel] || SESSAO.papel}): ${SESSAO.papel === 'admin' ? 'histórico, contas, ' : ''}palavra-passe e terminar a sessão` : '';
   b.setAttribute('aria-label', SESSAO ? 'Conta ' + SESSAO.utilizador : 'Conta');
   btnEditar.title = SESSAO ? `Modo de edição (${SESSAO.utilizador})` : 'Modo de edição (precisa de iniciar sessão)';
-  atualizarLegendaVarr(); // «(com sessão)» sai ou volta
+  aplicarModoEvento(); // o varrimento (ruas, legenda, botão nas Camadas, contagem na faixa) só aparece com sessão
 }
 async function entrarCentral(utilizador, chave, lembrar) {
   const j = await pedirCentral('/sessao', { method: 'POST', body: JSON.stringify({ utilizador, chave, lembrar: !!lembrar }), semSessao: true });
@@ -3469,7 +3470,7 @@ async function dialogoEntrar({ motivo, soCentral, aoDescer } = {}) {
   }
 }
 // a primeira vez que se desce do mapa de Lisboa a uma freguesia (em cada entrada na ferramenta), pede-se a sessão;
-// «Mais tarde» não volta a perguntar até se fechar a janela (o lápis e as ruas do varrimento continuam a pedi-la)
+// «Mais tarde» não volta a perguntar até se fechar a janela (o lápis continua a pedi-la; sem ela, o varrimento não aparece)
 const CHAVE_SESSAO_PEDIDA = 'co-sessao-pedida';
 async function pedirSessaoAoDescer() {
   if (cidade || EDITOR || edicao || dialogoEl.classList.contains('aberto')) return;
