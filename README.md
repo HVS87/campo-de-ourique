@@ -259,7 +259,7 @@ Em menu da conta → **Eventos**, o `System.Admin` vê todos os eventos e pode:
 - **Modo de visualização do evento** (ligado por omissão): enquanto o evento decorre, o mapa mostra só os registos dele, uma
   faixa no topo dá o total e o «+» vai direto aos tipos do evento, com «📍 Outros problemas» para o menu habitual. Cada pessoa
   pode desligá-lo nas Camadas ou em «Ver tudo», na faixa.
-- **Varrimento das ruas** (desligado por omissão): cada rua fica a vermelho (por percorrer) ou a azul (percorrida), em traço fino
+- **Varrimento das ruas** (ligado de origem no Levantamento Iluminação Pública, desligado nos eventos novos): cada rua fica a vermelho (por percorrer) ou a azul (percorrida), em traço fino
   e transparente ao longe. Com o rato, um clique numa rua muda-a. No telemóvel e no tablet é preciso um toque longo (2,5 s), para
   evitar toques acidentais: a rua realça-se enquanto se carrega e depois surge uma bolha, «Marcar como vista» ou «Marcar como não
   vista»; tocar na bolha muda o estado, tocar fora dela fecha-a sem mudar nada. A marca guarda-se e junta-se entre dispositivos
