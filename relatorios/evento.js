@@ -121,7 +121,7 @@ window.RelatorioEvento = (function () {
   // ---------- a escrita ----------
   function escritor(R) {
     const doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', compress: true }); let y = MARGEM, secao = '';
-    doc.setProperties({ title: R.ev.nome + (R.ambito ? ' - relatório de ' + R.ambito : ' - relatório da cidade'), subject: 'Relatório de evento', creator: FERRAMENTA });
+    doc.setProperties({ title: R.ev.nome + (R.ambito ? ' - relatório de ' + R.ambito : ' - relatório da cidade'), subject: R.assunto || 'Relatório de evento', creator: FERRAMENTA });
     const cor = (h, fundo) => { const [a, b, c] = rgb(h); if (fundo) doc.setFillColor(a, b, c); else doc.setTextColor(a, b, c); };
     const letra = (t, estilo, c) => { doc.setFont('helvetica', estilo || 'normal'); doc.setFontSize(t); cor(c || TINTA); };
     const altLinha = t => t * .3528 * 1.28;
@@ -336,5 +336,8 @@ window.RelatorioEvento = (function () {
     }
     return doc.output('blob');
   }
-  return { gerar };
+  // as peças comuns, para o relatório geral das ocorrências (relatorios/geral.js)
+  const base = { FERRAMENTA, LOGO, WMS, LARG, ALT, MARGEM, UTIL, FUNDO_PAGINA, TINTA, SUAVE, LINHA, TINTA_FRACA, LIGACAO, RAMPA,
+    limpo, textoDe, data, dataCurta, num, aoFolego, merc, rgb, clara, carregarImagem, canvasDe, emLotes, fotoReduzida, desenharPino, mapaCidade, escritor, cabecalho, quadrosNumeros, escreverFotos, rodape };
+  return { gerar, base };
 })();

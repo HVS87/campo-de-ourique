@@ -94,9 +94,12 @@
   .bolha-varr::after { content: ''; position: absolute; left: 50%; bottom: -7px; margin-left: -8px; border: 8px solid transparent; border-bottom: 0; border-top-color: #2f7de1; } .bolha-varr.feita::after { border-top-color: #e5484d; }
   @keyframes bolha-varr { 0% { opacity: 0; transform: translate(-50%, 10px) scale(.55); } 100% { opacity: 1; transform: translate(-50%, 0) scale(1); } }
   @media (prefers-reduced-motion: reduce) { .bolha-varr { animation-duration: .01s; } }
+  .varr-sobre .rua-hit, .varr-sobre .leaflet-zonas-pane path, .varr-sobre .leaflet-ruas-pane path { pointer-events: none !important; } /* em cima de uma rua do varrimento, ela recebe o rato e o dedo */
   .leaflet-container { -webkit-touch-callout: none; } .com-bolha .leaflet-tooltip { display: none; }
   #dialogo .lista-freguesias { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 0 10px; max-height: 210px; overflow: auto; padding: 2px 0; }
   #dialogo .lista-freguesias .campo-dialogo.marca { margin: 3px 0; } .aviso-tipo { color: #f0b429; } #dialogo .linha-zonas { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 6px 0 4px; } #dialogo .linha-zonas small { opacity: .75; }
+  .form-evento.datas-rel { align-items: end; } .form-evento.datas-rel .campo-dialogo:first-child { grid-column: auto; } .amostra-cor { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; box-shadow: 0 0 0 1px rgba(128,128,128,.6); }
+  #dialogo .contagem-rel { margin: 12px 0 0; font-size: 13.5px; }
   .titulo-tipos { font-size: 13px; margin: 12px 0 6px; } .titulo-tipos small, .form-evento small { font-weight: 400; color: var(--ink-dim); }
   #dialogo .campo-dialogo.tipo-evento { display: flex; gap: 6px; align-items: center; margin: 0 0 6px; }
   #dialogo .campo-dialogo.tipo-evento input { margin: 0; } #dialogo .campo-dialogo.tipo-evento input[name^=t-icone] { width: 58px; flex: none; text-align: center; } #dialogo .campo-dialogo.tipo-evento input[name^=t-nome] { flex: 1; min-width: 0; width: auto; } #dialogo .campo-dialogo.tipo-evento input[type=color] { width: 40px; height: 36px; flex: none; padding: 2px; cursor: pointer; }
@@ -918,7 +921,7 @@ function desagregarPonto(g, i) {
   if (g.pontos.length <= 1) { aviso('Um conjunto precisa de pelo menos um ponto; para o eliminar, apaga o conjunto.', 4000); return; }
   const d = lerSub(g, i), pos = g.pontos[i]; g.pontos.splice(i, 1); if (Array.isArray(g.detalhes)) marcarRemovidos(g, g.detalhes.splice(i, 1));
   const o = { tipo: 'ponto', nome: d.nome || g.nome + ' ' + (i + 1), icone: d.icone || g.icone || '📍', pos: pos.slice(), fotos: d.fotos || [], texto: d.texto || '' };
-  const pri = d.prioridade || g.prioridade, comp = d.competencia || g.competencia; if (pri) o.prioridade = pri; if (comp) o.competencia = comp;
+  const pri = d.prioridade || g.prioridade, comp = d.competencia || g.competencia; if (pri) o.prioridade = pri; if (comp) o.competencia = comp; if (d.quando) o.criado = d.quando;
   const z = zonaEm(pos, null); subAtual = null; const p = acrescentar(o, z && !z.oculto ? z : null);
   if (p) {
     for (const id of d.catsOrigem || []) { const c = catPorId(id); if (c && !c.membros.includes(p.id)) c.membros.push(p.id); }
@@ -1790,12 +1793,13 @@ const estiloVarr = feita => { const z = map.getZoom(), perto = z >= 16.5, meio =
 function atualizarVarrimento() {
   atualizarZonasEvento(); if (!varrimentoVisivel()) fecharBolhaVarr();
   const chaveVarr = JSON.stringify(zonasDoEvento(eventoAtivo()).map(x => x.id)); if (grupoVarr && grupoVarr._chave !== chaveVarr) { if (map.hasLayer(grupoVarr)) map.removeLayer(grupoVarr); grupoVarr = null; } // as zonas mudaram: outras ruas
-  if (!varrimentoVisivel()) { if (grupoVarr && map.hasLayer(grupoVarr)) map.removeLayer(grupoVarr); return; }
+  if (!varrimentoVisivel()) { if (grupoVarr && map.hasLayer(grupoVarr)) map.removeLayer(grupoVarr); map.getContainer().classList.remove('varr-sobre'); return; }
   if (!grupoVarr) {
     grupoVarr = L.layerGroup(); grupoVarr._chave = chaveVarr;
     for (const rua of ruasDoVarrimento()) for (const t of rua.trocos) {
       const l = L.polyline(t, estiloVarr(false)); l._rua = rua.nome;
       l.bindTooltip(() => esc(rua.nome) + ' · ' + (estadoRua(rua.nome) ? 'percorrida' : 'por percorrer') + (toqueRecente() ? '<small> · mantém o dedo para mudar</small>' : '<small> · clica para mudar</small>'), { sticky: true, className: 'rotulo', opacity: 1 });
+      l.on('mouseover', () => { if (!toqueRecente() && !toqueVarr) realcarRua(rua.nome, true, true); }); l.on('mouseout', () => { if (!toqueVarr) realcarRua(rua.nome, false); }); // com o rato, a rua realça-se por baixo do cursor
       l.on('click', e => { L.DomEvent.stop(e); if (toqueRecente()) { if (cliqueDoToqueLongo()) return; if (bolhaVarr) fecharBolhaVarr(); else aviso('Para marcar a rua, mantém o dedo em cima dela.', 3000); return; } marcarRua((ruaSobPonto(e.containerPoint) || l)._rua); }); // a rua mais perto do clique (onde duas se cruzam, o canvas daria a de cima) // ao toque, só o toque longo muda: um toque acidental não marca nada
       grupoVarr.addLayer(l);
     }
@@ -1820,13 +1824,13 @@ function porQueNaoMarca() { // '' quando pode marcar ruas; senão, a razão
 const TOQUE_LONGO = 2500; let ultimoToque = 0, toqueVarr = null, bolhaVarr = null, dedoDaBolha = null, ignorarCliqueAte = 0;
 const cliqueDoToqueLongo = () => Date.now() < ignorarCliqueAte || dedoDaBolha != null;
 const toqueRecente = () => Date.now() - ultimoToque < 1500;
-function ruaSobPonto(pt) { // a rua do varrimento mais perto de um ponto do mapa (em píxeis), até 18 px
+function ruaSobPonto(pt, lim = 18) { // a rua do varrimento mais perto de um ponto do mapa (em píxeis), até lim px
   if (!grupoVarr || !map.hasLayer(grupoVarr)) return null;
-  const caixa = L.latLngBounds(map.containerPointToLatLng(pt.subtract([18, 18])), map.containerPointToLatLng(pt.add([18, 18]))); let melhor = null, d = 18;
+  const caixa = L.latLngBounds(map.containerPointToLatLng(pt.subtract([lim, lim])), map.containerPointToLatLng(pt.add([lim, lim]))); let melhor = null, d = lim;
   grupoVarr.eachLayer(l => { if (!l.getBounds().intersects(caixa)) return; const ll = l.getLatLngs(); for (let i = 1; i < ll.length; i++) { const x = L.LineUtil.pointToSegmentDistance(pt, map.latLngToContainerPoint(ll[i - 1]), map.latLngToContainerPoint(ll[i])); if (x < d) { d = x; melhor = l; } } });
   return melhor;
 }
-function realcarRua(nome, ligar) { if (grupoVarr) grupoVarr.eachLayer(l => { if (l._rua !== nome) return; const s = estiloVarr(estadoRua(nome)); l.setStyle(ligar ? { weight: s.weight + 6, opacity: .85 } : s); }); }
+function realcarRua(nome, ligar, leve) { if (grupoVarr) grupoVarr.eachLayer(l => { if (l._rua !== nome) return; const s = estiloVarr(estadoRua(nome)); l.setStyle(ligar ? { weight: s.weight + (leve ? 3 : 6), opacity: leve ? .75 : .85 } : s); }); } // leve: ao passar o rato
 function cancelarToqueVarr() { if (!toqueVarr) return; clearTimeout(toqueVarr.t); realcarRua(toqueVarr.nome, false); toqueVarr = null; }
 function fecharBolhaVarr() { if (bolhaVarr) { map.removeLayer(bolhaVarr); bolhaVarr = null; } map.getContainer().classList.remove('com-bolha'); }
 function abrirBolhaVarr(nome, ll) {
@@ -1839,10 +1843,16 @@ function abrirBolhaVarr(nome, ll) {
 }
 {
   const cont = map.getContainer(), noMapa = e => { const r = cont.getBoundingClientRect(); return L.point(e.clientX - r.left, e.clientY - r.top); };
+  // O varrimento desenha-se por baixo das zonas, das ruas dos conteúdos e dos nomes das ruas, que também recebem o rato e o dedo.
+  // Em cima de uma rua do varrimento, essas camadas deixam-na passar (classe varr-sobre): a rua realça-se, mostra a etiqueta e marca-se.
+  const foraDoVarr = '.leaflet-marker-icon, .leaflet-popup, .leaflet-control, .bolha-varr';
+  const verSobreRua = e => { const on = !!(varrimentoVisivel() && !(e.target.closest && e.target.closest(foraDoVarr)) && ruaSobPonto(noMapa(e), estiloVarr(false).weight / 2 + 8)); if (on !== cont.classList.contains('varr-sobre')) cont.classList.toggle('varr-sobre', on); }; // a folga do canvas
+  cont.addEventListener('mousemove', verSobreRua, { capture: true, passive: true });
+  cont.addEventListener('click', e => { if (cliqueDoToqueLongo() && !(e.target.closest && e.target.closest('.bolha-varr'))) e.stopPropagation(); }, true); // o clique ao levantar o dedo do toque longo não abre a zona nem o conteúdo por baixo
   cont.addEventListener('pointerdown', e => {
-    if (e.pointerType === 'mouse') return; ultimoToque = Date.now(); dedoDaBolha = null;
+    verSobreRua(e); if (e.pointerType === 'mouse') return; ultimoToque = Date.now(); dedoDaBolha = null;
     if (toqueVarr) { cancelarToqueVarr(); return; } // um segundo dedo: é um gesto de zoom
-    if (!varrimentoVisivel() || e.target.closest('.bolha-varr')) return;
+    if (!varrimentoVisivel() || e.target.closest(foraDoVarr)) return;
     const pt = noMapa(e), l = ruaSobPonto(pt); if (!l) return;
     const nome = l._rua; realcarRua(nome, true);
     toqueVarr = { nome, id: e.pointerId, x: e.clientX, y: e.clientY, t: setTimeout(() => { toqueVarr = null; realcarRua(nome, false); dedoDaBolha = e.pointerId; const porque = porQueNaoMarca(); if (porque) { aviso(porque, 4500); return; } abrirBolhaVarr(nome, map.containerPointToLatLng(pt)); }, TOQUE_LONGO) };
@@ -3092,6 +3102,7 @@ function limpo(el, completo) { // completo: as ruas levam também o traçado (pa
   if (el.icone) c.icone = el.icone;
   if (el.prioridade) c.prioridade = el.prioridade;
   const comp = competenciaFixa(el) || el.competencia; if (comp) c.competencia = comp;
+  if (el.criado) c.criado = el.criado;
   c.texto = el.texto || '';
   c.fotos = (el.fotos || []).map(f => typeof f === 'string' ? { src: f, legenda: '' } : { src: f.src, legenda: f.legenda || '' });
   if (el.tipo === 'ponto') c.pos = el.pos.slice();
@@ -3495,13 +3506,14 @@ async function menuConta() {
   const r = await dialogo({ titulo: 'Conta ' + SESSAO.utilizador,
     corpo: admin ? htmlInterruptorVisita() : '',
     texto: `${esc(SESSAO.nome)} · ${esc(PAPEL_CONTA[SESSAO.papel] || SESSAO.papel)} · edita ${esc(nomesFreguesias(SESSAO))}.${urlCentral() ? '<br>Servidor central: ' + (sc ? 'sessão aberta até ' + esc(dataHora(sc.expira)) : 'sem sessão (os envios esperam na fila)') + '.' : ''}`,
-    botoes: [{ id: 'cancelar', texto: 'Fechar' }, ...(admin ? [{ id: 'historico', texto: 'Histórico de alterações' }, { id: 'contas', texto: 'Contas' }, { id: 'categorias', texto: 'Categorias' }, { id: 'evento', texto: (eventoAtivo() ? '🟢 ' : '') + 'Eventos' }] : []), { id: 'palavra', texto: 'Mudar a palavra-passe' },
+    botoes: [{ id: 'cancelar', texto: 'Fechar' }, ...(admin ? [{ id: 'historico', texto: 'Histórico de alterações' }, { id: 'contas', texto: 'Contas' }, { id: 'categorias', texto: 'Categorias' }, { id: 'evento', texto: (eventoAtivo() ? '🟢 ' : '') + 'Eventos' }, { id: 'relatorios', texto: '📄 Relatórios' }] : []), { id: 'palavra', texto: 'Mudar a palavra-passe' },
       ...(urlCentral() && !sc ? [{ id: 'central', texto: 'Entrar no servidor central' }] : []), { id: 'sair', texto: 'Terminar a sessão', classe: 'perigo' }] });
   if (r === 'visita-inicial') { await alternarVisitaInicial(); menuConta(); }
   else if (r === 'historico') verHistorico();
   else if (r === 'contas') gerirContas();
   else if (r === 'categorias') gerirCategorias();
   else if (r === 'evento') gerirEvento();
+  else if (r === 'relatorios') relatorioGeral();
   else if (r === 'palavra') mudarPalavraPasse();
   else if (r === 'central') { if (await dialogoEntrar({ soCentral: true })) enviarFilaCentral(); }
   else if (r === 'sair') terminarSessao();
@@ -3945,6 +3957,140 @@ async function exportarRelatorio(ev) {
     aviso(`Relatório transferido: ${a.download} (${(blob.size / 1048576).toLocaleString('pt-PT', { maximumFractionDigits: 1 })} MB).`, 8000);
   } catch (err) { aviso('Não foi possível gerar o relatório: ' + err.message, 8000); }
 }
+// ---------- os relatórios das ocorrências (backoffice da administração), à parte dos relatórios dos eventos ----------
+// Junta o que cada freguesia mostra (no servidor central, o preset mais recente, como o conteudos.js que lá se serve; sem ele, os
+// ficheiros), escolhe-se o que entra (freguesias, tipos, gravidade, datas de criação, responsável) e relatorios/geral.js faz o PDF.
+const TIPOS_OCORRENCIA = [{ id: 'ponto', nome: 'Pontos' }, { id: 'grupo', nome: 'Conjuntos de pontos' }, { id: 'rua', nome: 'Ruas em destaque' }, { id: 'zona', nome: 'Zonas' }, { id: 'desmaterializado', nome: 'Pontos sem localização' }];
+const RESPONSAVEIS = [{ id: 'camara', nome: 'Câmara Municipal de Lisboa' }, { id: 'junta', nome: 'Junta de Freguesia' }, { id: 'governo', nome: 'Governo' }, { id: 'sem', nome: 'Responsável por definir' }];
+const GRAVIDADES = [...PRIORIDADES, SEM_PRIORIDADE];
+function ruasDoFicheiro(t) { const i = t.indexOf('[', Math.max(0, t.indexOf('='))), j = t.lastIndexOf(']'); return i < 0 || j < i ? [] : JSON.parse(t.slice(i, j + 1)); } // ruas.js: window.RUAS_OSM = [...]
+function ocorrenciasDe(dados, geo, ruasF) { // os elementos de um preset, já com a geometria resolvida (as ruas e as áreas podem vir de geo.js e de ruas.js)
+  const cats = dados.categorias || [], areas = (geo && geo.areas) || {}, ruasGeo = (geo && geo.ruas) || {}, out = [];
+  const ll = p => Array.isArray(p) && p.length >= 2 && isFinite(+p[0]) && isFinite(+p[1]) ? [+p[0], +p[1]] : null;
+  const emLisboa = p => !!p && p[0] > 38.3 && p[0] < 39.2 && p[1] > -9.7 && p[1] < -8.6;
+  const tracado = e => { const n = e.rua || e.nome; if (Array.isArray(e.linhas) && e.linhas.length) return e.linhas; if (Array.isArray(e.tracado) && e.tracado.length) return e.tracado; if (ruasGeo[n]) return ruasGeo[n]; const r = (ruasF || []).find(x => x.nome === n); return r ? r.trocos : null; };
+  const fotos = l => (Array.isArray(l) ? l : []).map(f => typeof f === 'string' ? { src: f, legenda: '' } : f && f.src ? { src: f.src, legenda: f.legenda || '' } : null).filter(Boolean);
+  (function rec(lista, pai) { for (const e of lista || []) {
+    if (!e || !e.id || !TIPO[e.tipo]) continue;
+    let geo2 = null, sub = null;
+    if (e.tipo === 'ponto') { const p = ll(e.pos) || (e.area && areas[e.area] ? centro(areas[e.area]) : null); if (emLisboa(p)) geo2 = { pontos: [p] }; }
+    else if (e.tipo === 'grupo') {
+      sub = (e.pontos || []).map((p, i) => { const d = (Array.isArray(e.detalhes) && e.detalhes[i]) || {}, tp = tipoDoPonto(e, d), q = ll(p); return { nome: d.nome || (d.rua ? moradaTexto(d) : ''), tipo: tp ? { nome: tp.nome, cor: tp.cor } : null, quando: d.quando || '', texto: d.texto || '', fotos: fotos(d.fotos), lat: q && q[0], lon: q && q[1], ok: emLisboa(q) }; }).filter(p => p.ok);
+      if (sub.length) geo2 = { pontos: sub.map(p => [p.lat, p.lon]) };
+    }
+    else if (e.tipo === 'rua') { const l = (tracado(e) || []).map(x => (x || []).map(ll).filter(emLisboa)).filter(x => x.length > 1); if (l.length) geo2 = { linhas: l }; }
+    else if (e.tipo === 'zona') { const p = (e.poligono || areas[e.area || e.nome] || []).map(ll).filter(emLisboa); if (p.length >= 3) geo2 = { poligono: p }; }
+    if (geo2 || e.tipo === 'desmaterializado') {
+      const pri = PRI[e.prioridade] || SEM_PRIORIDADE, comp = competenciaFixa(e) || (COMP[e.competencia] ? e.competencia : ''), quando = e.criado || (sub && sub.map(p => p.quando).filter(Boolean).sort()[0]) || '';
+      out.push({ id: e.id, tipo: e.tipo, nome: e.nome || '', pri: { id: pri.id, nome: pri.nome, cor: pri.cor }, compId: comp || 'sem', comp: comp ? (RESPONSAVEIS.find(r => r.id === comp) || COMP[comp]).nome : '', quando, texto: e.texto || '', fotos: fotos(e.fotos),
+        dentroDe: pai ? pai.nome : '', rua: e.tipo === 'rua' ? e.rua || '' : '', categorias: cats.filter(c => (c.membros || []).includes(e.id)).map(c => c.nome), geo: geo2, ...(sub ? { sub: sub.map(({ ok, ...p }) => p) } : {}), ...(e.evento ? { evento: String(e.evento) } : {}) });
+    }
+    if (e.tipo === 'zona') rec(e.filhos, e); // os pontos dentro de uma zona são ocorrências como as outras
+  } })(dados.elementos, null);
+  return out;
+}
+async function recolherOcorrencias() { // o que cada freguesia mostra agora
+  const central = !!(urlCentral() && (lerSessaoCentral() || lerCentral().chave)), semAcesso = []; let doCentral = 0, dosFicheiros = 0;
+  const texto = async u => { const r = await fetch(u, { cache: 'no-store' }); if (!r.ok) throw new Error(r.status); return r.text(); };
+  const freguesias = await Promise.all(FREGUESIAS.map(async f => {
+    const aberta = !semFreguesia && f.id === FREG.id; let dados = aberta ? serializar(true) : null; // a freguesia aberta, tal como está agora
+    if (!dados && central) { try { const l = ((await pedirCentral('/presets?freguesia=' + encodeURIComponent(f.id))).presets || []).slice().sort((a, b) => String(b.recebido).localeCompare(String(a.recebido))); if (l[0]) { const j = await pedirCentral('/presets/' + encodeURIComponent(f.id) + '/' + encodeURIComponent(l[0].preset)); if (j.dados) { dados = j.dados; doCentral++; } } } catch (err) { /* lê-se dos ficheiros */ } }
+    if (!dados) { try { dados = JSON.parse(jsonDoFicheiro(await texto(baseFreguesia(f.id) + 'conteudos.js'))); dosFicheiros++; } catch (err) { semAcesso.push(f.nome); dados = { elementos: [] }; } }
+    let geo = aberta ? D : null, ruas = aberta ? RUAS : null;
+    if (!geo) try { geo = JSON.parse(jsonDoFicheiro(await texto(baseFreguesia(f.id) + 'geo.js'))); } catch (err) { geo = null; }
+    const semTracado = (dados.elementos || []).some(e => e && e.tipo === 'rua' && !(Array.isArray(e.linhas) && e.linhas.length) && !(Array.isArray(e.tracado) && e.tracado.length) && !(geo && geo.ruas && geo.ruas[e.rua || e.nome]));
+    if (!ruas && semTracado) try { ruas = ruasDoFicheiro(await texto(baseFreguesia(f.id) + 'ruas.js')); } catch (err) { ruas = []; }
+    return { id: f.id, nome: f.nome, ha: f.ha, imagem: geo && geo.imagem ? geo.imagem : null, ocorrencias: ocorrenciasDe(dados, geo, ruas) };
+  }));
+  const fonte = doCentral && dosFicheiros ? 'servidor central e ficheiros desta apresentação' : doCentral ? 'servidor central' : AMBIENTE.app ? 'dados desta aplicação' : 'ficheiros desta apresentação';
+  return { freguesias, fonte, central, semAcesso };
+}
+// o dia escolhido, do início ou do fim, na hora deste aparelho
+const inicioDoDia = s => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ''); return m ? new Date(+m[1], m[2] - 1, +m[3], 0, 0, 0, 0).toISOString() : ''; };
+const fimDoDia = s => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ''); return m ? new Date(+m[1], m[2] - 1, +m[3], 23, 59, 59, 999).toISOString() : ''; };
+const dataPt = s => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ''); return m ? `${m[3]}/${m[2]}/${m[1]}` : ''; };
+function filtroOcorrencias(v) { // v: as escolhas do menu → a função que diz se uma ocorrência entra
+  const desde = inicioDoDia(v.desde), ate = fimDoDia(v.ate);
+  return o => (o.evento ? v.eventos : v.tipos.has(o.tipo)) && v.gravidades.has(o.pri.id) && v.resp.has(o.compId)
+    && (o.quando ? (!desde || o.quando >= desde) && (!ate || o.quando <= ate) : (!desde && !ate) || v.semData);
+}
+async function relatorioGeral() {
+  aviso('A juntar as ocorrências das freguesias…', 120000);
+  let dadosR; try { dadosR = await recolherOcorrencias(); } catch (err) { aviso('Não consegui juntar as ocorrências: ' + err.message, 7000); return; }
+  $('#aviso').classList.remove('aberto');
+  const { freguesias, fonte, central, semAcesso } = dadosR, todas = freguesias.flatMap(f => f.ocorrencias);
+  const v = { fregs: new Set(FREGUESIAS.map(f => f.id)), tipos: new Set(TIPOS_OCORRENCIA.map(t => t.id)), eventos: false, gravidades: new Set(GRAVIDADES.map(g => g.id)), resp: new Set(RESPONSAVEIS.map(r => r.id)), desde: '', ate: '', semData: true, formato: 'extensivo', fotos: true };
+  const conta = (l, f) => l.filter(f).length, nSemData = conta(todas, o => !o.quando);
+  let erro = '';
+  for (;;) {
+    const marca = (nome, on, rotulo, extra) => `<label class="campo-dialogo marca"><input type="checkbox" name="${nome}"${on ? ' checked' : ''}><span>${rotulo}${extra ? ` <small>${extra}</small>` : ''}</span></label>`;
+    const amostra = c => `<span class="amostra-cor" style="background:${esc(c)}"></span>`;
+    const aberto = dialogo({ titulo: 'Relatórios', largo: true, alerta: erro, campos: [],
+      texto: `Um relatório das ocorrências do mapa, à parte dos relatórios dos eventos: escolhe as freguesias e o que entra. Há <b>${todas.length}</b> ocorrência${todas.length === 1 ? '' : 's'} nas ${FREGUESIAS.length} freguesias (fonte: ${esc(fonte)}).`,
+      corpo: `${[urlCentral() && !central ? 'Sem sessão no servidor central: estes são os dados deste aparelho.' : '', semAcesso.length ? `Não consegui ler ${esc(semAcesso.join(', '))}.` : ''].filter(Boolean).map(t => `<p class="alerta">⚠ ${t}</p>`).join('')}
+        <h3 class="titulo-tipos">Freguesias</h3>
+        ${marca('f-todas', v.fregs.size === FREGUESIAS.length, '<b>Toda a cidade</b>', `(${todas.length})`)}
+        <div class="lista-freguesias">${freguesias.map(f => marca('f-' + f.id, v.fregs.has(f.id), esc(f.nome), `(${f.ocorrencias.length})`)).join('')}</div>
+        <h3 class="titulo-tipos">Tipo de ocorrência</h3>
+        <div class="lista-freguesias">${TIPOS_OCORRENCIA.map(t => marca('t-' + t.id, v.tipos.has(t.id), esc(t.nome), `(${conta(todas, o => o.tipo === t.id && !o.evento)})`)).join('')}</div>
+        ${marca('t-eventos', v.eventos, 'Incluir também os conjuntos dos eventos', `(${conta(todas, o => o.evento)}) · têm relatório próprio, em Eventos`)}
+        <h3 class="titulo-tipos">Gravidade</h3>
+        <div class="lista-freguesias">${GRAVIDADES.map(g => marca('g-' + g.id, v.gravidades.has(g.id), amostra(g.cor) + esc(g.nome), `(${conta(todas, o => o.pri.id === g.id)})`)).join('')}</div>
+        <h3 class="titulo-tipos">Data de criação <small>desde e/ou até; deixa em branco para não limitar</small></h3>
+        <div class="form-evento datas-rel"><label class="campo-dialogo">Desde<input type="date" name="desde" value="${esc(v.desde)}"></label><label class="campo-dialogo">Até<input type="date" name="ate" value="${esc(v.ate)}"></label></div>
+        ${nSemData ? marca('sem-data', v.semData, 'Com datas escolhidas, incluir também as ocorrências sem data de criação', `(${nSemData}) · criadas antes de se começar a guardar a data`) : ''}
+        <h3 class="titulo-tipos">Responsável</h3>
+        <div class="lista-freguesias">${RESPONSAVEIS.map(r => marca('r-' + r.id, v.resp.has(r.id), esc(r.nome), `(${conta(todas, o => o.compId === r.id)})`)).join('')}</div>
+        <h3 class="titulo-tipos">Relatório</h3>
+        <div class="form-evento"><label class="campo-dialogo">Formato<select class="seletor" name="formato"><option value="extensivo"${v.formato === 'extensivo' ? ' selected' : ''}>Extensivo: com a ficha de cada ocorrência</option><option value="resumo"${v.formato === 'resumo' ? ' selected' : ''}>Resumido: totais, mapas e lista</option></select></label></div>
+        <p class="nota-rel"><small>O extensivo leva, de cada ocorrência, um mapa do sítio, a descrição, as fotos e, nos conjuntos, cada ponto com as suas notas.</small></p>
+        ${marca('fotos', v.fotos, 'Incluir as fotos', 'no extensivo')}
+        <p class="contagem-rel" aria-live="polite"></p>`,
+      botoes: [{ id: 'cancelar', texto: 'Cancelar' }, { id: 'gerar', texto: 'Gerar PDF', classe: 'on' }] });
+    // «Toda a cidade» liga e desliga as freguesias todas; e a contagem acompanha as escolhas
+    const q = s => dialogoEl.querySelector(s), todasF = q('[name=f-todas]'), cada = [...dialogoEl.querySelectorAll('[name^="f-"]:not([name=f-todas])')];
+    todasF.addEventListener('change', () => cada.forEach(c => { c.checked = todasF.checked; }));
+    cada.forEach(c => c.addEventListener('change', () => { todasF.checked = cada.every(y => y.checked); }));
+    const ler = () => { const marcado = n => { const e = q(`[name="${n}"]`); return !!(e && e.checked); };
+      return { fregs: new Set(FREGUESIAS.filter(f => marcado('f-' + f.id)).map(f => f.id)), tipos: new Set(TIPOS_OCORRENCIA.filter(t => marcado('t-' + t.id)).map(t => t.id)), eventos: marcado('t-eventos'), gravidades: new Set(GRAVIDADES.filter(g => marcado('g-' + g.id)).map(g => g.id)),
+        resp: new Set(RESPONSAVEIS.filter(r => marcado('r-' + r.id)).map(r => r.id)), desde: q('[name=desde]').value, ate: q('[name=ate]').value, semData: nSemData ? marcado('sem-data') : true, formato: q('[name=formato]').value, fotos: marcado('fotos') }; };
+    const contar = () => { const x = ler(), f = filtroOcorrencias(x), n = freguesias.filter(g => x.fregs.has(g.id)).reduce((s, g) => s + g.ocorrencias.filter(f).length, 0); q('.contagem-rel').innerHTML = `Com estas escolhas: <b>${n}</b> ocorrência${n === 1 ? '' : 's'} no relatório.`; };
+    const caixa = dialogoEl.querySelector('.caixa'); caixa.addEventListener('change', contar); caixa.addEventListener('input', contar); contar();
+    const { r } = await aberto; caixa.removeEventListener('change', contar); caixa.removeEventListener('input', contar); // a caixa é a mesma em todos os diálogos
+    if (r !== 'gerar') return;
+    Object.assign(v, ler()); erro = '';
+    if (!v.fregs.size) erro = 'Escolhe pelo menos uma freguesia.';
+    else if (!v.tipos.size && !v.eventos) erro = 'Escolhe pelo menos um tipo de ocorrência.';
+    else if (!v.gravidades.size) erro = 'Escolhe pelo menos um nível de gravidade.';
+    else if (!v.resp.size) erro = 'Escolhe pelo menos um responsável.';
+    else if (v.desde && v.ate && v.desde > v.ate) erro = 'A data «desde» é depois da data «até».';
+    if (erro) continue;
+    const entra = filtroOcorrencias(v), escolhidas = freguesias.filter(f => v.fregs.has(f.id)).map(f => ({ ...f, ocorrencias: f.ocorrencias.filter(entra) })), n = escolhidas.reduce((s, f) => s + f.ocorrencias.length, 0);
+    if (!n) { erro = 'Nenhuma ocorrência com estas escolhas.'; continue; }
+    await gerarRelatorioGeral(v, escolhidas, fonte); return;
+  }
+}
+async function gerarRelatorioGeral(v, escolhidas, fonte) {
+  const todasF = v.fregs.size === FREGUESIAS.length, so = escolhidas.length === 1 ? escolhidas[0] : null, extensivo = v.formato !== 'resumo';
+  const nomes = (lista, ids) => lista.length === ids.size ? 'Todos' : lista.filter(x => ids.has(x.id)).map(x => x.nome).join(', ');
+  const tipos = TIPOS_OCORRENCIA.filter(t => v.tipos.has(t.id)).map(t => t.nome);
+  const datas = v.desde && v.ate ? `de ${dataPt(v.desde)} a ${dataPt(v.ate)}` : v.desde ? `desde ${dataPt(v.desde)}` : v.ate ? `até ${dataPt(v.ate)}` : 'qualquer data';
+  const criterios = [['Freguesias', todasF ? `Toda a cidade (${FREGUESIAS.length})` : escolhidas.map(f => f.nome).join(', ')],
+    ['Tipo', (v.tipos.size === TIPOS_OCORRENCIA.length ? 'Todos' : tipos.join(', ') || 'nenhum') + (v.eventos ? ', e os conjuntos dos eventos' : '')],
+    ['Gravidade', nomes(GRAVIDADES, v.gravidades).replace(/^Todos$/, 'Todas')], ['Data de criação', datas + (v.desde || v.ate ? (v.semData ? ', e as sem data' : ', sem as que não têm data') : '')],
+    ['Responsável', nomes(RESPONSAVEIS, v.resp)], ['Relatório', extensivo ? 'extensivo' + (v.fotos ? ', com fotos' : ', sem fotos') : 'resumido']];
+  try {
+    aviso('A preparar o relatório…', 600000);
+    await Promise.all([window.jspdf || carregarScript('vendor/jspdf/jspdf.umd.min.js'), carregarLimitesCidade()]);
+    if (!window.RelatorioEvento) await carregarScript('relatorios/evento.js'); // as peças comuns
+    if (!window.RelatorioGeral) await carregarScript('relatorios/geral.js');
+    const blob = await window.RelatorioGeral.gerar({ freguesias: escolhidas, limites: window.LIMITES_FREGUESIAS, extensivo, fotos: v.fotos, criterios, fonte,
+      gravidades: GRAVIDADES.filter(g => v.gravidades.has(g.id)), tipos: TIPOS_OCORRENCIA.filter(t => v.tipos.has(t.id) || (v.eventos && t.id === 'grupo')), responsaveis: RESPONSAVEIS.filter(r => v.resp.has(r.id)),
+      aoProgresso: (n, total) => aviso(`A preparar o relatório: ${n} de ${total}…`, 600000) });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `relatorio-ocorrencias-${so ? so.id : todasF ? 'cidade' : escolhidas.length + '-freguesias'}${extensivo ? '' : '-resumo'}-${new Date().toISOString().slice(0, 10)}.pdf`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    aviso(`Relatório transferido: ${a.download} (${(blob.size / 1048576).toLocaleString('pt-PT', { maximumFractionDigits: 1 })} MB).`, 8000);
+  } catch (err) { aviso('Não foi possível gerar o relatório: ' + err.message, 8000); }
+}
 // ao entrar na edição ou no «+»: o que registar?
 async function escolherRegisto() {
   const ev = eventoAtivo(); if (!ev) { abrirCriar(true, true); return; }
@@ -4084,7 +4230,7 @@ function registarNoConjunto(ev, pos, d, opcoes = {}) { if (visitaSoSimula()) ret
     if (selecionado === g && cartaoAberto()) mostrarInfo(g, modal.classList.contains('lado') ? 'lado' : 'baixo');
   } else {
     const c = ev.conjunto, id = POR_ID[c.id] ? c.id + '-' + Date.now().toString(36) : c.id;
-    g = preparar({ id, tipo: 'grupo', nome: c.nome, icone: c.icone, prioridade: c.prioridade, competencia: c.competencia, texto: c.texto, fotos: [], evento: ev.id, pontos: [pos], detalhes: [d] }, null);
+    g = preparar({ id, tipo: 'grupo', nome: c.nome, icone: c.icone, prioridade: c.prioridade, competencia: c.competencia, texto: c.texto, fotos: [], evento: ev.id, criado: new Date().toISOString(), pontos: [pos], detalhes: [d] }, null);
     ELEMENTOS.push(g); construir(); construirIndice(); construirPesquisa();
   }
   if (!opcoes.semAlterar) marcarAlterado();
@@ -4211,7 +4357,7 @@ function acrescentar(el, pai) {
   const reservados = new Set(consolidacoes.flatMap(x => [x.fica, x.sai])); // o que ainda se pode reverter guarda o seu id
   const raiz = idDe(el.nome).slice(0, 44).replace(/-$/, '') + '-' + Math.random().toString(36).slice(2, 6); // o sufixo: dois dispositivos a criar «Novo ponto 1» ao mesmo tempo não dão o mesmo id
   let id = raiz; for (let k = 2; POR_ID[id] || reservados.has(id); k++) id = raiz + '-' + k;
-  el.id = id; el.fotos = el.fotos || []; el.texto = el.texto || '';
+  el.id = id; el.fotos = el.fotos || []; el.texto = el.texto || ''; if (!el.criado) el.criado = new Date().toISOString(); // a data de criação: para os relatórios
   const p = preparar(el, pai); if (!p) { aviso('Não foi possível criar o elemento.', 3000); return; }
   if (pai) pai.filhos.push(p); else ELEMENTOS.push(p);
   construir(); construirIndice(); construirPesquisa(); marcarAlterado();
@@ -4712,7 +4858,7 @@ if (EDITOR || idInicial) semFreguesia = false; // ?editor e #id abrem logo a fre
 if (window.ENTRA_NA_CIDADE) map.whenReady(() => abrirCidade(true)); else quandoLivre(() => carregarCamadas());
 if (EDITOR) pedirEdicao({ criar: PARAMS.has('criar') }); // ?editor abre logo em modo de edição (depois de iniciar sessão); ?criar abre também o «+»
 sessaoPronta.then(lerEventoServidor).finally(() => map.whenReady(() => setTimeout(arrancarVisitaGuiada, 1400))); // depois de o mapa se acomodar (o voo até Lisboa dura 1,1 s)
-window.__mapa = { get RUAS_CIDADE() { return window.RUAS_CIDADE; }, ruaSobPonto, abrirBolhaVarr, fecharBolhaVarr, get bolhaVarr() { return bolhaVarr; }, porQueNaoMarca, TOQUE_LONGO, eventoAtivo, eventoDaCidade, zonasDoEvento, dentroDoEvento, porFotografar, antesDeGuardar, fecharComFoto, get contornoZonas() { return contornoZonas; }, ligarModoEvento, modoEventoAtivo, marcarRua, estadoRua, escolherFotos, enviarPublico, get C() { return C; }, ABA, filaCentral, get FICHEIRO() { return FICHEIRO; }, get alteradoAgora() { return alterado; }, alternarVisitaInicial, visitaInicialLigada, menuConta, eventoComVisita, recolherRegistos, exportarRelatorio, EVENTOS, carregarIndiceCidade, procurar, irParaLugar, fonteRegisto, resumoConjuntos, juntarLinhasConjuntos, sincronizarConjuntos, tiposDe, aplicarTema, temaAtual, abrirSub, subPonto, agregarPonto, desagregarPonto, get subAtual() { return subAtual; }, quarteiroesDe, alternarQuarteirao, frasePedacos, paresDuplicados, perguntarDuplicado, consolidar, reverterConsolidacao, verConsolidacoes, get consolidacoes() { return consolidacoes; }, semelhancaNomes, novaCategoria, criarCategoria, gerirCategorias, categoriasConhecidas, map, C, FREG, ELEMENTOS, POR_ID, RUAS_VISTA, atualizarInstalar, instalarApp, podeInstalar, get satVisivel() { return satVisivel; }, EVENTOS, get EVENTO() { return EVENTO; }, get levant() { return levant; }, lerEventoServidor, aplicarEvento, gerirEvento, escolherRegisto, levantamento, abrirLevantamento, mostrarLevantamento, confirmarLevantamento, cancelarLevantamento, moradaSugerida, registarNoConjunto, resumoCidadeEvento, localizarPrecisa, iniciarVisita, sairVisita, terminarVisita, irPassoVisita, seguinteVisita, visitaAberta, lerEstadoVisita, get visitaPasso() { return visitaPassos[visitaI] && visitaPassos[visitaI].id; }, get visitaPassos() { return visitaPassos; }, pedirEdicao, entrarConta, lerSessao, terminarSessao, menuConta, verHistorico, gerirContas, mudarPalavraPasse, dialogoEntrar, get SESSAO() { return SESSAO; }, lerSessaoCentral, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, ligarVerdes, ligarMapa, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva, entrarEdicao, porFerramenta, serializar, guardar, carregar, lerPreset, novoPreset, apagarPreset, mudarPreset, PRESETS, importarPreset, reporDoFicheiro, largarPonto, novoPonto, criarRua, criarDeLote, painelCentral, abrirDoCentral, enviarFilaCentral, copiarCentral, estadoCopia, filaCentral, lerCentral, gravarCentral, get AMBIENTE() { return AMBIENTE; }, confirmar, perguntarTexto, abrirCidade, irParaFreguesia, sairEdicao, descartarAlteracoes, dialogo, construirDesmat, expandirDesmat, pontoDeGrupo, emConjunto, novoDesmaterializado, desmaterializar, colocarNoMapa, criarAqui, ruaMaisProxima, abrirCriar, acrescentarPresetImportado, PRESETS_LOCAIS, get cidade() { return cidade; }, get alterado() { return alterado; }, novaCategoria, definirMembro, alternarCategoria, editarVisita, mostrarCategoria, categoriasAtivas, get edicao() { return edicao; }, get ferramenta() { return ferramenta; }, get passos() { return passos; } };
+window.__mapa = { get RUAS_CIDADE() { return window.RUAS_CIDADE; }, relatorioGeral, recolherOcorrencias, ocorrenciasDe, filtroOcorrencias, ruaSobPonto, abrirBolhaVarr, fecharBolhaVarr, get bolhaVarr() { return bolhaVarr; }, porQueNaoMarca, TOQUE_LONGO, eventoAtivo, eventoDaCidade, zonasDoEvento, dentroDoEvento, porFotografar, antesDeGuardar, fecharComFoto, get contornoZonas() { return contornoZonas; }, ligarModoEvento, modoEventoAtivo, marcarRua, estadoRua, escolherFotos, enviarPublico, get C() { return C; }, ABA, filaCentral, get FICHEIRO() { return FICHEIRO; }, get alteradoAgora() { return alterado; }, alternarVisitaInicial, visitaInicialLigada, menuConta, eventoComVisita, recolherRegistos, exportarRelatorio, EVENTOS, carregarIndiceCidade, procurar, irParaLugar, fonteRegisto, resumoConjuntos, juntarLinhasConjuntos, sincronizarConjuntos, tiposDe, aplicarTema, temaAtual, abrirSub, subPonto, agregarPonto, desagregarPonto, get subAtual() { return subAtual; }, quarteiroesDe, alternarQuarteirao, frasePedacos, paresDuplicados, perguntarDuplicado, consolidar, reverterConsolidacao, verConsolidacoes, get consolidacoes() { return consolidacoes; }, semelhancaNomes, novaCategoria, criarCategoria, gerirCategorias, categoriasConhecidas, map, C, FREG, ELEMENTOS, POR_ID, RUAS_VISTA, atualizarInstalar, instalarApp, podeInstalar, get satVisivel() { return satVisivel; }, EVENTOS, get EVENTO() { return EVENTO; }, get levant() { return levant; }, lerEventoServidor, aplicarEvento, gerirEvento, escolherRegisto, levantamento, abrirLevantamento, mostrarLevantamento, confirmarLevantamento, cancelarLevantamento, moradaSugerida, registarNoConjunto, resumoCidadeEvento, localizarPrecisa, iniciarVisita, sairVisita, terminarVisita, irPassoVisita, seguinteVisita, visitaAberta, lerEstadoVisita, get visitaPasso() { return visitaPassos[visitaI] && visitaPassos[visitaI].id; }, get visitaPassos() { return visitaPassos; }, pedirEdicao, entrarConta, lerSessao, terminarSessao, menuConta, verHistorico, gerirContas, mudarPalavraPasse, dialogoEntrar, get SESSAO() { return SESSAO; }, lerSessaoCentral, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, ligarVerdes, ligarMapa, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva, entrarEdicao, porFerramenta, serializar, guardar, carregar, lerPreset, novoPreset, apagarPreset, mudarPreset, PRESETS, importarPreset, reporDoFicheiro, largarPonto, novoPonto, criarRua, criarDeLote, painelCentral, abrirDoCentral, enviarFilaCentral, copiarCentral, estadoCopia, filaCentral, lerCentral, gravarCentral, get AMBIENTE() { return AMBIENTE; }, confirmar, perguntarTexto, abrirCidade, irParaFreguesia, sairEdicao, descartarAlteracoes, dialogo, construirDesmat, expandirDesmat, pontoDeGrupo, emConjunto, novoDesmaterializado, desmaterializar, colocarNoMapa, criarAqui, ruaMaisProxima, abrirCriar, acrescentarPresetImportado, PRESETS_LOCAIS, get cidade() { return cidade; }, get alterado() { return alterado; }, novaCategoria, definirMembro, alternarCategoria, editarVisita, mostrarCategoria, categoriasAtivas, get edicao() { return edicao; }, get ferramenta() { return ferramenta; }, get passos() { return passos; } };
 });
 </script>
 </body>

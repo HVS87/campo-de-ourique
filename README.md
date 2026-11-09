@@ -279,6 +279,36 @@ Em menu da conta → **Eventos**, o `System.Admin` vê todos os eventos e pode:
   Os mapas das fichas vêm do satélite da DGT e, sem rede, da imagem guardada da freguesia.
 - **Apagar:** só um evento criado aqui, inativo e sem registos.
 
+### Relatórios das ocorrências
+
+No menu da conta da administração, **📄 Relatórios** faz um PDF das ocorrências do mapa, à parte dos relatórios dos eventos.
+
+- **Fonte:** o que cada freguesia mostra. Com sessão no servidor central, é o preset mais recente de cada uma, o mesmo que o
+  `conteudos.js` servido lá. Sem ela, são os ficheiros. A freguesia aberta entra tal como está no ecrã.
+- **Escolhas:**
+  - as freguesias (ou toda a cidade);
+  - o tipo: pontos, conjuntos de pontos, ruas em destaque, zonas e pontos sem localização. Os conjuntos dos eventos só entram se
+    se pedir, porque têm relatório próprio;
+  - a gravidade: os cinco níveis de cor e «Sem classificação»;
+  - a data de criação: desde e/ou até;
+  - o responsável: Câmara Municipal de Lisboa, Junta de Freguesia, Governo ou por definir;
+  - o formato: extensivo ou resumido, com ou sem fotos.
+- **Contagem:** o diálogo mostra a contagem de cada opção e quantas ocorrências entram com as escolhas feitas.
+- **Data de criação:** cada ocorrência nova guarda-a no campo `criado`. As anteriores não a têm. Com datas escolhidas, podem
+  entrar ou não, e na ficha aparecem como «Data de criação desconhecida».
+- **Uma freguesia:** capa, as escolhas feitas, os números (total, com fotografia, por km² e período), as contagens por
+  gravidade, tipo e responsável, o mapa numerado e a lista das ocorrências.
+- **Várias freguesias:** o resumo, com o mapa da cidade e a tabela por freguesia, e depois um capítulo por freguesia.
+- **Extensivo:** acrescenta a ficha de cada ocorrência:
+  - a gravidade, o tipo e o responsável;
+  - a zona onde fica, as categorias, a data e as coordenadas;
+  - um mapa do sítio, com o ponto, a rua ou a zona desenhados;
+  - a descrição e as fotos;
+  - nos conjuntos, cada ponto com o seu tipo, a data, as notas e as fotos.
+- **Índice:** como nos relatórios dos eventos, a lista de cada freguesia é um índice, em que cada linha leva à ficha e diz a
+  página. Na tabela da cidade, o nome de cada freguesia leva ao seu capítulo.
+- **Código:** `relatorios/geral.js`, que usa as peças comuns de `relatorios/evento.js`.
+
 ### Fotos dos registos
 
 «📷 Adicionar foto», no cartão de um ponto, de um ponto de uma zona ou de um ponto de um conjunto, e no painel do registo do
