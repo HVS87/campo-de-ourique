@@ -40,8 +40,11 @@ vale para todos, na primeira visita, e fica no servidor central e no local. Desl
 no índice (☰).
 
 Com um evento ativo que tenha visita própria (hoje, o Levantamento Iluminação Pública, com o campo `visita`), é essa mini visita
-que corre em vez da geral: explica só como registar, mostra o painel de registo como exemplo, sem gravar nada, e no fim pergunta
-se se quer ver a visita geral. Fica também em ☰ → Visita do evento.
+que corre em vez da geral. Começa pela conta (o varrimento e as bolhas precisam de sessão). Num evento com varrimento, explica as
+ruas a vermelho e a azul e a legenda do topo, mostra no mapa a **bolha** de marcar uma rua (o toque longo de 2 s) e o seletor
+**Varrimento | Registar**. Depois mostra a bolha de acrescentar um ponto ao conjunto do evento e, se o evento der seguimento a outro,
+os registos anteriores a verificar. Por fim, o caminho pelo «+», o painel de registo como exemplo e a ficha com «✎ Editar», sem
+gravar nada, e no fim pergunta se se quer ver a visita geral. Fica também em ☰ → Visita do evento.
 
 As visitas só simulam: o ponto de exemplo é um marcador solto, fora dos dados, e com uma visita aberta nada se cria nem se regista.
 
