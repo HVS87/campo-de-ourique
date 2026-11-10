@@ -51,7 +51,7 @@ window.RelatorioEvento = (function () {
     const com = freguesias.filter(f => f.registos.length), todos = com.flatMap(f => f.registos);
     for (const f of com) f.registos.forEach((r, i) => { r.n = i + 1; });
     const tipos = comTipos ? base.filter(t => !pedidos || pedidos.has(t.id)) : [SEM_TIPO]; // sem tipos no evento, um só (que não aparece)
-    return { ev: { nome: limpo(ev.nome), um: limpo(termos.um) || 'registo', varios: limpo(termos.varios) || 'registos', descricao: limpo(ev.descricao), competencia: limpo(o.competencia) }, freguesias, com, todos, tipos, fotos: o.fotos !== false };
+    return { ev: { nome: limpo(ev.nome), um: limpo(termos.um) || 'registo', varios: limpo(termos.varios) || 'registos', descricao: limpo(ev.descricao), competencia: limpo(o.competencia) }, freguesias, com, todos, tipos, fotos: o.fotos !== false, anterior: o.anterior ? { nome: limpo(o.anterior.nome) } : null };
   }
 
   // ---------- os mapas ----------
@@ -173,6 +173,25 @@ window.RelatorioEvento = (function () {
     E.y += 5; E.garantir(10 + top.length * 5.4); E.titulo('Ruas com mais ' + R.ev.varios);
     for (const x2 of top) { letra(9, 'bold'); doc.text(num(x2.n), MARGEM + 6, E.y + 3, { align: 'right' }); letra(9); doc.text(doc.splitTextToSize(limpo(x2.rua), 105)[0], MARGEM + 10, E.y + 3); if (comFreguesia) { letra(9, 'normal', SUAVE); doc.text(limpo(x2.f), LARG - MARGEM, E.y + 3, { align: 'right' }); } E.y += 5.4; }
   }
+  // o comparativo com o evento anterior (o que este «dá seguimento a»): por freguesia, os registos de lá e o que se verificou deles
+  // no varrimento (atualizado: mantém-se; desatualizado: já não se verifica), e os registos novos deste evento
+  function comparativo(E, R, freguesias, comFreguesia) {
+    const linhas = freguesias.filter(f => f.comparativo && (f.comparativo.anteriores || f.registos.length));
+    if (!R.anterior || !linhas.length) return;
+    const { doc, letra, linhaH, pinta } = E, soma = k => linhas.reduce((s, f) => s + (k === 'novos' ? f.registos.length : f.comparativo[k] || 0), 0);
+    const cols = [['anteriores', 'Anteriores', '#5b6470'], ['atualizados', 'Atualizados', '#43a047'], ['desatualizados', 'Desatualizados', '#e53935'], ['porVerificar', 'Por verificar', '#9aa3ad'], ['novos', 'Novos', '#2f7de1']];
+    const xs = cols.map((c, i) => LARG - MARGEM - (cols.length - 1 - i) * 27);
+    E.y += 5; E.garantir(24 + (linhas.length + 1) * 6.3); E.titulo('Comparativo com «' + R.anterior.nome + '»');
+    E.paragrafos(`Os registos de «${R.anterior.nome}», verificados no varrimento deste evento: atualizado, se ainda se verifica; desatualizado, se já não. Novos: os registos feitos neste evento.`, MARGEM, UTIL, 8.5, SUAVE); E.y += 2;
+    letra(7.5, 'bold', SUAVE); if (comFreguesia) doc.text('Freguesia', MARGEM, E.y + 3);
+    cols.forEach(([, t, c], i) => { doc.text(t, xs[i], E.y + 3, { align: 'right' }); pinta(xs[i] - doc.getTextWidth(t) - 2.2, E.y + 2, c, 1); letra(7.5, 'bold', SUAVE); });
+    E.y += 4.8; linhaH(E.y); E.y += 1;
+    const linha = (nome, val, forte) => { E.garantir(6.3); const yb = E.y + 4; letra(9, forte ? 'bold' : 'normal'); if (comFreguesia) doc.text(doc.splitTextToSize(limpo(nome), xs[0] - MARGEM - 14)[0], MARGEM, yb); cols.forEach(([k], i) => { letra(9, forte || k === 'anteriores' ? 'bold' : 'normal'); doc.text(num(val(k)), xs[i], yb, { align: 'right' }); }); E.y += 5.2; linhaH(E.y); E.y += 1.1; };
+    for (const f of [...linhas].sort((a, b) => b.comparativo.anteriores - a.comparativo.anteriores || a.nome.localeCompare(b.nome, 'pt'))) linha(f.nome, k => k === 'novos' ? f.registos.length : f.comparativo[k] || 0);
+    if (comFreguesia && linhas.length > 1) linha('Total', soma, true);
+    const ant = soma('anteriores'), feitos = soma('atualizados') + soma('desatualizados');
+    if (ant) { E.y += 1.5; letra(8.5, 'normal', SUAVE); doc.text(`Verificados ${num(feitos)} de ${num(ant)} (${Math.round(feitos / ant * 100)} %)${feitos ? `: ${Math.round(soma('atualizados') / feitos * 100)} % ainda se verificam` : ''}.`, MARGEM, E.y + 3); E.y += 5; }
+  }
   function escreverResumo(E, R, logo, mapa) {
     const { doc, letra, pinta, cor, linhaH } = E, t = R.todos, n = t.length;
     cabecalho(E, R, logo, 'Relatório da cidade de Lisboa');
@@ -206,6 +225,7 @@ window.RelatorioEvento = (function () {
       E.y += 5.2; linhaH(E.y); E.y += 1.1;
     }
     ruasComMais(E, R, R.com, true);
+    comparativo(E, R, R.freguesias, true);
     return ligacoes;
   }
   async function escreverFreguesia(E, R, f, limite, avancar) {
@@ -243,7 +263,7 @@ window.RelatorioEvento = (function () {
     if (!mapa.numerados) { letra(8, 'normal', SUAVE); doc.text(`Com ${num(n)} ${R.ev.varios}, o mapa mostra só os pontos; os números estão na lista.`, MARGEM, E.y + 2.5); E.y += 4.5; }
     // a lista dos registos: no detalhado, um índice que leva à ficha de cada um
     E.pagina(); const linhas = escreverLista(E, R, f, detalhado);
-    E.secao = ''; ruasComMais(E, R, [f], false);
+    E.secao = ''; ruasComMais(E, R, [f], false); comparativo(E, R, [f], false);
     if (detalhado) { E.pagina(); E.titulo('Ficha de cada ' + R.ev.um); E.secao = nome + ' · fichas (continuação)'; await escreverFichas(E, R, f, avancar); ligarLista(E, linhas); }
     f.foto = null;
   }

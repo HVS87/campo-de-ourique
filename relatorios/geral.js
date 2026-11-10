@@ -100,7 +100,7 @@ window.RelatorioGeral = (function () {
   }
 
   // ---------- a escrita ----------
-  function pintaCor(E, x, y, cor, r) { E.cor(cor, true); if (clara(cor)) { E.doc.setDrawColor(...rgb('#8a929c')); E.doc.setLineWidth(.2); E.doc.circle(x, y, r, 'FD'); } else E.doc.circle(x, y, r, 'F'); } // o branco da «Sugestão» precisa de contorno
+  function pintaCor(E, x, y, cor, r) { E.cor(cor, true); if (clara(cor)) { E.doc.setDrawColor(...rgb('#8a929c')); E.doc.setLineWidth(.2); E.doc.circle(x, y, r, 'FD'); } else E.doc.circle(x, y, r, 'F'); } // o branco de «Sugestões/Projetos» precisa de contorno
   function numero(E, x, y, cor, n, r) { pintaCor(E, x, y, cor, r); E.letra(r > 2.5 ? 8 : 6.5, 'bold', clara(cor) ? '#0b0b0b' : '#ffffff'); E.doc.text(String(n), x, y + r * .42, { align: 'center' }); }
   function criterios(E, R) { // o que se escolheu, numa caixa
     if (!R.criterios.length) return;

@@ -89,7 +89,9 @@ Transfere-se em [Releases](https://github.com/HVS87/campo-de-ourique/releases):
 - **Aviso do sistema:** os executáveis não estão assinados. Na primeira vez, o Windows (SmartScreen) e o macOS
   (Gatekeeper) avisam: no Windows escolhe-se «Mais informações → Executar mesmo assim»; no macOS, botão direito
   → «Abrir».
-- **Localização:** «Ponto onde estou» depende de o sistema dar a localização à aplicação.
+- **Localização:** «Ponto onde estou» e o registo dos eventos dependem de o sistema dar a localização à aplicação (no Windows,
+  Definições → Privacidade e segurança → Localização). Bloqueada, a apresentação diz como a voltar a permitir e deixa tentar
+  outra vez, tocar no mapa ou desligar a geolocalização no painel ☰.
 
 ### Instalar como app no telemóvel ou no tablet
 
@@ -208,7 +210,10 @@ Com o evento ativo:
 - **O levantamento:**
   1. escolhe-se o tipo: 💡 Candeeiro apagado/fundido ou 🌑 Candeeiro em falta/zona escura (o último fica lembrado);
   2. a apresentação acompanha o GPS durante uns segundos até ter precisão de 12 m (ou o melhor em 9 s) e põe um
-     marcador no mapa, ampliado ao máximo; sem GPS (no computador, ou sem autorização), pede um toque no mapa;
+     marcador no mapa, ampliado ao máximo; sem GPS (no computador, ou sem autorização), pede um toque no mapa. Com a
+     localização bloqueada, explica como a voltar a permitir (no browser, no ícone ao lado do endereço; na aplicação, nas
+     definições do sistema) e deixa tentar outra vez. O interruptor **📍 Geolocalização** do painel ☰ (ligado por omissão)
+     desliga-a, para registar à distância sem o mapa ir parar à posição de quem regista; desligada, o registo pede um toque no mapa;
   3. sugere a **morada** (rua e número de porta) a partir dos números de polícia da CML (`edificado.js`) e das ruas, sem
      precisar de internet; arrastar o marcador atualiza a sugestão, e os campos podem corrigir-se à mão;
   4. **Confirmar registo** acrescenta o ponto ao conjunto do evento da freguesia (criado no primeiro registo) e grava;
@@ -217,6 +222,19 @@ Com o evento ativo:
 - **O conjunto por freguesia** («Levantamento Iluminação Pública», prioridade importante, competência Câmara) tem no
   cartão uma tabela com o total de falhas registadas e o número de cada tipo, e a lista dos registos com morada e
   data (clicar num leva ao sítio no mapa). Os marcadores têm a cor do tipo. Em edição, cada registo pode tirar-se.
+- **Toque longo no mapa (2 s, com o rato ou o dedo):** com sessão numa conta da freguesia, no modo de edição ou fora dele, um
+  anel à volta do cursor mostra o tempo a passar e, aos 2 s, abre-se uma bolha. Com o evento a decorrer e o modo do evento ligado,
+  a bolha propõe acrescentar ali um ponto ao conjunto do evento: carregar nela abre o registo nesse sítio, sem ir ao GPS. Sem
+  evento, ou com o modo do evento desligado nas Camadas, propõe uma nova ocorrência: carregar nela abre o menu de criar, com
+  «Ponto aqui» e «Rua mais próxima» já nesse sítio. Carregar fora da bolha fecha-a sem fazer nada. Uma legenda no topo diz o
+  que o toque longo faz, enquanto o evento decorre.
+- **Edição que se fecha sozinha:** quando o modo de edição abre sem o lápis (pela bolha do mapa ou pelo «+» fora da edição),
+  fecha-se sozinho depois de o registo ser confirmado e gravado, ao «Guardar», ou ao sair sem nada feito.
+- **«✎ Editar» na ficha:** com sessão numa conta da freguesia, a ficha de cada ocorrência e de cada registo de um evento tem
+  um botão «✎ Editar», que abre o modo de edição só para ela. Ao sair (✕, «Concluído», clicar fora, apagar ou «Tirar do
+  conjunto»), se algo mudou pergunta «Tens a certeza que queres alterar…?» (ou «…apagar…?»): «Sim» grava e fecha a edição,
+  «Desfazer as alterações» (ou «Não apagar») volta ao que estava, «Continuar a editar» reabre a ficha. Sem alterações, fecha
+  logo.
 - **O resumo da cidade**, no mapa de Lisboa (botão «💡 Resumo da cidade» na barra), é uma tabela com o total de
   Lisboa e, por freguesia, o número de cada tipo. Vem do servidor central (que junta as 24 freguesias) ou, sem ele,
   dos ficheiros de cada freguesia neste computador.
@@ -268,9 +286,18 @@ Em menu da conta → **Eventos**, o `System.Admin` vê todos os eventos e pode:
   no telemóvel, por baixo do painel) diz as cores, como se muda uma rua e que se desliga em **Camadas**. Passar o rato por cima
   mostra o nome e o estado, centrados por cima do cursor. Só aparece **com sessão iniciada** (as ruas, a legenda, o botão nas
   Camadas e a contagem na faixa), exceto num evento com «Registos sem conta», onde qualquer pessoa marca. Com uma conta da
-  freguesia, marca-se **sem o modo de edição**. Com o rato, um clique muda a rua; no telemóvel e no tablet é preciso
-  um toque longo (2,5 s), para evitar toques acidentais: a rua realça-se enquanto se carrega e muda no fim, com uma vibração
-  curta. A marca guarda-se e junta-se entre dispositivos como um registo.
+  freguesia, marca-se **sem o modo de edição**, com um toque longo (2 s, com o rato ou o dedo): ao carregar, a rua realça-se e
+  mostra a etiqueta; aos 2 s abre-se uma bolha, «Carrega outra vez para marcar como percorrida» (ou «por percorrer»), e só
+  carregar nela muda a rua. Carregar fora da bolha fecha-a sem mudar nada; um clique rápido também não muda nada. A marca
+  guarda-se e junta-se entre dispositivos como um registo. Com o varrimento e o registo no mesmo evento, um seletor discreto na
+  legenda do topo, **🛣 Varrimento | Registar**, escolhe o que faz o toque longo: marcar ruas ou acrescentar pontos ao conjunto
+  do evento (aí, as ruas continuam à vista mas não recebem o toque).
+- **Dá seguimento a um evento passado:** ao editar o evento, «Dá seguimento a» liga-o a outro. No varrimento aparecem então os
+  registos desse evento anterior nesta freguesia, cada um **por verificar** (cinzento), **atualizado** (verde: ainda se verifica)
+  ou **desatualizado** (vermelho: já não se verifica); carregar num deles abre uma bolha com as três escolhas. A faixa do topo
+  conta os verificados, a verificação guarda-se em `verificacao: { <evento>: { <id do registo anterior>: { e, q, a } } }` e
+  junta-se entre dispositivos como o varrimento, e o relatório do evento traz um **comparativo** por freguesia: anteriores,
+  atualizados, desatualizados, por verificar e novos.
 - **Registos sem conta** (desligado por omissão, com um aviso sério ao ligar): qualquer pessoa regista e marca ruas sem iniciar
   sessão; o autor fica «Membro do público». O servidor só aceita acrescentar um registo ao conjunto do evento, com até 3 fotos.
 - **Ativar ou desativar:** só há um ativo de cada vez. Os registos ficam guardados ao mudar de evento.
@@ -413,7 +440,7 @@ mostra só as ferramentas; «⋯ Mais» abre o título, o subtítulo e os preset
   código SIG quando veio do cadastro; `filhos`: pontos dentro da zona).
 - `prioridade` (opcional): cor do elemento no mapa, no índice e no cartão: `urgente` (preto, problema urgente),
   `importante` (vermelho), `preocupante` (amarelo), `pouco` (verde, pouco preocupante) ou `sugestao` (branco,
-  sugestão). Sem prioridade, o elemento fica cinzento. Escolhe-se no cartão em modo de edição.
+  Sugestões/Projetos). Sem prioridade, o elemento fica cinzento. Escolhe-se no cartão em modo de edição.
 - `competencia` (opcional): a quem cabe resolver: `governo` (Governo), `camara` (Câmara Municipal) ou `junta`
   (Junta de Freguesia). Aparece no cartão.
 - `texto`: um texto (pode ter HTML) ou uma lista de parágrafos. `fotos`: `[{ src, legenda }]` (`src` é um caminho

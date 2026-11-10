@@ -5,6 +5,7 @@
 //   juntarTresVias(noServidor, recebido, base) → { dados, conflitos, juntou }
 //   juntarEventos(antes, d, { admin })    → junta os pontos dos conjuntos pelo id de cada registo (depois da junção a três vias)
 //   juntarVarrimento(a, b)                → as ruas já percorridas de um evento: por rua, fica a marcação mais recente
+//                                           (serve também a «verificacao»: { <evento>: { <id do registo anterior>: { e, q, a } } })
 //   aplicarPublico(dados, evento, pedido) → um registo (ou uma rua percorrida) de um membro do público, validado
 //   limparAbrangencia(a) · abrangeFreguesia(evento, f) · naAbrangencia(evento, f, pos) → onde decorre um evento (freguesias e, nelas, zonas)
 // Regras, campo a campo: o que só um lado mudou, fica; o que os dois mudaram para o mesmo, fica; o que os dois mudaram de
@@ -13,7 +14,7 @@
 // primeiro envio), nada se apaga: junta-se tudo o que há dos dois lados.
 
 const ESPECIAIS = new Set(['id', 'filhos', 'pontos', 'detalhes', 'fotos']); // tratados à parte
-const TOPO_FORA = new Set(['elementos', 'categorias', 'removidosEvento', 'conjuntosApagados', 'duplicadosMantidos', 'varrimento', 'preset', 'freguesia']);
+const TOPO_FORA = new Set(['elementos', 'categorias', 'removidosEvento', 'conjuntosApagados', 'duplicadosMantidos', 'varrimento', 'verificacao', 'preset', 'freguesia']);
 
 function canonico(v) { // JSON com as chaves por ordem: o mesmo conteúdo dá sempre o mesmo texto
   if (v === undefined) return 'u';
@@ -119,6 +120,7 @@ export function juntarTresVias(noServidor, recebido, base) {
   if (cats.length) dados.categorias = cats; else delete dados.categorias;
   const dup = [...new Set([...(recebido.duplicadosMantidos || []), ...(noServidor.duplicadosMantidos || [])])]; if (dup.length) dados.duplicadosMantidos = dup;
   const varr = juntarVarrimento(recebido.varrimento, noServidor.varrimento); if (varr) dados.varrimento = varr; else delete dados.varrimento;
+  const verif = juntarVarrimento(recebido.verificacao, noServidor.verificacao); if (verif) dados.verificacao = verif; else delete dados.verificacao; // os registos do evento anterior, verificados no seguinte (mesma forma e mesma regra)
   if (canonico(dados) === canonico(recebido)) return { dados: recebido, conflitos, juntou: false }; // nada a juntar: fica tal como veio
   return { dados, conflitos, juntou: true };
 }
