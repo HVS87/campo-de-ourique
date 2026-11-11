@@ -12,6 +12,7 @@ window.RelatorioEvento = (function () {
   const WMS = 'https://ortos.dgterritorio.gov.pt/wms/ortosat2023?service=WMS&request=GetMap&layers=ortoSat2023-CorVerdadeira&styles=&format=image/jpeg&version=1.3.0&crs=EPSG:3857';
   const LARG = 210, ALT = 297, MARGEM = 15, UTIL = LARG - 2 * MARGEM, FUNDO_PAGINA = ALT - 16;
   const TINTA = '#1b2129', SUAVE = '#555d68', LINHA = '#d5dae0', TINTA_FRACA = '#eef0f2', LIGACAO = '#205daa';
+  const VARR_FEITA = '#2f7de1', VARR_POR = '#e5484d'; // as cores do varrimento no mapa: percorrida, por percorrer
   const RAMPA = ['#cde2fb', '#9bc4f5', '#5d9eea', '#2a78d6', '#184f96']; // magnitude: um só tom, do claro para o escuro
   const SEM_TIPO = { id: 'sem', nome: 'Sem tipo', cor: '#8a929c' };
 
@@ -51,7 +52,7 @@ window.RelatorioEvento = (function () {
     const com = freguesias.filter(f => f.registos.length), todos = com.flatMap(f => f.registos);
     for (const f of com) f.registos.forEach((r, i) => { r.n = i + 1; });
     const tipos = comTipos ? base.filter(t => !pedidos || pedidos.has(t.id)) : [SEM_TIPO]; // sem tipos no evento, um só (que não aparece)
-    return { ev: { nome: limpo(ev.nome), um: limpo(termos.um) || 'registo', varios: limpo(termos.varios) || 'registos', descricao: limpo(ev.descricao), competencia: limpo(o.competencia) }, freguesias, com, todos, tipos, fotos: o.fotos !== false, anterior: o.anterior ? { nome: limpo(o.anterior.nome) } : null };
+    return { ev: { nome: limpo(ev.nome), um: limpo(termos.um) || 'registo', varios: limpo(termos.varios) || 'registos', descricao: limpo(ev.descricao), competencia: limpo(o.competencia) }, freguesias, com, todos, tipos, fotos: o.fotos !== false, anterior: o.anterior ? { nome: limpo(o.anterior.nome) } : null, varrimento: !!o.varrimento };
   }
 
   // ---------- os mapas ----------
@@ -192,6 +193,44 @@ window.RelatorioEvento = (function () {
     const ant = soma('anteriores'), feitos = soma('atualizados') + soma('desatualizados');
     if (ant) { E.y += 1.5; letra(8.5, 'normal', SUAVE); doc.text(`Verificados ${num(feitos)} de ${num(ant)} (${Math.round(feitos / ant * 100)} %)${feitos ? `: ${Math.round(soma('atualizados') / feitos * 100)} % ainda se verificam` : ''}.`, MARGEM, E.y + 3); E.y += 5; }
   }
+  // o varrimento das ruas (opcional, desligado por omissão): no resumo, uma tabela por freguesia; depois, as ruas de cada uma
+  const comRuas = f => !!(f.ruasVarr && f.ruasVarr.percorridas.length + f.ruasVarr.porPercorrer.length);
+  function varrimentoResumo(E, R, freguesias) {
+    const l = freguesias.filter(comRuas); if (!R.varrimento || !l.length) return;
+    const { doc, letra, linhaH, cor } = E, xP = 118, xF = 144, xPct = 158, xBarra = 163, wBarra = LARG - MARGEM - 163;
+    E.y += 5; E.garantir(24 + (l.length + 1) * 6.3); E.titulo('Varrimento das ruas');
+    E.paragrafos('As ruas percorridas e por percorrer em cada freguesia (vale a marcação mais recente de cada rua). As listas das ruas estão no fim do relatório.', MARGEM, UTIL, 8.5, SUAVE); E.y += 2;
+    letra(7.5, 'bold', SUAVE); doc.text('Freguesia', MARGEM, E.y + 3); doc.text('Percorridas', xP, E.y + 3, { align: 'right' }); doc.text('Por percorrer', xF, E.y + 3, { align: 'right' }); doc.text('%', xPct, E.y + 3, { align: 'right' });
+    E.y += 4.8; linhaH(E.y); E.y += 1;
+    const linha = (nome, p, q, forte) => {
+      E.garantir(6.3); const yb = E.y + 4, n = p + q;
+      letra(9, forte ? 'bold' : 'normal'); doc.text(doc.splitTextToSize(limpo(nome), xP - MARGEM - 22)[0], MARGEM, yb);
+      letra(9, 'bold'); doc.text(num(p), xP, yb, { align: 'right' }); letra(9); doc.text(num(q), xF, yb, { align: 'right' }); doc.text(n ? Math.round(p / n * 100) + ' %' : '-', xPct, yb, { align: 'right' });
+      cor(VARR_POR, true); doc.rect(xBarra, yb - 2.5, wBarra, 2.8, 'F'); if (p) { cor(VARR_FEITA, true); doc.rect(xBarra, yb - 2.5, wBarra * p / n, 2.8, 'F'); }
+      E.y += 5.2; linhaH(E.y); E.y += 1.1;
+    };
+    const conta = f => [f.ruasVarr.percorridas.length, f.ruasVarr.porPercorrer.length];
+    for (const f of [...l].sort((a, b) => { const [pa, qa] = conta(a), [pb, qb] = conta(b); return pb / (pb + qb) - pa / (pa + qa) || a.nome.localeCompare(b.nome, 'pt'); })) linha(f.nome, ...conta(f));
+    if (l.length > 1) linha('Total', l.reduce((s, f) => s + conta(f)[0], 0), l.reduce((s, f) => s + conta(f)[1], 0), true);
+  }
+  function varrimentoListas(E, R, f) { // as ruas de uma freguesia: as percorridas (com a data) e as por percorrer, em três colunas
+    if (!R.varrimento || !comRuas(f)) return;
+    const { doc, letra, pinta, linhaH } = E, v = f.ruasVarr, n = v.percorridas.length + v.porPercorrer.length, nome = limpo(f.nome);
+    E.garantir(30); letra(12, 'bold'); doc.text(nome, MARGEM, E.y + 4);
+    letra(9, 'normal', SUAVE); doc.text(`${num(v.percorridas.length)} de ${num(n)} ruas percorridas (${Math.round(v.percorridas.length / n * 100)} %)`, LARG - MARGEM, E.y + 4, { align: 'right' }); E.y += 6;
+    if (v.zonas && v.zonas.length) { letra(8.5, 'normal', SUAVE); doc.text(doc.splitTextToSize('Só as ruas das zonas do evento: ' + v.zonas.map(limpo).join(', '), UTIL)[0], MARGEM, E.y + 3); E.y += 5; }
+    E.y += 1; E.secao = nome + ' · varrimento das ruas (continuação)';
+    const lista = (titulo, itens, c) => {
+      if (!itens.length) return;
+      E.garantir(12); pinta(MARGEM + 1.3, E.y + 1.9, c, 1.3); letra(9.5, 'bold'); doc.text(`${titulo} (${num(itens.length)})`, MARGEM + 4.5, E.y + 3); E.y += 6;
+      const col = 3, w = UTIL / col;
+      for (let i = 0; i < itens.length; i += col) { E.garantir(4.4); itens.slice(i, i + col).forEach((t, k) => { letra(8.2); const l = doc.splitTextToSize(t, w - 5); doc.text(l[0] + (l.length > 1 ? '…' : ''), MARGEM + k * w, E.y + 3); }); /* um nome comprido corta-se com reticências */ E.y += 4.2; }
+      E.y += 3;
+    };
+    lista('Percorridas', v.percorridas.map(x => limpo(x.nome) + (x.quando ? ' · ' + dataCurta(x.quando) : '')), VARR_FEITA);
+    lista('Por percorrer', v.porPercorrer.map(limpo), VARR_POR);
+    E.secao = ''; linhaH(E.y); E.y += 6;
+  }
   function escreverResumo(E, R, logo, mapa) {
     const { doc, letra, pinta, cor, linhaH } = E, t = R.todos, n = t.length;
     cabecalho(E, R, logo, 'Relatório da cidade de Lisboa');
@@ -226,6 +265,7 @@ window.RelatorioEvento = (function () {
     }
     ruasComMais(E, R, R.com, true);
     comparativo(E, R, R.freguesias, true);
+    varrimentoResumo(E, R, R.freguesias);
     return ligacoes;
   }
   async function escreverFreguesia(E, R, f, limite, avancar) {
@@ -264,6 +304,7 @@ window.RelatorioEvento = (function () {
     // a lista dos registos: no detalhado, um índice que leva à ficha de cada um
     E.pagina(); const linhas = escreverLista(E, R, f, detalhado);
     E.secao = ''; ruasComMais(E, R, [f], false); comparativo(E, R, [f], false);
+    if (R.varrimento && comRuas(f)) { E.pagina(); E.titulo('Varrimento das ruas'); varrimentoListas(E, R, f); }
     if (detalhado) { E.pagina(); E.titulo('Ficha de cada ' + R.ev.um); E.secao = nome + ' · fichas (continuação)'; await escreverFichas(E, R, f, avancar); ligarLista(E, linhas); }
     f.foto = null;
   }
@@ -343,6 +384,8 @@ window.RelatorioEvento = (function () {
     if (so) { await escreverRelatorioFreguesia(E, R, R.com[0], porLimite[so.id], logoUrl, o.extensivo !== false, avancar); return rodape(E, R, o); }
     const ligacoes = escreverResumo(E, R, logoUrl, mapa);
     if (o.extensivo !== false) for (const f of R.com) { paginaDe[f.id] = await escreverFreguesia(E, R, f, porLimite[f.id], avancar); doc.outline.add(null, limpo(f.nome) + ' (' + f.registos.length + ')', { pageNumber: paginaDe[f.id] }); } // o resumo fica pelas páginas da cidade
+    const comVarr = R.varrimento ? R.freguesias.filter(comRuas).sort((a, b) => a.nome.localeCompare(b.nome, 'pt')) : [];
+    if (comVarr.length) { E.pagina(); E.secao = ''; const p = doc.getCurrentPageInfo().pageNumber; E.titulo('Varrimento das ruas, por freguesia'); for (const f of comVarr) varrimentoListas(E, R, f); doc.outline.add(null, 'Varrimento das ruas', { pageNumber: p }); } // no fim: as ruas de cada freguesia
     // o índice da tabela e o rodapé só se sabem no fim
     for (const l of ligacoes) { if (!paginaDe[l.f.id]) continue; doc.setPage(l.pagina); E.letra(9, 'normal', LIGACAO); const p = paginaDe[l.f.id]; doc.text(String(p), l.xPag, l.yb, { align: 'right' }); doc.link(MARGEM, l.y, UTIL, 5.2, { pageNumber: p }); }
     return rodape(E, R, o);

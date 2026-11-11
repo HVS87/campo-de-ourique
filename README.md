@@ -314,6 +314,11 @@ Em menu da conta → **Eventos**, o `System.Admin` vê todos os eventos e pode:
   freguesia, e ruas com mais registos. Segue com cada freguesia: o mapa dos registos e a ficha de cada um, com a morada, o tipo, a
   data, as coordenadas, um mapa do sítio exato, as notas e as fotos. Os nomes de quem registou não saem no relatório.
   Os mapas das fichas vêm do satélite da DGT e, sem rede, da imagem guardada da freguesia.
+- **O varrimento no relatório** (opcional, desligado por omissão): num evento com varrimento (ou com ruas marcadas), o diálogo do
+  relatório tem «Incluir o varrimento». Ligado, o resumo da cidade traz uma tabela por freguesia (ruas percorridas, por percorrer
+  e percentagem, com uma barra azul e vermelha), e no fim do relatório, «Varrimento das ruas, por freguesia», as ruas percorridas
+  (com a data) e as por percorrer de cada freguesia onde o evento decorre. O relatório de uma só freguesia traz as listas dela. As
+  ruas são as do `ruas.js` de cada freguesia (numa freguesia com zonas, só as das zonas), e vale a marcação mais recente de cada uma.
 - **Apagar:** só um evento criado aqui, inativo e sem registos.
 
 ### Relatórios das ocorrências

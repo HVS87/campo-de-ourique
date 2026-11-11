@@ -4159,6 +4159,18 @@ function comparativoDe(presets, ev, ant) {
   for (const r of anteriores) { const e = (verif[r.i || [r.quando, r.rua, r.numero, [r.lat, r.lon]].join('|')] || {}).e; if (e === 'atualizado') c.atualizados++; else if (e === 'desatualizado') c.desatualizados++; }
   c.porVerificar = c.anteriores - c.atualizados - c.desatualizados; return c;
 }
+// o varrimento de um evento numa freguesia, para o relatório: as ruas dela (ou só as das zonas do evento, como no mapa) e a
+// marcação mais recente de cada uma, juntando os presets (o mesmo critério do varrimento entre dispositivos)
+async function varrimentoDaFreguesia(f, presets, ev) {
+  const marcas = {};
+  for (const d of presets) for (const [nome, v] of Object.entries(((d && d.varrimento) || {})[ev.id] || {})) if (v && typeof v === 'object' && (!marcas[nome] || String(v.q || '') > String(marcas[nome].q || ''))) marcas[nome] = v;
+  let ruas = f.id === FREG.id ? RUAS : null;
+  if (!ruas) { try { const r = await fetch(baseFreguesia(f.id) + 'ruas.js', { cache: 'no-store' }); ruas = r.ok ? ruasDoFicheiro(await r.text()) : []; } catch (err) { ruas = []; } }
+  const z = ((ev.abrangencia && ev.abrangencia.zonas) || {})[f.id] || [];
+  if (z.length) ruas = ruas.filter(r => (r.trocos || []).some(t => t.some(p => z.some(x => dentro(L.latLng(p), x.poligono)))));
+  const nomes = [...new Set(ruas.map(r => r.nome).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt'));
+  return { percorridas: nomes.filter(n => marcas[n] && marcas[n].e).map(n => ({ nome: n, quando: marcas[n].q || '' })), porPercorrer: nomes.filter(n => !(marcas[n] && marcas[n].e)), zonas: z.map(x => x.nome) };
+}
 async function recolherRegistos(ev) {
   const presets = new Map(FREGUESIAS.map(f => [f.id, []])), semAcesso = []; let fonte = '', central = false;
   if (urlCentral() && (lerSessaoCentral() || lerCentral().chave)) {
@@ -4171,11 +4183,12 @@ async function recolherRegistos(ev) {
   }
   if (!fonte) { await Promise.all(FREGUESIAS.map(async f => { const l = await presetsLocais(f); presets.get(f.id).push(...l); if (l.semAcesso) semAcesso.push(f.nome); })); fonte = AMBIENTE.app ? 'dados desta aplicação' : 'ficheiros desta apresentação'; }
   const ant = eventoAnterior(ev);
-  return { fonte, central, semAcesso, certo: !semAcesso.length && (central || !urlCentral()), freguesias: FREGUESIAS.map(f => ({ id: f.id, nome: f.nome, ha: f.ha, registos: registosDoEvento(presets.get(f.id), ev), ...(ant ? { comparativo: comparativoDe(presets.get(f.id), ev, ant) } : {}) })).filter(f => abrangeFreguesia(ev, f.id) || f.registos.length || f.registos.excluidos || (f.comparativo && f.comparativo.anteriores)) };
+  return { fonte, central, semAcesso, presets, certo: !semAcesso.length && (central || !urlCentral()), freguesias: FREGUESIAS.map(f => ({ id: f.id, nome: f.nome, ha: f.ha, registos: registosDoEvento(presets.get(f.id), ev), ...(ant ? { comparativo: comparativoDe(presets.get(f.id), ev, ant) } : {}) })).filter(f => abrangeFreguesia(ev, f.id) || f.registos.length || f.registos.excluidos || (f.comparativo && f.comparativo.anteriores)) };
 }
 async function exportarRelatorio(ev) {
   aviso('A juntar os registos do evento…');
-  const { fonte, freguesias, central, semAcesso } = await recolherRegistos(ev);
+  const { fonte, freguesias, central, semAcesso, presets } = await recolherRegistos(ev);
+  const comVarrimento = !!ev.varrimento || [...presets.values()].some(l => l.some(d => d && d.varrimento && d.varrimento[ev.id] && Object.keys(d.varrimento[ev.id]).length));
   const valido = r => !ev.categorias.length || ev.categorias.some(c => c.id === r.c); // num evento com tipos, todos os registos têm um: os de antes da regra não contam
   for (const f of freguesias) { const ex = f.registos.excluidos; f.semTipo = f.registos.filter(r => !valido(r)).length; f.registos = Object.assign(f.registos.filter(valido), { excluidos: ex }); }
   const semTipo = freguesias.filter(f => f.semTipo), nSemTipo = semTipo.reduce((s, f) => s + f.semTipo, 0);
@@ -4187,7 +4200,7 @@ async function exportarRelatorio(ev) {
   const { r, valores } = await dialogo({ titulo: 'Relatório · ' + ev.nome, texto: `<b>${todos.length}</b> ${esc(todos.length === 1 ? T.um : T.varios)} em ${comRegistos} freguesia${comRegistos === 1 ? '' : 's'}, com ${nFotos} foto${nFotos === 1 ? '' : 's'} (fonte: ${esc(fonte)}). Escolhe o âmbito: a cidade toda (o resumo da cidade e cada freguesia) ou uma só freguesia, resumido ou detalhado.${eventoAnterior(ev) ? ` Inclui o comparativo com «${esc(eventoAnterior(ev).nome)}».` : ''}`,
     alerta: [nSemTipo ? `${nSemTipo} ${esc(nSemTipo === 1 ? T.um : T.varios)} sem tipo, de antes desta regra, não ${nSemTipo === 1 ? 'entra' : 'entram'} no relatório nem nos totais (${esc(semTipo.map(f => f.nome + ': ' + f.semTipo).join(', '))}). Para ${nSemTipo === 1 ? 'o' : 'os'} incluir, abre o cartão de cada um e escolhe o tipo.` : '', excluidos ? `${excluidos} ${esc(excluidos === 1 ? T.um : T.varios)} sem localização válida ${excluidos === 1 ? 'fica' : 'ficam'} de fora.` : '', urlCentral() && !central ? 'Sem acesso ao servidor central: estes são só os dados deste aparelho.' : '', semAcesso.length ? `Não consegui ler ${esc(semAcesso.join(', '))}: o relatório sai sem essas freguesias.` : '', naFila ? `Há ${naFila} envio${naFila === 1 ? '' : 's'} à espera na fila deste aparelho, que ainda não entram.` : ''].filter(Boolean).join('<br>'),
     campos: [{ nome: 'ambito', rotulo: 'Âmbito', valor: 'cidade', opcoes: [{ valor: 'cidade', texto: `Toda a cidade (${todos.length})` }, ...freguesias.filter(f => f.registos.length).map(f => ({ valor: f.id, texto: `${f.nome} (${f.registos.length})` }))] },
-      { nome: 'formato', rotulo: 'Relatório', valor: 'extensivo', opcoes: [{ valor: 'extensivo', texto: 'Detalhado: o resumo e a ficha de cada registo, com mapa, fotos e notas' }, { valor: 'resumo', texto: 'Resumido: os totais, o mapa e a tabela (numa freguesia, a lista dos registos)' }] }, ...(tipos.length > 1 ? tipos.map(t => ({ tipo: 'checkbox', nome: 'tipo:' + t.id, rotulo: `${t.nome} (${conta(t)})`, valor: true })) : []), { tipo: 'checkbox', nome: 'fotos', rotulo: 'Incluir as fotos', valor: true }],
+      { nome: 'formato', rotulo: 'Relatório', valor: 'extensivo', opcoes: [{ valor: 'extensivo', texto: 'Detalhado: o resumo e a ficha de cada registo, com mapa, fotos e notas' }, { valor: 'resumo', texto: 'Resumido: os totais, o mapa e a tabela (numa freguesia, a lista dos registos)' }] }, ...(tipos.length > 1 ? tipos.map(t => ({ tipo: 'checkbox', nome: 'tipo:' + t.id, rotulo: `${t.nome} (${conta(t)})`, valor: true })) : []), { tipo: 'checkbox', nome: 'fotos', rotulo: 'Incluir as fotos', valor: true }, ...(comVarrimento ? [{ tipo: 'checkbox', nome: 'varrimento', rotulo: 'Incluir o varrimento: as ruas percorridas e as por percorrer de cada freguesia', valor: false }] : [])],
     botoes: [{ id: 'cancelar', texto: 'Cancelar' }, { id: 'exportar', texto: 'Exportar PDF', classe: 'on' }] });
   if (r !== 'exportar') return;
   const escolhidos = tipos.length > 1 ? tipos.filter(t => valores['tipo:' + t.id]).map(t => t.id) : null;
@@ -4198,9 +4211,10 @@ async function exportarRelatorio(ev) {
     // a imagem de cada freguesia e o sítio dela: estão no geo.js de cada uma
     const ambito = valores.ambito && valores.ambito !== 'cidade' ? valores.ambito : null;
     await Promise.all(freguesias.filter(f => f.registos.length && (!ambito || f.id === ambito)).map(async f => { try { f.imagem = JSON.parse(jsonDoFicheiro(await (await fetch(baseFreguesia(f.id) + 'geo.js')).text())).imagem; } catch (err) { f.imagem = null; } }));
+    if (valores.varrimento) { aviso('A juntar as ruas do varrimento…', 600000); await Promise.all(freguesias.filter(f => (!ambito || f.id === ambito) && abrangeFreguesia(ev, f.id)).map(async f => { f.ruasVarr = await varrimentoDaFreguesia(f, presets.get(f.id) || [], ev); })); }
     const nomeComp = (COMP[ev.conjunto && ev.conjunto.competencia] || {}).nome || '';
     const extensivo = valores.formato !== 'resumo';
-    const blob = await window.RelatorioEvento.gerar({ evento: ev, anterior: eventoAnterior(ev), competencia: nomeComp, extensivo, freguesias, freguesia: ambito, limites: window.LIMITES_FREGUESIAS, tipos: escolhidos, fotos: valores.fotos, fonte, aoProgresso: (n, total) => aviso(`A preparar o relatório: ${n} de ${total}…`, 600000) });
+    const blob = await window.RelatorioEvento.gerar({ evento: ev, anterior: eventoAnterior(ev), competencia: nomeComp, extensivo, freguesias, freguesia: ambito, limites: window.LIMITES_FREGUESIAS, tipos: escolhidos, fotos: valores.fotos, varrimento: !!valores.varrimento, fonte, aoProgresso: (n, total) => aviso(`A preparar o relatório: ${n} de ${total}…`, 600000) });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `relatorio-${ev.id}${ambito ? '-' + ambito : ''}${extensivo ? '' : '-resumo'}-${new Date().toISOString().slice(0, 10)}.pdf`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);
     aviso(`Relatório transferido: ${a.download} (${(blob.size / 1048576).toLocaleString('pt-PT', { maximumFractionDigits: 1 })} MB).`, 8000);
   } catch (err) { aviso('Não foi possível gerar o relatório: ' + err.message, 8000); }
