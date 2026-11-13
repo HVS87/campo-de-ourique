@@ -3,10 +3,12 @@
 // (padrões da web, sem dependências). O «armazém» é a única diferença entre os dois:
 //   ler(chave) → texto | null · escrever(chave, texto) · listar(prefixo) → [{ chave, tamanho, data }] · apagar(chave)
 //   atualizar(chave, f) (opcional) → lê, aplica f ao texto e grava sem pisar uma escrita simultânea (no R2, com etag)
+//   lerBinario(chave) → { corpo, tipo } | null · escreverBinario(chave, bytes, tipo) · existe(chave) (opcional): as fotos
 // As chaves do armazém são caminhos; no Node viram ficheiros com o mesmo caminho, por isso uma cópia local tem a mesma
 // forma que a pasta de dados do servidor Node:
 //   presets/<freguesia>/<preset>/<revisão>.json, atual.json, revisoes.json · indice/<freguesia>.json (resumo de cada preset)
 //   elementos/<freguesia>.json (elementos já preparados para a consulta) · chaves.json
+//   fotos/<freguesia>/<impressão>.jpg|png|webp (as fotos, à parte: os presets levam só o endereço, para cada envio ser pequeno)
 //   contas/contas.json, contas/segredo.json, historico/<AAAA-MM>.json (contas de utilizador e quem fez o quê: ver contas.mjs)
 // Cada consulta lê no máximo um objeto por freguesia (o plano grátis do Workers limita as leituras e o processador por pedido).
 //
@@ -21,7 +23,8 @@ const LIMITE = 40 * 1024 * 1024;
 const idValido = id => typeof id === 'string' && /^[a-z0-9][a-z0-9-]{0,60}$/.test(id);
 // objetos que se podem copiar e repor (cópia local, reposição); o segredo das sessões fica sempre no servidor
 const ID = '[a-z0-9][a-z0-9-]{0,60}';
-const CHAVE_OBJETO = new RegExp(`^(presets/${ID}/${ID}/(\\d+|atual|revisoes)\\.json|(indice|elementos)/${ID}\\.json|historico/\\d{4}-\\d{2}\\.json|chaves\\.json|contas/contas\\.json|evento/(atual|catalogo)\\.json|definicoes/geral\\.json|categorias/fundidas\\.json|apagados/${ID}\\.json)$`);
+const CHAVE_FOTO = new RegExp(`^fotos/${ID}/[0-9a-f]{32}\\.(jpg|png|webp)$`);
+const CHAVE_OBJETO = new RegExp(`^(fotos/${ID}/[0-9a-f]{32}\\.(jpg|png|webp)|presets/${ID}/${ID}/(\\d+|atual|revisoes)\\.json|(indice|elementos)/${ID}\\.json|historico/\\d{4}-\\d{2}\\.json|chaves\\.json|contas/contas\\.json|evento/(atual|catalogo)\\.json|definicoes/geral\\.json|categorias/fundidas\\.json|apagados/${ID}\\.json)$`);
 export const PAPEIS = { leitor: ['ler'], contribuidor: ['ler', 'enviar'], admin: ['ler', 'enviar', 'admin'] };
 const AUTORIA = ['autor', 'contribuidor', 'utilizador'];
 const semAutoria = o => {
@@ -30,6 +33,16 @@ const semAutoria = o => {
   return x;
 };
 const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+// ---------- fotos: cada uma é um objeto à parte, com o nome pela impressão do conteúdo (a mesma foto enviada duas vezes é a mesma) ----------
+const TIPO_FOTO = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp' }, LIMITE_FOTO = 12 * 1024 * 1024;
+const DATA_FOTO = /^data:image\/(jpeg|jpg|png|webp);base64,/i;
+function extensaoFoto(b) { // pela assinatura do ficheiro, não pelo que o pedido diz
+  if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'jpg';
+  if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return 'png';
+  if (b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50) return 'webp';
+  return null;
+}
+function bytesDoDataURL(s) { const b = atob(s.slice(s.indexOf(',') + 1)), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
 export async function resumoDe(chave) { return hex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(chave))); } // só se guarda o resumo das chaves
 const iguais = (a, b) => { if (a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; }; // tempo constante
 export function novaChave() { const b = new Uint8Array(24); crypto.getRandomValues(b); return btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
@@ -91,6 +104,24 @@ export function criarAPI({ armazem, nome = 'Servidor central das freguesias', or
     ? armazem.atualizar(k, t => { let v = null; try { v = t == null ? null : JSON.parse(t); } catch (err) { v = null; } return JSON.stringify(f(v)); })
     : lerJSON(k).then(v => gravarJSON(k, f(v)));
   const pasta = (f, p) => `presets/${f}/${p}/`;
+  async function gravarFoto(f, bytes) { // devolve a chave do objeto (fotos/<f>/<impressão>.<ext>)
+    const ext = extensaoFoto(bytes); if (!ext) throw Object.assign(new Error('O ficheiro não é uma imagem JPEG, PNG ou WebP'), { codigo: 415 });
+    if (bytes.length > LIMITE_FOTO) throw Object.assign(new Error('Foto demasiado grande (máximo 12 MB)'), { codigo: 413 });
+    const chave = `fotos/${f}/${hex(await crypto.subtle.digest('SHA-256', bytes)).slice(0, 32)}.${ext}`;
+    if (!(armazem.existe && await armazem.existe(chave))) await armazem.escreverBinario(chave, bytes, TIPO_FOTO[ext]);
+    return chave;
+  }
+  const enderecoFoto = (origem, chave) => `${origem}/api/v${VERSAO_API}/${chave}`;
+  // as fotos embebidas (data:…) passam a objetos à parte e o preset fica só com o endereço; devolve { <data:…>: endereço }
+  async function tirarFotos(listas, f, origem) {
+    const mapa = new Map(); if (!armazem.escreverBinario) return mapa;
+    for (const l of listas) if (Array.isArray(l)) for (let i = 0; i < l.length; i++) {
+      const x = l[i], src = typeof x === 'string' ? x : x && x.src; if (typeof src !== 'string' || !DATA_FOTO.test(src)) continue;
+      try { if (!mapa.has(src)) mapa.set(src, enderecoFoto(origem, await gravarFoto(f, bytesDoDataURL(src)))); l[i] = typeof x === 'string' ? mapa.get(src) : { ...x, src: mapa.get(src) }; } catch (err) { /* ilegível: fica como veio */ }
+    }
+    return mapa;
+  }
+  const listasDeFotos = els => (els || []).flatMap(e => !e ? [] : [e.fotos, ...(Array.isArray(e.detalhes) ? e.detalhes.map(d => d && d.fotos) : []), ...listasDeFotos(e.filhos)]);
   // uma sessão dura um dia; com «lembrar-me», 30 dias (a fila da apresentação pode enviar dias depois de uma edição sem rede)
   const contas = criarContas({ armazem, iniciais: contasIniciais, segredo: segredoSessoes, horas: horasSessao, horasLembrar });
   // quem pede (Authorization: Bearer …): uma conta (testemunho «s1.…») ou uma chave de acesso; a CHAVE_ADMIN de arranque vale como administração
@@ -134,6 +165,7 @@ export function criarAPI({ armazem, nome = 'Servidor central das freguesias', or
     if (!d || typeof d !== 'object' || !Array.isArray(d.elementos)) return json(400, { erro: 'Esperava { dados: { …, elementos: [] } }' });
     if (d.freguesia && d.freguesia !== f) return json(409, { erro: `O preset é da freguesia «${d.freguesia}», não de «${f}»` });
     d.freguesia = f; d.preset = p;
+    await tirarFotos(listasDeFotos(d.elementos), f, new URL(req.url).origin); // um dispositivo antigo (ou sem rede quando tirou a foto) manda-as embebidas
     const fundidas = (await lerJSON('categorias/fundidas.json')) || []; // o que a administração fundiu não volta com um envio de um ficheiro antigo
     let atual = null, reg = null, conflitos = [], juntou = false;
     const juntar = t => { // corre outra vez se outro envio do mesmo preset gravar primeiro: ninguém pisa os registos de ninguém
@@ -163,9 +195,12 @@ export function criarAPI({ armazem, nome = 'Servidor central das freguesias', or
     let base = null;
     if (!(await armazem.ler(pasta(f, p) + 'atual.json'))) { base = lerBase ? await lerBase(f, p).catch(() => null) : null; if (!base) return json(409, { erro: 'Esta freguesia ainda não tem dados no servidor central' }); }
     let erro = null, reg = null, atual = null;
+    const fotosPub = corpo.registo && Array.isArray(corpo.registo.fotos) ? corpo.registo.fotos.slice(0, 3) : [];
+    const mapa = await tirarFotos([fotosPub.map(x => x && x.src)], f, new URL(req.url).origin); // validadas como data:image em aplicarPublico; depois trocam-se pelo endereço
     await trocarAtual(f, p, t => {
       try { atual = t == null ? { revisao: 0, dados: { ...base, freguesia: f, preset: p } } : JSON.parse(t); } catch (err) { erro = 'Dados inválidos'; return t; }
       const novo = structuredClone(atual.dados); erro = aplicarPublico(novo, def, { ...corpo, freguesia: f }); if (erro) return t;
+      if (mapa.size) for (const l of listasDeFotos(novo.elementos)) if (Array.isArray(l)) l.forEach((x, i) => { if (x && mapa.has(x.src)) l[i] = { ...x, src: mapa.get(x.src) }; });
       const recebido = new Date().toISOString();
       reg = { freguesia: f, preset: p, revisao: (atual.revisao || 0) + 1, utilizador: 'publico', autor: AUTOR_PUBLICO, contribuidor: AUTOR_PUBLICO, origem: 'publico', versao: '', quando: Date.now(), recebido, dados: novo };
       return JSON.stringify(reg);
@@ -298,6 +333,11 @@ export function criarAPI({ armazem, nome = 'Servidor central das freguesias', or
       return json(200, { objetos: l.map(o => ({ chave: o.chave, versao: `${o.tamanho}-${o.data}` })) });
     }
     if (!CHAVE_OBJETO.test(q.chave || '')) return json(400, { erro: 'Objeto inválido' });
+    if (CHAVE_FOTO.test(q.chave)) { // binário
+      if (req.method === 'GET') { const o = armazem.lerBinario ? await armazem.lerBinario(q.chave) : null; return o ? new Response(o.corpo, { status: 200, headers: { 'Content-Type': o.tipo || 'application/octet-stream', 'Cache-Control': 'no-store' } }) : json(404, { erro: 'Não encontrado' }); }
+      if (req.method === 'POST') { const b = new Uint8Array(await req.arrayBuffer()); if (!extensaoFoto(b)) return json(400, { erro: 'O objeto não é uma imagem' }); await armazem.escreverBinario(q.chave, b, TIPO_FOTO[q.chave.split('.').pop()]); return json(200, { ok: true }); }
+      return json(405, { erro: 'Método não suportado' });
+    }
     if (req.method === 'GET') {
       const t = await armazem.ler(q.chave); return t == null ? json(404, { erro: 'Não encontrado' }) : resposta(t, 200, 'application/json; charset=utf-8');
     }
@@ -357,6 +397,17 @@ export function criarAPI({ armazem, nome = 'Servidor central das freguesias', or
       if (rec === 'chaves') return await chaves(req, c, f, p);
       if (rec === 'copia' || rec === 'objeto') return await copia(req, c, rec === 'copia' ? {} : q);
       if (rec === 'presets' && req.method === 'POST' && idValido(f) && idValido(p) && !extra) return await receber(req, c, f, p);
+      if (rec === 'fotos' && req.method === 'POST' && idValido(f) && !p) { // uma foto de cada vez, antes do preset que a leva
+        if (!pode(c, 'enviar', f)) return recusa(c);
+        if (!armazem.escreverBinario) return json(501, { erro: 'Este servidor não guarda fotos à parte' });
+        if (Number(req.headers.get('content-length') || 0) > LIMITE_FOTO) return json(413, { erro: 'Foto demasiado grande (máximo 12 MB)' });
+        const chave = await gravarFoto(f, new Uint8Array(await req.arrayBuffer()));
+        return json(201, { ok: true, chave, endereco: enderecoFoto(new URL(req.url).origin, chave) });
+      }
+      if (rec === 'fotos' && (req.method === 'GET' || req.method === 'HEAD') && idValido(f) && /^[0-9a-f]{32}\.(jpg|png|webp)$/.test(p || '') && !extra) { // públicas, como a apresentação que as mostra
+        const o = armazem.lerBinario ? await armazem.lerBinario(`fotos/${f}/${p}`) : null; if (!o) return json(404, { erro: 'Foto não encontrada' });
+        return new Response(req.method === 'HEAD' ? null : o.corpo, { status: 200, headers: { 'Content-Type': TIPO_FOTO[p.split('.').pop()], 'Cache-Control': 'public, max-age=31536000, immutable' } });
+      }
       if (rec === 'publico' && req.method === 'POST' && idValido(f) && idValido(p) && !extra) return await receberPublico(req, f, p); // sem conta: só durante um evento que o permita
       if (rec === 'presets' && req.method === 'POST' && idValido(f) && idValido(p) && extra === 'apagar') return await apagarPreset(c, f, p);
       if (req.method !== 'GET') return json(405, { erro: 'Método não suportado' });

@@ -65,7 +65,7 @@ const LIMITE_CORPO = 40 * 1024 * 1024; // 40 MB
 const idValido = id => /^[a-z0-9][a-z0-9-]{0,60}$/.test(id);
 // objetos do servidor central que a cópia local aceita (os mesmos de servidor-central/nucleo.mjs)
 const ID = '[a-z0-9][a-z0-9-]{0,60}';
-const CHAVE_COPIA = new RegExp(`^(presets/${ID}/${ID}/(\\d+|atual|revisoes)\\.json|(indice|elementos)/${ID}\\.json|historico/\\d{4}-\\d{2}\\.json|chaves\\.json|contas/contas\\.json|evento/(atual|catalogo)\\.json|definicoes/geral\\.json|categorias/fundidas\\.json|apagados/${ID}\\.json)$`);
+const CHAVE_COPIA = new RegExp(`^(fotos/${ID}/[0-9a-f]{32}\\.(jpg|png|webp)|presets/${ID}/${ID}/(\\d+|atual|revisoes)\\.json|(indice|elementos)/${ID}\\.json|historico/\\d{4}-\\d{2}\\.json|chaves\\.json|contas/contas\\.json|evento/(atual|catalogo)\\.json|definicoes/geral\\.json|categorias/fundidas\\.json|apagados/${ID}\\.json)$`);
 const agora = () => new Date().toISOString().slice(0, 16).replace('T', ' ');
 const local = req => ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress);
 const json = (res, codigo, obj, extra = {}) => { res.writeHead(codigo, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...extra }); res.end(JSON.stringify(obj)); };
@@ -259,7 +259,7 @@ export function criarServidor({ raiz, gravavel = raiz, app = false, versao = '',
     const u = new URL(url, 'http://x'), chave = u.searchParams.get('chave') || '', versao = u.searchParams.get('versao') || '';
     if (!CHAVE_COPIA.test(chave)) return json(res, 400, { erro: 'Objeto inválido' });
     const corpo = await lerCorpo(req);
-    try { JSON.parse(corpo.toString('utf8')); } catch (err) { return json(res, 400, { erro: 'O objeto não é JSON' }); }
+    if (!chave.startsWith('fotos/')) { try { JSON.parse(corpo.toString('utf8')); } catch (err) { return json(res, 400, { erro: 'O objeto não é JSON' }); } } // as fotos vão como estão
     fs.writeFileSync(paraEscrever('copia-central/' + chave), corpo);
     let v = {}; try { v = JSON.parse(fs.readFileSync(paraLer('copia-central/versoes.json'), 'utf8')); } catch (err) { v = {}; }
     v[chave] = versao; fs.writeFileSync(paraEscrever('copia-central/versoes.json'), JSON.stringify(v));

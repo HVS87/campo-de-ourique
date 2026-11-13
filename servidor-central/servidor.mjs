@@ -27,12 +27,15 @@ const armazem = {
   async ler(chave) { try { return fs.readFileSync(caminho(chave), 'utf8'); } catch (err) { return null; } },
   async escrever(chave, texto) { const f = caminho(chave); fs.mkdirSync(path.dirname(f), { recursive: true }); const tmp = f + '.tmp'; fs.writeFileSync(tmp, texto); fs.renameSync(tmp, f); }, // escrita atómica
   async apagar(chave) { try { fs.unlinkSync(caminho(chave)); } catch (err) { /* já não existe */ } },
+  async lerBinario(chave) { try { return { corpo: fs.readFileSync(caminho(chave)), tipo: { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp' }[chave.split('.').pop()] || '' }; } catch (err) { return null; } },
+  async escreverBinario(chave, bytes) { const f = caminho(chave); fs.mkdirSync(path.dirname(f), { recursive: true }); const tmp = f + '.tmp'; fs.writeFileSync(tmp, bytes); fs.renameSync(tmp, f); },
+  async existe(chave) { return fs.existsSync(caminho(chave)); },
   // ler-mudar-gravar sem esperas pelo meio: dois pedidos ao mesmo tempo não se pisam (o Node corre um de cada vez)
   async atualizar(chave, f) { let t = null; try { t = fs.readFileSync(caminho(chave), 'utf8'); } catch (err) { t = null; } const novo = f(t); if (novo != null && novo !== t) await armazem.escrever(chave, novo); },
   async listar(prefixo) {
     const out = [], base = prefixo ? caminho(prefixo.replace(/\/$/, '')) : DADOS;
     (function andar(dir) { let l = []; try { l = fs.readdirSync(dir, { withFileTypes: true }); } catch (err) { return; }
-      for (const e of l) { const f = path.join(dir, e.name); if (e.isDirectory()) andar(f); else if (e.name.endsWith('.json')) { const st = fs.statSync(f); out.push({ chave: path.relative(DADOS, f).split(path.sep).join('/'), tamanho: st.size, data: st.mtime.toISOString() }); } } })(base);
+      for (const e of l) { const f = path.join(dir, e.name); if (e.isDirectory()) andar(f); else if (/\.(json|jpg|png|webp)$/.test(e.name)) { const st = fs.statSync(f); out.push({ chave: path.relative(DADOS, f).split(path.sep).join('/'), tamanho: st.size, data: st.mtime.toISOString() }); } } })(base);
     return out;
   },
 };

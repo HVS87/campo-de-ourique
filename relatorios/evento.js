@@ -52,7 +52,8 @@ window.RelatorioEvento = (function () {
     const com = freguesias.filter(f => f.registos.length), todos = com.flatMap(f => f.registos);
     for (const f of com) f.registos.forEach((r, i) => { r.n = i + 1; });
     const tipos = comTipos ? base.filter(t => !pedidos || pedidos.has(t.id)) : [SEM_TIPO]; // sem tipos no evento, um só (que não aparece)
-    return { ev: { nome: limpo(ev.nome), um: limpo(termos.um) || 'registo', varios: limpo(termos.varios) || 'registos', descricao: limpo(ev.descricao), competencia: limpo(o.competencia) }, freguesias, com, todos, tipos, fotos: o.fotos !== false, anterior: o.anterior ? { nome: limpo(o.anterior.nome) } : null, varrimento: !!o.varrimento };
+    const so = comTipos && pedidos && tipos.length < base.length ? tipos.map(t => limpo(t.nome)).join(', ') : ''; // o relatório só de alguns tipos diz quais logo na capa
+    return { ev: { nome: limpo(ev.nome), um: limpo(termos.um) || 'registo', varios: limpo(termos.varios) || 'registos', descricao: limpo(ev.descricao), competencia: limpo(o.competencia) }, so, freguesias, com, todos, tipos, fotos: o.fotos !== false, anterior: o.anterior ? { nome: limpo(o.anterior.nome) } : null, varrimento: !!o.varrimento };
   }
 
   // ---------- os mapas ----------
@@ -147,6 +148,7 @@ window.RelatorioEvento = (function () {
     E.y = MARGEM + 21; linhaH(E.y); E.y += 5;
     if (R.ev.descricao) { E.paragrafos(R.ev.descricao, MARGEM, UTIL, 9.5, SUAVE); E.y += 1; }
     if (R.ev.competencia) { letra(9.5, 'bold'); doc.text('Competência: ' + R.ev.competencia, MARGEM, E.y + 3); E.y += 5; }
+    if (R.so) { letra(9.5, 'bold'); doc.text(doc.splitTextToSize('Só: ' + R.so, UTIL)[0], MARGEM, E.y + 3); E.y += 5; }
     E.y += 2;
   }
   function quadrosNumeros(E, quadros) { // os números principais, em quatro caixas

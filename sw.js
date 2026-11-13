@@ -1,10 +1,12 @@
 // Service worker da app instalada: guarda a apresentação para abrir depressa e sem internet.
 // As imagens e as bibliotecas vêm logo do que está guardado (e atualizam-se por trás); o resto vem da rede, com o guardado
 // como reserva, para quem tem rede ver sempre os dados mais recentes. Contas, sessões, evento e cópia central nunca se guardam;
-// a API e o que vem de outros sites (satélite em direto) passam ao lado.
-const CACHE = 'co-v8';
+// a API e o que vem de outros sites (satélite em direto) passam ao lado, menos as fotos do servidor central, que nunca mudam
+// (o nome é a impressão do conteúdo): guardam-se na primeira vez e servem sem rede.
+const CACHE = 'co-v9';
 const BASE = ['./', 'index.html', 'config.js', 'manifest.webmanifest', 'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css', 'dados/freguesias/index.js', 'dados/freguesias/limites.js', 'dados/freguesias/ruas-cidade.js', 'vendor/jspdf/jspdf.umd.min.js', 'relatorios/evento.js', 'comum/juntar.mjs', 'assets/lisboa-dgt-2023.jpg', 'assets/lisboa-dgt-2023-alto.jpg', 'assets/icones/icone-192.png', 'assets/icones/icone-512.png', 'assets/icones/ps-logotipo.png'];
 const NUNCA = /\/(api|consulta|sessao|eventos?|definicoes|categorias|historico|contas|guardar|ativar-preset|apagar-preset|guardar-foto|copia-central)(\/|$)|\/ambiente\.json$/;
+const FOTO_CENTRAL = /\/api\/v\d+\/fotos\/[a-z0-9-]+\/[0-9a-f]{32}\.(jpg|png|webp)$/;
 const ESTAVEL = /\.(jpe?g|png|webp|gif|avif|svg|woff2)$|\/vendor\//;
 
 self.addEventListener('install', e => {
@@ -18,6 +20,7 @@ async function guardar(pedido, resposta) { if (resposta && resposta.ok && respos
 const guardado = pedido => caches.match(chave(pedido));
 self.addEventListener('fetch', e => {
   const r = e.request, u = new URL(r.url);
+  if (r.method === 'GET' && u.origin === location.origin && FOTO_CENTRAL.test(u.pathname)) { e.respondWith(guardado(r).then(g => g || fetch(r).then(x => guardar(r, x)))); return; }
   if (r.method !== 'GET' || u.origin !== location.origin || NUNCA.test(u.pathname)) return;
   if (ESTAVEL.test(u.pathname)) {
     e.respondWith(guardado(r).then(g => { const rede = fetch(r).then(x => guardar(r, x)); if (g) { rede.catch(() => {}); return g; } return rede; }));

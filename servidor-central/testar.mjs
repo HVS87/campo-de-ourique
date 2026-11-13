@@ -371,6 +371,30 @@ async function bateria(tipo) {
       assert.equal((await post('/evento', { id: 'abrange', nome: 'Abrange', ativo: false })).status, 200);
       assert.equal((await post('/eventos', { id: 'abrange', apagar: true })).status, 200);
     },
+    'fotos: à parte do preset, públicas, e as embebidas saem do preset ao chegar': async () => {
+      const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, ...Array.from({ length: 300 }, (_, i) => (i * 37) % 256)]), foto = (c, f, corpo) => fetch(API + '/fotos/' + f, { method: 'POST', headers: { 'Content-Type': 'image/jpeg', ...(c ? { Authorization: 'Bearer ' + c } : {}) }, body: corpo });
+      await pedir(sessoes.Admin, '/contas/Belem/palavra-passe', { method: 'POST', body: JSON.stringify({ nova: await derivarChave('Belem', 'fotos-teste') }) }); // uma sessão nova, seja qual for o estado deixado pelos testes de antes
+      sessoes.Belem = (await (await entrar('Belem', 'fotos-teste')).json()).testemunho;
+      assert.equal((await foto(null, 'belem', jpeg)).status, 401, 'sem sessão');
+      assert.equal((await foto(sessoes.Belem, 'ajuda', jpeg)).status, 403, 'outra freguesia');
+      assert.equal((await foto(sessoes.Belem, 'belem', new TextEncoder().encode('<html>nao sou foto</html>'))).status, 415, 'só imagens');
+      const r = await foto(sessoes.Belem, 'belem', jpeg); assert.equal(r.status, 201); const { endereco, chave } = await r.json();
+      assert.match(chave, /^fotos\/belem\/[0-9a-f]{32}\.jpg$/); assert.equal(endereco, API + '/' + chave);
+      assert.equal((await (await foto(sessoes.Belem, 'belem', jpeg)).json()).chave, chave, 'a mesma foto é o mesmo objeto');
+      const g = await fetch(endereco); assert.equal(g.status, 200, 'pública'); assert.equal(g.headers.get('content-type'), 'image/jpeg'); assert.deepEqual(new Uint8Array(await g.arrayBuffer()), jpeg);
+      assert.match(g.headers.get('cache-control') || '', /immutable/);
+      assert.equal((await fetch(API + '/fotos/belem/' + '0'.repeat(32) + '.jpg')).status, 404);
+      // um dispositivo antigo manda as fotos dentro do preset (num ponto e num registo de um conjunto): ficam objetos, o preset só com o endereço
+      const dataURL = 'data:image/jpeg;base64,' + Buffer.from(jpeg).toString('base64');
+      const dados = { preset: 'fotos', freguesia: 'belem', titulo: 'Fotos', elementos: [{ id: 'f1', tipo: 'ponto', nome: 'Com foto', texto: '', fotos: [{ src: dataURL, legenda: 'antiga' }], pos: [38.697, -9.2] }, { id: 'g1', tipo: 'grupo', nome: 'Registos', texto: '', fotos: [], pontos: [[38.697, -9.201]], detalhes: [{ i: 'a1b2c3d4e5f6', rua: 'Rua A', fotos: [{ src: dataURL, legenda: '' }] }] }] };
+      assert.equal((await enviar(sessoes.Belem, 'belem', 'fotos', dados)).status, 201);
+      const guardado = (await (await pedir(sessoes.Belem, '/presets/belem/fotos')).json()).dados;
+      assert.deepEqual(guardado.elementos[0].fotos, [{ src: endereco, legenda: 'antiga' }]); assert.equal(guardado.elementos[1].detalhes[0].fotos[0].src, endereco);
+      assert.ok(!JSON.stringify(guardado).includes('data:image'), 'nada embebido');
+      // a cópia local leva as fotos, em binário
+      const objs = (await (await pedir(sessoes.Admin, '/copia')).json()).objetos; assert.ok(objs.some(o => o.chave === chave), 'na lista da cópia');
+      const o = await pedir(sessoes.Admin, '/objeto?chave=' + encodeURIComponent(chave)); assert.equal(o.status, 200); assert.deepEqual(new Uint8Array(await o.arrayBuffer()), jpeg);
+    },
     'página de consulta': async () => { const r = await fetch(s.base + '/consulta'); assert.equal(r.status, 200); assert.ok((await r.text()).includes('Consulta dos dados')); },
   };
   console.log(`\n${tipo === 'node' ? 'Servidor Node' : 'Worker do Cloudflare (local)'}:`);

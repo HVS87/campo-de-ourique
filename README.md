@@ -209,7 +209,8 @@ servidor local; a apresentação lembra-o neste browser para abrir sem rede.
 Com o evento ativo:
 
 - **Ao entrar no modo de edição e no «+»** (também na vista normal, depois de iniciar sessão), pergunta-se o que se quer
-  registar: **Levantamento Iluminação Pública** ou **Outros Problemas**, que leva ao menu habitual.
+  registar: **Levantamento Iluminação Pública** ou **Outros Problemas** (fora da edição, um ponto simples; em edição, o menu
+  habitual). Fora da edição, o registo não abre o modo de edição: confirma-se e fica guardado.
 - **O levantamento:**
   1. escolhe-se o tipo: 💡 Candeeiro apagado/fundido ou 🌑 Candeeiro em falta/zona escura (o último fica lembrado);
   2. a apresentação acompanha o GPS durante uns segundos até ter precisão de 12 m (ou o melhor em 9 s) e põe um
@@ -228,11 +229,12 @@ Com o evento ativo:
 - **Toque longo no mapa (2 s, com o rato ou o dedo):** com sessão numa conta da freguesia, no modo de edição ou fora dele, um
   anel à volta do cursor mostra o tempo a passar e, aos 2 s, abre-se uma bolha. Com o evento a decorrer e o modo do evento ligado,
   a bolha propõe acrescentar ali um ponto ao conjunto do evento: carregar nela abre o registo nesse sítio, sem ir ao GPS. Sem
-  evento, ou com o modo do evento desligado nas Camadas, propõe uma nova ocorrência: carregar nela abre o menu de criar, com
-  «Ponto aqui» e «Rua mais próxima» já nesse sítio. Carregar fora da bolha fecha-a sem fazer nada. Uma legenda no topo diz o
+  evento, ou com o modo do evento desligado nas Camadas, propõe uma nova ocorrência: carregar nela abre, fora da edição, o
+  registo de um ponto nesse sítio (como o «+»); em edição, o menu de criar, com «Ponto aqui» e «Rua mais próxima» já nesse
+  sítio. Carregar fora da bolha fecha-a sem fazer nada (um toque até 12 px ao lado dela ainda conta como nela). Uma legenda no topo diz o
   que o toque longo faz, enquanto o evento decorre.
-- **Edição que se fecha sozinha:** quando o modo de edição abre sem o lápis (pela bolha do mapa ou pelo «+» fora da edição),
-  fecha-se sozinho depois de o registo ser confirmado e gravado, ao «Guardar», ou ao sair sem nada feito.
+- **Edição que se fecha sozinha:** quando o modo de edição abre sem o lápis (pelo «✎ Editar» da ficha), fecha-se sozinho ao
+  «Guardar» ou ao sair sem nada feito. O «+» e a bolha do mapa já não abrem o modo de edição.
 - **«✎ Editar» na ficha:** com sessão numa conta da freguesia, a ficha de cada ocorrência e de cada registo de um evento tem
   um botão «✎ Editar», que abre o modo de edição só para ela. Ao sair (✕, «Concluído», clicar fora, apagar ou «Tirar do
   conjunto»), se algo mudou pergunta «Tens a certeza que queres alterar…?» (ou «…apagar…?»): «Sim» grava e fecha a edição,
@@ -291,7 +293,9 @@ Em menu da conta → **Eventos**, o `System.Admin` vê todos os eventos e pode:
   Camadas e a contagem na faixa), exceto num evento com «Registos sem conta», onde qualquer pessoa marca. Com uma conta da
   freguesia, marca-se **sem o modo de edição**, com um toque longo (2 s, com o rato ou o dedo): ao carregar, a rua realça-se e
   mostra a etiqueta; aos 2 s abre-se uma bolha, «Carrega outra vez para marcar como percorrida» (ou «por percorrer»), e só
-  carregar nela muda a rua. Carregar fora da bolha fecha-a sem mudar nada; um clique rápido também não muda nada. A marca
+  carregar nela muda a rua. Carregar fora da bolha fecha-a sem mudar nada; um clique rápido também não muda nada. Com o dedo,
+  conta uma rua até 30 px do toque (com o rato, 18 px), o dedo pode tremer até 26 px sem cancelar, e os pontos registados em
+  cima das ruas não impedem o toque longo (um toque curto continua a abri-los). A marca
   guarda-se e junta-se entre dispositivos como um registo. Com o varrimento e o registo no mesmo evento, um seletor discreto na
   legenda do topo, **🛣 Varrimento | Registar**, escolhe o que faz o toque longo: marcar ruas ou acrescentar pontos ao conjunto
   do evento (aí, as ruas continuam à vista mas não recebem o toque).
@@ -305,7 +309,8 @@ Em menu da conta → **Eventos**, o `System.Admin` vê todos os eventos e pode:
   sessão; o autor fica «Membro do público». O servidor só aceita acrescentar um registo ao conjunto do evento, com até 3 fotos.
 - **Ativar ou desativar:** só há um ativo de cada vez. Os registos ficam guardados ao mudar de evento.
 - **Exportar PDF:** funciona também com o evento inativo. Escolhe-se o âmbito (toda a cidade ou uma freguesia), o formato
-  (detalhado, com a ficha de cada registo, ou resumido), os tipos a incluir e se levam fotos. O relatório de uma freguesia tem a
+  (detalhado, com a ficha de cada registo, ou resumido), os pontos a incluir (todos, ou só os de um tipo: por exemplo, só os
+  candeeiros apagados/fundidos ou só os em falta/zonas escuras; a capa diz qual) e se levam fotos. O relatório de uma freguesia tem a
   sua capa e os seus números (total, com fotografia, por km² e período), o mapa numerado, a lista dos registos (número, morada,
   tipo, data, fotos e notas), as ruas com mais registos e, no detalhado, a ficha de cada um. As densidades vêm em km². No detalhado,
   a lista de cada freguesia (também em cada capítulo do relatório da cidade) é um índice: cada linha leva à ficha do registo e diz
@@ -369,8 +374,12 @@ mostra só as ferramentas; «⋯ Mais» abre o título, o subtítulo e os preset
   zona pisca, a indicar que vai «mergulhar»); arrastar um ponto para fora da zona tira-o de lá. Numa zona
   selecionada aparecem os vértices: arrastam-se, os pontos médios criam vértices novos e um duplo clique num
   vértice apaga-o.
-- **Botão «+»** (canto inferior direito): abre a lista do que se pode criar. Fora da edição é um atalho: pede para
-  iniciar sessão, se ainda não houver sessão, entra no modo de edição e abre a lista. O que se pode criar: ponto, conjunto de
+- **Botão «+»** (canto inferior direito): fora da edição, marca um ponto sem abrir o modo de edição, pensado para o
+  telemóvel: pede a conta da freguesia (se ainda não houver sessão), vai à localização do aparelho (ou, com a geolocalização
+  desligada, espera um toque no mapa), o marcador arrasta-se com o dedo, sugere a morada, aceita notas e fotos, e «Confirmar
+  registo» cria o ponto (com a morada por nome) e guarda-o logo (no site alojado, no servidor central, em segundo plano). Com
+  um evento ativo, oferece primeiro os tipos do evento. O nome, o texto e o resto mudam-se depois no modo de edição. Em edição,
+  o «+» abre a lista do que se pode criar: ponto, conjunto de
   pontos, ponto desmaterializado, rua, zona, zona livre e lote. Em telemóveis e tablets tem também «Ponto onde
   estou» e «Rua onde estou», que usam a localização do aparelho (a rua é a mais próxima, até 60 m; fora da
   freguesia, pergunta antes). O browser só dá a localização a páginas em https ou abertas no próprio aparelho.
@@ -411,11 +420,12 @@ mostra só as ferramentas; «⋯ Mais» abre o título, o subtítulo e os preset
   `dados/conteudos.js`, que é o que a apresentação abre. Em Campo de Ourique há dois: **Campo de Ourique** (os
   conteúdos reais) e **Campo de Ourique (exemplo)** (dados de demonstração). **Novo…** cria um preset
   vazio com o nome que escolheres; **Apagar** apaga o ativo (fica uma cópia `.apagado.bak`); **Importar…**
-  carrega um preset exportado (.json) ou um `conteudos.js` gravado por esta ferramenta como **preset
-  alternativo** desta freguesia (nunca substitui um existente; com o mesmo nome fica «(importado)»), que passa a
-  aparecer no seletor; **Exportar** transfere o preset ativo em JSON, com a freguesia a que pertence. Um preset de
-  outra freguesia pode abrir-se nessa freguesia (onde fica como alternativo, sem mexer nos presets desta) ou,
-  se se quiser, importar-se aqui. O servidor recusa gravar numa freguesia um preset marcado com outra. Sem
+  junta ao preset aberto um preset exportado (.json) ou um `conteudos.js` gravado por esta ferramenta: só entra o
+  que falta (pontos, registos dos eventos, zonas, ruas, categorias, ruas percorridas); nada do que cá está se apaga
+  nem muda, e o resultado guarda-se logo (no site alojado, no servidor central). Importar o mesmo ficheiro outra vez não
+  acrescenta nada. **Exportar** transfere o preset ativo em JSON, com a freguesia a que pertence; é a única
+  maneira de transferir um ficheiro (com um servidor, «Guardar» nunca transfere). Um preset de outra freguesia pode
+  juntar-se ao dessa freguesia (sem mexer nos presets desta) ou, se se quiser, ficar aqui como preset alternativo. O servidor recusa gravar numa freguesia um preset marcado com outra. Sem
   servidor, os presets novos ficam só neste browser (indicado no seletor) até serem exportados;
   **Transferir conteudos.js** transfere
   o ficheiro no formato de `dados/conteudos.js`, para quando a apresentação não está servida por

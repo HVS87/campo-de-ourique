@@ -16,6 +16,9 @@ function armazemR2(r2) {
     async ler(chave) { const o = await r2.get(chave); return o ? o.text() : null; },
     async escrever(chave, texto) { await r2.put(chave, texto, { httpMetadata: { contentType: 'application/json; charset=utf-8' } }); },
     async apagar(chave) { await r2.delete(chave); },
+    async lerBinario(chave) { const o = await r2.get(chave); return o ? { corpo: await o.arrayBuffer(), tipo: (o.httpMetadata && o.httpMetadata.contentType) || '' } : null; },
+    async escreverBinario(chave, bytes, tipo) { await r2.put(chave, bytes, { httpMetadata: { contentType: tipo } }); },
+    async existe(chave) { return !!(await r2.head(chave)); },
     listar,
     // ler-mudar-gravar sem pisar outro envio ao mesmo tempo: só grava se o objeto não mudou entretanto (etag), senão repete
     async atualizar(chave, f) {

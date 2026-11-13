@@ -213,5 +213,13 @@ Erros:
 A apresentação tira da fila um envio recusado com `400`, `403`, `409` ou `413`; os outros erros, e a falta de rede,
 ficam para mais tarde.
 
-**As fotos não vão para o servidor central.** Vão só as fotos por endereço (https://…). As que estão em
-`assets/fotos/` ficam no computador de quem as pôs.
+**As fotos ficam à parte dos presets.** No site alojado (sem servidor local), cada foto segue sozinha, reduzida a 1600 px,
+em `POST /api/v1/fotos/<freguesia>` (o corpo é a imagem: JPEG, PNG ou WebP, até 12 MB; a mesma conta que envia para a
+freguesia) e o preset leva só o endereço que volta (`/api/v1/fotos/<freguesia>/<impressão>.jpg`). O nome é a impressão
+SHA-256 do conteúdo: a mesma foto enviada duas vezes é o mesmo objeto, e nunca muda. Lê-se sem sessão, como a
+apresentação que a mostra, e a app instalada guarda-a para ver sem rede. Uma foto tirada sem rede fica reduzida dentro do
+preset e segue sozinha antes do envio dele; as que chegam embebidas (`data:image/…`, de versões antigas ou de um membro do
+público) passam a objetos à parte ao chegar. Antes, cada envio levava todas as fotos dentro do preset: o armazenamento do
+telemóvel enchia (a fila deixava de se gravar e «Guardar» transferia o ficheiro) e o servidor recebia pedidos cada vez
+maiores. As fotos entram na cópia local (`fotos/…`). As que estão em `assets/fotos/` (aplicação de computador) ficam no
+computador de quem as pôs.
