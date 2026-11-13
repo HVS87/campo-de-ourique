@@ -43,10 +43,15 @@ Com um evento ativo que tenha visita própria (hoje, o Levantamento Iluminação
 que corre em vez da geral. Começa pela conta (o varrimento e as bolhas precisam de sessão). Num evento com varrimento, explica as
 ruas a vermelho e a azul e a legenda do topo, mostra no mapa a **bolha** de marcar uma rua (o toque longo de 2 s) e o seletor
 **Varrimento | Registar**. Depois mostra a bolha de acrescentar um ponto ao conjunto do evento e, se o evento der seguimento a outro,
-os registos anteriores a verificar. Por fim, o caminho pelo «+», o painel de registo como exemplo e a ficha com «✎ Editar», sem
-gravar nada, e no fim pergunta se se quer ver a visita geral. Fica também em ☰ → Visita do evento.
+os registos anteriores a verificar. Por fim, o caminho pelo «+» (sem modo de edição, com «📍 Outros problemas» para um ponto
+simples), o painel de registo como exemplo (com a foto) e a ficha com «✎ Editar», sem gravar nada, e no fim pergunta se se
+quer ver a visita geral. Fica também em ☰ → Visita do evento.
 
-As visitas só simulam: o ponto de exemplo é um marcador solto, fora dos dados, e com uma visita aberta nada se cria nem se regista.
+A visita geral mostra, nos comandos do índice, «📲 Instalar a aplicação» e a geolocalização, e no «+» o painel de registo
+como exemplo: marca-se um ponto sem o modo de edição, que fica para editar a fundo.
+
+As visitas só simulam: o ponto de exemplo é um marcador solto ou o painel de registo vazio, fora dos dados, e com uma visita
+aberta nada se cria nem se regista.
 
 Na primeira vez que se abre a apresentação, uma visita guiada explica a interface passo a passo: cada passo realça
 um elemento do ecrã (a escurecer o resto) e explica-o num cartão, com «Seguinte», «Anterior» e uma barra de
@@ -98,9 +103,13 @@ Transfere-se em [Releases](https://github.com/HVS87/campo-de-ourique/releases):
 
 ### Instalar como app no telemóvel ou no tablet
 
-A apresentação alojada em `https` instala-se como aplicação, sem loja nem instalador. No Android aparece um convite no
-topo (e o botão «📲 Instalar» no índice ☰); no iPhone e no iPad, esse botão explica o caminho: Safari → Partilhar →
-Adicionar ao ecrã principal. Abre em ecrã inteiro, com ícone próprio.
+A apresentação alojada em `https` instala-se como aplicação, sem loja nem instalador. No telemóvel e no tablet aparece
+uma vez um convite no topo. O botão **«📲 Instalar a aplicação»** no índice ☰ fica sempre (menos dentro da própria
+aplicação), para quem recusou o convite instalar mais tarde: no Android, abre o pedido do browser ou, se o browser já não
+o der (depois de recusado, o Chrome deixa de o dar durante um tempo), explica o caminho pelo menu ⋮ → Instalar aplicação;
+no iPhone e no iPad, explica o caminho: Safari → Partilhar → Adicionar ao ecrã principal; no computador, leva à página
+das versões, para transferir a aplicação de computador (e lembra que o Chrome e o Edge também instalam a página). Abre em
+ecrã inteiro, com ícone próprio.
 
 O service worker (`sw.js`) guarda o que já se abriu, para abrir depressa e sem internet: as imagens e as bibliotecas vêm
 logo do guardado, os dados vêm da rede, com o guardado como reserva. Contas, sessões e evento nunca se guardam. A
