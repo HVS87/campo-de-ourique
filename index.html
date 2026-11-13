@@ -3124,10 +3124,12 @@ function apagarAutosave(id) { // o desta janela e os de janelas que já fecharam
 }
 function estado(txt, sujo) { estadoEl.textContent = txt; barra.classList.toggle('sujo', !!sujo); }
 let rascunhoEnviado = false; // o rascunho é o que seguiu para o servidor central: tem de aparecer, mas não está por guardar
+let semBase = false; // um rascunho que não se conseguiu juntar: o próximo envio vai sem base (o servidor junta sem apagar nada)
+function baseDoRascunho() { try { return juntarCarregado && FICHEIRO && !semBase ? juntarCarregado.baseDe(FICHEIRO) : null; } catch (err) { return null; } } // o módulo pode ainda não ter chegado
 function autoGuardar() {
   if (!SESSAO) return; // cada rascunho tem dono
   try {
-    localStorage.setItem(chaveAuto(), JSON.stringify({ quando: Date.now(), utilizador: SESSAO ? SESSAO.utilizador : '', enviado: rascunhoEnviado, consolidacoes, dados: serializar() }));
+    localStorage.setItem(chaveAuto(), JSON.stringify({ quando: Date.now(), utilizador: SESSAO ? SESSAO.utilizador : '', enviado: rascunhoEnviado, consolidacoes, dados: serializar(), base: baseDoRascunho() })); // a base: o que esta janela tinha recebido, para o rascunho se juntar sem apagar o que outros puseram entretanto
     if (SESSAO) localStorage.removeItem(PREFIXO_ANTIGO + C.preset); // um rascunho de antes das contas passa a ser desta conta
     if (rascunhoAdotado && rascunhoAdotado !== chaveAuto()) { localStorage.removeItem(rascunhoAdotado); rascunhoAdotado = null; } // o que esta janela retomou já está no seu
     $('#estado-auto').textContent = 'rascunho guardado às ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5); autoFalhou = false;
@@ -3154,7 +3156,7 @@ async function autosaveValido(id, r) {
     if (mod && mod > r.quando) {
       if (naFilaCentral(id)) return true; // ainda não chegou ao servidor central: é este o trabalho mais recente
       if (r.enviado) { apagarAutosave(id); return false; } // já chegou ao servidor central: o ficheiro mais recente tem-no
-      const q = await dialogo({ titulo: 'Rascunho mais antigo do que o ficheiro', texto: `O preset foi gravado depois deste rascunho (de ${esc(dataHora(r.quando))}). O que queres abrir?`, botoes: [{ id: 'rascunho', texto: 'O rascunho' }, { id: 'ficheiro', texto: 'O ficheiro (apaga o rascunho)', classe: 'on' }] });
+      const q = await dialogo({ titulo: 'Rascunho mais antigo do que o ficheiro', texto: `O preset foi gravado depois deste rascunho (de ${esc(dataHora(r.quando))}). Juntar acrescenta o teu trabalho ao que foi gravado depois, sem apagar nada do que lá está.`, botoes: [{ id: 'rascunho', texto: 'Juntar o rascunho' }, { id: 'ficheiro', texto: 'O ficheiro (apaga o rascunho)', classe: 'on' }] });
       if (q === 'ficheiro') { apagarAutosave(id); return false; }
       if (q !== 'rascunho') return false;
     }
@@ -3348,8 +3350,13 @@ async function restaurarAutosave() { // repõe o preset em curso da sessão ante
   const r = lerAutosaveDe(C.preset);
   if (!r || JSON.stringify(r.dados) === JSON.stringify(FICHEIRO)) return;
   if (!PRESETS_LOCAIS.has(C.preset) && !(await autosaveValido(C.preset, r))) return;
-  const id = C.preset; carregar(clonar(r.dados)); C.preset = id; consolidacoes = Array.isArray(r.consolidacoes) ? r.consolidacoes : []; atualizarAvisosEdicao();
-  if (r.enviado || naFilaCentral(id)) { alterado = false; rascunhoEnviado = !!r.enviado; FICHEIRO = clonar(r.dados); estado(r.enviado ? 'Enviado para o servidor central' : 'Na fila do servidor central'); return; }
+  // O rascunho junta-se ao que esta janela acabou de receber, com a base de que ele partiu: o que outros (ou outra versão da
+  // apresentação) gravaram entretanto fica, e só sai o que o rascunho tirou de facto. Sem base (rascunhos de antes desta versão),
+  // junta-se tudo e nada se apaga. Antes, o rascunho substituía o que tinha chegado, e o envio seguinte apagava os pontos novos dos outros.
+  const id = C.preset; let dados = clonar(r.dados);
+  if (FICHEIRO) { try { const J = await juntarMod(); dados = J.juntarTresVias(clonar(FICHEIRO), dados, r.base || null).dados; J.juntarEventos(FICHEIRO, dados, { admin: true }); } catch (err) { semBase = true; /* sem o módulo: o próximo envio vai sem base, e o servidor junta sem apagar nada */ } }
+  carregar(clonar(dados)); C.preset = id; consolidacoes = Array.isArray(r.consolidacoes) ? r.consolidacoes : []; atualizarAvisosEdicao();
+  if (r.enviado || naFilaCentral(id)) { alterado = false; rascunhoEnviado = !!r.enviado; FICHEIRO = clonar(dados); estado(r.enviado ? 'Enviado para o servidor central' : 'Na fila do servidor central'); return; }
   alterado = true;
   marcarAlterado(); estado('Alterações por guardar (rascunho de ' + new Date(r.quando).toLocaleString('pt-PT') + ')', true);
   aviso('Rascunho de ' + dataHora(r.quando) + ' recuperado: ainda não está guardado no ficheiro do preset.', 7000);
@@ -3415,21 +3422,22 @@ async function guardar(opcoes = {}) {
   if (validar && r !== 'recusado') { consolidacoes = []; atualizarAvisosEdicao(); autoGuardar(); }
   return r;
 }
-let modJuntar = null; // comum/juntar.mjs: a mesma junção que os servidores usam
-const juntarMod = () => modJuntar || (modJuntar = import('./comum/juntar.mjs').catch(err => { modJuntar = null; throw err; }));
+let modJuntar = null, juntarCarregado = null; // comum/juntar.mjs: a mesma junção que os servidores usam
+const juntarMod = () => modJuntar || (modJuntar = import('./comum/juntar.mjs').then(m => (juntarCarregado = m)).catch(err => { modJuntar = null; throw err; }));
+juntarMod().catch(() => { /* sem o módulo: volta a tentar quando for preciso */ }); // o rascunho guarda a base de que partiu (autoGuardar), e isso é síncrono
 function avisarConflitos(conflitos, onde) { // o que dois dispositivos mudaram ao mesmo tempo, no mesmo sítio
   const nomes = [...new Set(conflitos.map(c => c.nome))].slice(0, 6);
   aviso(`Ao mesmo tempo, noutro dispositivo ou janela, mudou-se também ${nomes.map(n => '«' + n + '»').join(', ')}${conflitos.length > nomes.length ? ' e mais' : ''}. Ficou o que acabaste de guardar; a outra versão ${onde === 'central' ? 'fica no histórico de revisões do servidor central' : 'fica em ' + BASE + 'presets/' + C.preset + '.anterior.js'}.`, 12000);
 }
 async function gravarPreset(opcoes) {
   const dados = serializar(), paraCentral = !opcoes.semCentral && CONFIG_CENTRAL.enviarAoGuardar !== false;
-  let base = null; try { if (FICHEIRO) base = (await juntarMod()).baseDe(FICHEIRO); } catch (err) { /* sem o módulo, o servidor junta sem apagar nada */ } // o que esta janela recebeu antes de mexer
+  let base = null; try { if (FICHEIRO && !semBase) base = (await juntarMod()).baseDe(FICHEIRO); } catch (err) { /* sem o módulo, o servidor junta sem apagar nada */ } // o que esta janela recebeu antes de mexer
   if (await verificarServidor()) {
     try {
       const r = await postLocal('/guardar' + qsFreguesia, JSON.stringify(base ? { ...dados, __base: base } : dados));
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw Object.assign(new Error(j.erro || r.statusText), { codigo: r.status });
-      alterado = false; FICHEIRO = clonar(dados);
+      alterado = false; semBase = false; FICHEIRO = clonar(dados);
       if (j.juntou && j.dados) { carregar(clonar(j.dados)); FICHEIRO = clonar(serializar()); } // o que outro guardou ao mesmo tempo aparece já
       cancelarAuto(); autoGuardar(); PRESETS_LOCAIS.delete(C.preset);
       if (j.presets) atualizarPresets(j.presets); else preencherPresets();
@@ -3444,7 +3452,7 @@ async function gravarPreset(opcoes) {
   } else if (!podeEditarEm(SESSAO, FREG.id)) { autoGuardarJa(); aviso('Para guardar, inicia sessão com uma conta que edite ' + FREG.nome + '.', 6000); return 'recusado'; }
   const naFila = paraCentral && enfileirarCentral(serializar(true), opcoes.soEvento, base);
   if (naFila && (opcoes.semTransferir || !contasLocais())) {
-    alterado = false; FICHEIRO = clonar(dados); rascunhoEnviado = false; cancelarAuto(); autoGuardar(); estado('Na fila do servidor central · ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5));
+    alterado = false; semBase = false; FICHEIRO = clonar(dados); rascunhoEnviado = false; cancelarAuto(); autoGuardar(); estado('Na fila do servidor central · ' + new Date().toLocaleTimeString('pt-PT').slice(0, 5));
     PRESETS_LOCAIS.delete(C.preset); const e = PRESETS.find(p => p.id === C.preset); if (e) { e.nome = dados.titulo || e.nome; e.subtitulo = dados.subtitulo || ''; e.elementos = dados.elementos.length; } preencherPresets();
     return 'central';
   } // no site alojado, o servidor central é onde se guarda: não há ficheiro a transferir

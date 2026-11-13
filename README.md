@@ -448,8 +448,13 @@ mostra só as ferramentas; «⋯ Mais» abre o título, o subtítulo e os preset
   - **De quem é:** cada rascunho é da conta que o fez. Volta quando essa conta entra outra vez no modo de edição; a
     barra indica «Alterações por guardar (rascunho de …)». Quem só vê a apresentação, ou entra com outra conta, vê
     os ficheiros.
-  - **Ficheiro mais recente:** se o ficheiro do preset tiver sido alterado depois (à mão ou noutro browser), vale o
-    ficheiro.
+  - **Ficheiro mais recente:** se o preset tiver sido gravado depois (noutro dispositivo, noutro browser ou à mão),
+    pergunta-se: «O ficheiro» apaga o rascunho; «Juntar o rascunho» acrescenta-o ao que foi gravado depois.
+  - **Nunca apaga o que outros puseram:** o rascunho guarda a base de que partiu (o que este dispositivo tinha
+    recebido) e, ao voltar, junta-se ao que acabou de chegar como no servidor (a três vias): fica o que outros
+    gravaram entretanto, e só sai o que o rascunho tirou de facto. Um rascunho de uma versão anterior, sem base,
+    junta-se sem apagar nada. Antes, o rascunho substituía o que tinha chegado e o envio seguinte apagava os pontos
+    novos dos outros (por exemplo, depois de uma atualização, ao voltar a uma página com trabalho por guardar).
   - **Quando se perde:** com «Sair sem guardar», «Descartar e terminar», «Repor do ficheiro», ao apagar o preset ou ao
     limpar os dados do site.
   - **Ao fechar com alterações por guardar:** o browser pergunta se fecha mesmo, e a aplicação de computador também.

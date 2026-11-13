@@ -233,7 +233,9 @@ Sempre que o código ou os dados de base mudarem, volta a correr:
 npm run central:publicar
 ```
 
-Os dados guardados no R2 não mudam com isto. Antes de publicar, confirma que a versão é a que queres: a publicação
+Os dados guardados no R2 não mudam com isto: os pontos, as fotos, as contas e o evento ficam, e o site novo serve-os por
+cima dos ficheiros que vêm com ele. Os envios que estavam na fila dos telemóveis seguem depois, juntados sem apagar o que
+entretanto chegou (cada envio leva a base de que partiu). Antes de publicar, confirma que a versão é a que queres: a publicação
 vai para a internet logo a seguir.
 
 ### Ver o uso e os limites
