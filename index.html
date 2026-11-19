@@ -4047,7 +4047,7 @@ async function gerirEvento() {
     };
     const r = await dialogo({ titulo: 'Eventos', largo: true,
       texto: 'Com um evento ativo, ao entrar no modo de edição e ao carregar no «+» pergunta-se se é um registo do evento ou uma ocorrência normal. Cada registo leva a localização e a morada confirmadas, num conjunto por freguesia; o mapa de Lisboa mostra o resumo da cidade. Cada evento controla-se à mão ou pelo calendário, em «Editar». Só há um evento ativo de cada vez, e o relatório exporta-se mesmo depois de ele acabar.',
-      corpo: htmlInterruptorVisita() + `<div class="tabela-dialogo"><table><thead><tr><th>Evento</th><th>Estado</th><th></th></tr></thead><tbody>${lista.map((e, i) => `<tr><td>${esc(e.icone)} ${esc(e.nome)}</td><td>${estadoEvento(e)}</td><td class="acoes-evento"><button type="button" class="btn" data-r="pdf:${i}">Exportar PDF</button><button type="button" class="btn" data-r="editar:${i}">Editar</button>${e.agenda ? (agendaDecorre(e) ? `<button type="button" class="btn perigo" data-r="terminar:${i}">Terminar agora</button>` : '') : `<button type="button" class="btn ${ativoEste(e) ? 'perigo' : ''}" data-r="${ativoEste(e) ? 'desativar' : 'ativar'}:${i}"${!ativoEste(e) && calendarioEmCurso ? ` disabled title="Está a decorrer «${esc(calendarioEmCurso.nome)}», pelo calendário"` : ''}>${ativoEste(e) ? 'Desativar' : 'Ativar'}</button>`}</td></tr>`).join('')}</tbody></table></div>`,
+      corpo: htmlInterruptorVisita() + `<div class="tabela-dialogo"><table><thead><tr><th>Evento</th><th>Estado</th><th></th></tr></thead><tbody>${lista.map((e, i) => `<tr><td>${esc(e.icone)} ${esc(e.nome)}</td><td>${estadoEvento(e)}</td><td class="acoes-evento"><button type="button" class="btn" data-r="pdf:${i}">Exportar PDF</button><button type="button" class="btn" data-r="zip:${i}" title="Só as fotos do evento, de uma ou mais freguesias, num ficheiro .zip">Fotos (.zip)</button><button type="button" class="btn" data-r="editar:${i}">Editar</button>${e.agenda ? (agendaDecorre(e) ? `<button type="button" class="btn perigo" data-r="terminar:${i}">Terminar agora</button>` : '') : `<button type="button" class="btn ${ativoEste(e) ? 'perigo' : ''}" data-r="${ativoEste(e) ? 'desativar' : 'ativar'}:${i}"${!ativoEste(e) && calendarioEmCurso ? ` disabled title="Está a decorrer «${esc(calendarioEmCurso.nome)}», pelo calendário"` : ''}>${ativoEste(e) ? 'Desativar' : 'Ativar'}</button>`}</td></tr>`).join('')}</tbody></table></div>`,
       alerta: fontes.length > 1 ? '' : 'As mudanças ficam só ' + fontes[0].em + '.',
       botoes: [{ id: 'cancelar', texto: 'Fechar' }, { id: 'novo', texto: '+ Novo evento', classe: 'on' }] });
     if (r === 'novo') { await editarEvento(null, fontes); continue; }
@@ -4055,6 +4055,7 @@ async function gerirEvento() {
     const [acao, n] = String(r).split(':'), ev = lista[+n];
     if (!ev) return;
     if (acao === 'pdf') await exportarRelatorio(ev);
+    else if (acao === 'zip') await exportarFotos(ev);
     else if (acao === 'editar') await editarEvento(ev, fontes);
     else if (acao === 'terminar') {
       if (!(await confirmar('Terminar o evento', `Terminar «${esc(ev.nome)}» agora? Os registos ficam guardados e o relatório continua disponível.`, 'Terminar', true))) continue;
@@ -4266,6 +4267,59 @@ async function exportarRelatorio(ev) {
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `relatorio-${ev.id}${ambito ? '-' + ambito : ''}${escolhidos ? '-' + escolhidos[0] : ''}${extensivo ? '' : '-resumo'}-${new Date().toISOString().slice(0, 10)}.pdf`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);
     aviso(`Relatório transferido: ${a.download} (${(blob.size / 1048576).toLocaleString('pt-PT', { maximumFractionDigits: 1 })} MB).`, 8000);
   } catch (err) { aviso('Não foi possível gerar o relatório: ' + err.message, 8000); }
+}
+// Só as fotos do evento, num .zip: uma pasta por freguesia e, em cada foto, o número da ficha no relatório (a mesma ordem), a morada
+// e o tipo. As fotos entram como estão guardadas, sem as reduzir. Os registos sem tipo (de antes da regra) também entram, sem número.
+async function exportarFotos(ev) {
+  aviso('A juntar os registos do evento…');
+  const { fonte, freguesias, central, semAcesso } = await recolherRegistos(ev), T = termosDe(ev), naFila = central ? filaCentral().length : 0;
+  const valido = r => !ev.categorias.length || ev.categorias.some(c => c.id === r.c);
+  const srcDe = f => typeof f === 'string' ? f : f && f.src, fotosDe = r => (r.fotos || []).map(srcDe).filter(Boolean);
+  const com = freguesias.map(f => ({ ...f, nFotos: f.registos.reduce((s, r) => s + fotosDe(r).length, 0) })).filter(f => f.nFotos);
+  const total = com.reduce((s, f) => s + f.nFotos, 0);
+  $('#aviso').classList.remove('aberto');
+  if (!total) { await dialogo({ titulo: 'Fotos · ' + ev.nome, texto: `Ainda não há fotos nos ${esc(T.varios)} deste evento (fonte: ${esc(fonte)}).`, botoes: [{ id: 'ok', texto: 'Fechar', classe: 'on' }] }); return; }
+  const marca = (nome, on, rotulo, extra) => `<label class="campo-dialogo marca"><input type="checkbox" name="${nome}"${on ? ' checked' : ''}><span>${rotulo}${extra ? ` <small>${extra}</small>` : ''}</span></label>`;
+  let escolhidas = new Set(com.map(f => f.id)), erro = '';
+  for (;;) {
+    const aberto = dialogo({ titulo: 'Fotos · ' + ev.nome, largo: com.length > 4, campos: [],
+      texto: `<b>${total}</b> foto${total === 1 ? '' : 's'} em ${com.length} freguesia${com.length === 1 ? '' : 's'} (fonte: ${esc(fonte)}). Escolhe as freguesias: o ficheiro .zip leva só as fotos, numa pasta por freguesia, com o número da ficha no relatório, a morada e o tipo no nome de cada uma.`,
+      alerta: [erro, urlCentral() && !central ? 'Sem acesso ao servidor central: estes são só os dados deste aparelho.' : '', semAcesso.length ? `Não consegui ler ${esc(semAcesso.join(', '))}.` : '', naFila ? `Há ${naFila} envio${naFila === 1 ? '' : 's'} à espera na fila deste aparelho, que ainda não entram.` : ''].filter(Boolean).join('<br>'),
+      corpo: `${com.length > 1 ? marca('f-todas', escolhidas.size === com.length, '<b>Todas</b>', `(${total})`) : ''}
+        <div class="lista-freguesias">${com.map(f => marca('f-' + f.id, escolhidas.has(f.id), esc(f.nome), `(${f.nFotos})`)).join('')}</div>
+        <p class="contagem-rel" aria-live="polite"></p>`,
+      botoes: [{ id: 'cancelar', texto: 'Cancelar' }, { id: 'exportar', texto: 'Exportar .zip', classe: 'on' }] });
+    const q = s => dialogoEl.querySelector(s), todasF = q('[name=f-todas]'), cada = [...dialogoEl.querySelectorAll('[name^="f-"]:not([name=f-todas])')];
+    const contar = () => { const n = com.filter(f => (cada.find(c => c.name === 'f-' + f.id) || {}).checked).reduce((s, f) => s + f.nFotos, 0); q('.contagem-rel').innerHTML = `Com estas escolhas: <b>${n}</b> foto${n === 1 ? '' : 's'} no .zip.`; };
+    if (todasF) { todasF.addEventListener('change', () => { cada.forEach(c => { c.checked = todasF.checked; }); contar(); }); cada.forEach(c => c.addEventListener('change', () => { todasF.checked = cada.every(y => y.checked); })); }
+    cada.forEach(c => c.addEventListener('change', contar)); contar();
+    const { r } = await aberto;
+    if (r !== 'exportar') return;
+    escolhidas = new Set(com.filter(f => (cada.find(c => c.name === 'f-' + f.id) || {}).checked).map(f => f.id));
+    if (escolhidas.size) break;
+    erro = 'Escolhe pelo menos uma freguesia.';
+  }
+  try {
+    if (!window.FotosZip) await carregarScript('relatorios/fotos-zip.js');
+    // os nomes: «Alvalade/007 - Rua X, 12 - Candeeiro fundido (2).jpg»; o número é o da ficha no relatório com todos os pontos
+    const tipoDe = r => (ev.categorias.find(c => c.id === r.c) || {}).nome || 'sem tipo', limpo = s => window.FotosZip.nomeLimpo(s), entradas = [];
+    for (const f of com.filter(x => escolhidas.has(x.id))) {
+      const numerados = f.registos.filter(valido), largura = Math.max(3, String(numerados.length).length), pasta = limpo(f.nome) || f.id;
+      for (const reg of [...numerados, ...f.registos.filter(x => !valido(x))]) {
+        const l = fotosDe(reg); if (!l.length) continue;
+        const i = numerados.indexOf(reg), morada = reg.rua ? reg.rua + (reg.numero ? ', ' + reg.numero : '') : reg.nome || 'sem morada';
+        const base = [i >= 0 ? String(i + 1).padStart(largura, '0') : '', limpo(morada), limpo(tipoDe(reg))].filter(Boolean).join(' - ');
+        l.forEach((src, k) => entradas.push({ nome: `${pasta}/${base}${l.length > 1 ? ` (${k + 1})` : ''}.jpg`, src }));
+      }
+    }
+    aviso('A juntar as fotos…', 600000);
+    const { blob, incluidas, falhas } = await window.FotosZip.gerar({ entradas, aoProgresso: (n, t) => aviso(`A juntar as fotos: ${n} de ${t}…`, 600000) });
+    if (!incluidas) { aviso(`Nenhuma das ${entradas.length} fotos se conseguiu ler (sem acesso aos ficheiros).`, 8000); return; }
+    const um = escolhidas.size === 1 ? '-' + [...escolhidas][0] : '';
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `fotos-${ev.id}${um}-${new Date().toISOString().slice(0, 10)}.zip`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    const tamanho = blob.size < 1048576 ? Math.max(1, Math.round(blob.size / 1024)) + ' KB' : (blob.size / 1048576).toLocaleString('pt-PT', { maximumFractionDigits: 1 }) + ' MB';
+    aviso(`Fotos transferidas: ${a.download} (${incluidas} foto${incluidas === 1 ? '' : 's'}, ${tamanho}).${falhas.length ? ` ${falhas.length === 1 ? 'Uma não se conseguiu ler e ficou' : falhas.length + ' não se conseguiram ler e ficaram'} de fora.` : ''}`, 9000);
+  } catch (err) { aviso('Não foi possível juntar as fotos: ' + err.message, 8000); }
 }
 // ---------- os relatórios das ocorrências (backoffice da administração), à parte dos relatórios dos eventos ----------
 // Junta o que cada freguesia mostra (no servidor central, o preset mais recente, como o conteudos.js que lá se serve; sem ele, os

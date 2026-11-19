@@ -333,6 +333,12 @@ Em menu da conta → **Eventos**, o `System.Admin` vê todos os eventos e pode:
   e percentagem, com uma barra azul e vermelha), e no fim do relatório, «Varrimento das ruas, por freguesia», as ruas percorridas
   (com a data) e as por percorrer de cada freguesia onde o evento decorre. O relatório de uma só freguesia traz as listas dela. As
   ruas são as do `ruas.js` de cada freguesia (numa freguesia com zonas, só as das zonas), e vale a marcação mais recente de cada uma.
+- **Fotos (.zip):** só as fotos do evento, de uma ou mais freguesias (ou de todas), num ficheiro `.zip`; funciona também com o
+  evento inativo. O diálogo mostra as freguesias com fotos e quantas tem cada uma. Dentro do `.zip` há uma pasta por freguesia, e
+  cada foto tem no nome o número da ficha no relatório (a mesma ordem do relatório com todos os pontos), a morada e o tipo, por
+  exemplo `Alvalade/007 - Rua X, 12 - Candeeiro apagado fundido (2).jpg`. Os registos sem tipo (de antes da regra) também entram,
+  sem número. As fotos entram como estão guardadas, sem as reduzir nem comprimir de novo (`relatorios/fotos-zip.js`, sem
+  bibliotecas). As que não se conseguem ler (um ficheiro que já não existe) ficam de fora, e o aviso diz quantas.
 - **Apagar:** só um evento criado aqui, inativo e sem registos.
 
 ### Relatórios das ocorrências
