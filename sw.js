@@ -5,7 +5,7 @@
 // (o nome é a impressão do conteúdo): guardam-se na primeira vez e servem sem rede.
 const CACHE = 'co-v10';
 const BASE = ['./', 'index.html', 'config.js', 'manifest.webmanifest', 'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css', 'dados/freguesias/index.js', 'dados/freguesias/limites.js', 'dados/freguesias/ruas-cidade.js', 'vendor/jspdf/jspdf.umd.min.js', 'relatorios/evento.js', 'relatorios/fotos-zip.js', 'comum/juntar.mjs', 'assets/lisboa-dgt-2023.jpg', 'assets/lisboa-dgt-2023-alto.jpg', 'assets/icones/icone-192.png', 'assets/icones/icone-512.png', 'assets/icones/ps-logotipo.png'];
-const NUNCA = /\/(api|consulta|sessao|eventos?|definicoes|categorias|historico|contas|guardar|ativar-preset|apagar-preset|guardar-foto|copia-central)(\/|$)|\/ambiente\.json$/;
+const NUNCA = /\/(api|consulta|sessao|eventos?|definicoes|categorias|historico|contas|guardar|ativar-preset|apagar-preset|guardar-foto|copia-central)(\/|$)|\/(ambiente|versao)\.json$/;
 const FOTO_CENTRAL = /\/api\/v\d+\/fotos\/[a-z0-9-]+\/[0-9a-f]{32}\.(jpg|png|webp)$/;
 const ESTAVEL = /\.(jpe?g|png|webp|gif|avif|svg|woff2)$|\/vendor\//;
 

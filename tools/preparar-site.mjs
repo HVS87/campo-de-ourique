@@ -12,6 +12,12 @@ for (const f of ['index.html', 'manifest.webmanifest', 'sw.js', 'LICENSE', 'LICE
 for (const d of ['vendor', 'relatorios', 'comum', 'assets', 'dados']) fs.cpSync(path.join(RAIZ, d), path.join(SITE, d), { recursive: true, filter: f => !FORA.test(f) });
 // quem fez cada registo só a administração vê: não pode sair nos ficheiros públicos
 (function limpar(d) { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const f = path.join(d, e.name); if (e.isDirectory()) { limpar(f); continue; } if (e.name !== 'conteudos.js' && path.basename(d) !== 'presets') continue; const t = fs.readFileSync(f, 'utf8'), m = /window\.[A-Z_]+\s*=\s*\{/.exec(t), a = m ? m.index + m[0].length - 1 : -1, b = t.lastIndexOf('}'); if (a < 0 || b < a || !t.includes('"autor"')) continue; let dados; try { dados = JSON.parse(t.slice(a, b + 1)); } catch (err) { continue; } for (const el of dados.elementos || []) for (const x of el.detalhes || []) if (x) delete x.autor; fs.writeFileSync(f, t.slice(0, a) + JSON.stringify(dados, null, 1) + t.slice(b + 1)); } })(path.join(SITE, 'dados'));
+// a versão: a página leva a sua e versao.json diz a publicada; a app instalada no telemóvel compara as duas e atualiza-se sozinha
+const VERSAO = JSON.parse(fs.readFileSync(path.join(RAIZ, 'package.json'), 'utf8')).version;
+const pagina = fs.readFileSync(path.join(SITE, 'index.html'), 'utf8');
+if (!pagina.includes('<meta name="versao" content="">')) throw new Error('index.html: não encontrei <meta name="versao">');
+fs.writeFileSync(path.join(SITE, 'index.html'), pagina.replace('<meta name="versao" content="">', '<meta name="versao" content="' + VERSAO + '">'));
+fs.writeFileSync(path.join(SITE, 'versao.json'), JSON.stringify({ versao: VERSAO }));
 const config = fs.readFileSync(path.join(RAIZ, 'config.js'), 'utf8').replace(/url: *'[^']*'/, "url: location.origin + '/api/v1'");
 if (!config.includes('location.origin')) throw new Error('config.js: não encontrei o campo «url»');
 fs.writeFileSync(path.join(SITE, 'config.js'), config);

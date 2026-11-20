@@ -1,7 +1,7 @@
 {
   "name": "campo-de-ourique",
   "productName": "PS Lisboa - Repositório da Cidade",
-  "version": "1.19.0",
+  "version": "1.20.0",
   "description": "Apresentação interativa das freguesias de Lisboa num mapa de satélite, com modo de edição (versão browser e aplicação de computador)",
   "author": "Hugo (HVS87)",
   "license": "MIT",
@@ -57,6 +57,9 @@
       "servidor-central/contas.mjs",
       "servidor-central/contas-iniciais.mjs",
       "desktop/main.mjs",
+      "desktop/atualizacoes.mjs",
+      "desktop/atualizacoes-comum.mjs",
+      "desktop/preload.cjs",
       "desktop/recursos/icone.png",
       "LICENSE",
       "LICENCAS-TERCEIROS.md",
@@ -109,7 +112,8 @@
     },
     "mac": {
       "target": [
-        "dmg"
+        "dmg",
+        "zip"
       ],
       "category": "public.app-category.education",
       "artifactName": "PS-Lisboa-${version}.${ext}",

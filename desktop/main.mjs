@@ -4,11 +4,13 @@
 // fora do programa, e sobrevive às atualizações.
 //   npm run app        → abre a aplicação a partir do código (desenvolvimento)
 //   npm run dist       → gera o instalador e a versão portátil para Windows em dist/
+// As atualizações (procurar, transferir, instalar, nos três sistemas) estão em desktop/atualizacoes.mjs.
 import { app, BrowserWindow, Menu, dialog, shell } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { criarServidor } from '../tools/servidor.mjs';
+import * as atualizacoes from './atualizacoes.mjs';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PORTA_BASE = 47831; // porta fixa: o que a página guarda no browser (gravação automática, fila do servidor central) depende da origem
@@ -53,31 +55,10 @@ function menu() {
     ] },
     { label: 'Ajuda', submenu: [
       { label: 'Página do projeto', click: ir('https://github.com/HVS87/campo-de-ourique') },
-      { label: 'Procurar atualizações', click: () => procurarAtualizacoes(true) },
+      ...atualizacoes.itensMenu(),
       { label: 'Sobre', click: () => dialog.showMessageBox(janela, { type: 'info', title: 'Sobre', message: 'PS Lisboa - Repositório da Cidade ' + app.getVersion(), detail: 'Apresentação interativa das freguesias de Lisboa.\nCódigo MIT; dados e imagens de terceiros com as suas licenças (LICENCAS-TERCEIROS.md).\n\nOs teus dados: ' + pastaDados(), buttons: ['Fechar'] }) },
     ] },
   ]));
-}
-
-// atualizações automáticas pelas releases do GitHub (só no instalador; a versão portátil e o desenvolvimento não se atualizam sozinhos)
-const portatil = !!process.env.PORTABLE_EXECUTABLE_DIR;
-async function procurarAtualizacoes(manual) {
-  if (!app.isPackaged || portatil) { if (manual) dialog.showMessageBox(janela, { type: 'info', message: portatil ? 'A versão portátil não se atualiza sozinha.' : 'Em desenvolvimento não há atualizações.', detail: 'Transfere a versão nova em https://github.com/HVS87/campo-de-ourique/releases', buttons: ['Fechar'] }); return; }
-  try {
-    const { default: atualizador } = await import('electron-updater');
-    const au = atualizador.autoUpdater;
-    au.autoDownload = true; au.logger = null;
-    au.removeAllListeners();
-    au.on('update-downloaded', info => {
-      dialog.showMessageBox(janela, { type: 'info', title: 'Atualização', message: `A versão ${info.version} está pronta.`, detail: 'Reinicia a aplicação para a instalar. Os teus dados ficam como estão.', buttons: ['Reiniciar agora', 'Mais tarde'], defaultId: 0, cancelId: 1 })
-        .then(r => { if (r.response === 0) au.quitAndInstall(); });
-    });
-    if (manual) {
-      au.once('update-not-available', () => dialog.showMessageBox(janela, { type: 'info', message: 'Já tens a versão mais recente (' + app.getVersion() + ').', buttons: ['Fechar'] }));
-      au.once('error', err => dialog.showMessageBox(janela, { type: 'warning', message: 'Não foi possível procurar atualizações.', detail: String(err && err.message || err), buttons: ['Fechar'] }));
-    } else au.on('error', () => { /* sem rede: tenta-se na próxima vez */ });
-    await au.checkForUpdates();
-  } catch (err) { registo('atualizações: ' + (err && err.message)); }
 }
 
 async function abrirJanela() {
@@ -87,8 +68,10 @@ async function abrirJanela() {
   janela = new BrowserWindow({
     width: 1600, height: 900, minWidth: 360, minHeight: 360, show: false, backgroundColor: '#0f1216', title: 'PS Lisboa - Repositório da Cidade',
     icon: path.join(RAIZ, 'desktop', 'recursos', 'icone.png'), autoHideMenuBar: true,
-    webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, spellcheck: false },
+    webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false, spellcheck: false, preload: path.join(RAIZ, 'desktop', 'preload.cjs') },
   });
+  atualizacoes.iniciar({ janela, origem, registo, teste: TESTE });
+  menu(); // depois de iniciar as atualizações: o menu mostra a preferência guardada
   janela.once('ready-to-show', () => { if (!TESTE) { janela.maximize(); janela.show(); } });
   // ligações para fora (fontes, OpenStreetMap, servidor central…) abrem no browser do sistema
   janela.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:/.test(url) && !url.startsWith(origem)) shell.openExternal(url); return { action: 'deny' }; });
@@ -96,7 +79,7 @@ async function abrirJanela() {
   // fechar (ou recarregar) com alterações por guardar: a página já as pôs em rascunho; o Electron não mostra o aviso do
   // browser, por isso pergunta-se aqui
   janela.webContents.on('will-prevent-unload', e => {
-    if (TESTE) { e.preventDefault(); return; }
+    if (TESTE || atualizacoes.aReiniciar()) { e.preventDefault(); return; }
     const r = dialog.showMessageBoxSync(janela, { type: 'warning', title: 'Alterações por guardar', message: 'Há alterações por guardar no modo de edição.',
       detail: 'Se fechares agora, ficam em rascunho neste computador e voltam quando a mesma conta entrar outra vez no modo de edição.',
       buttons: ['Fechar e manter em rascunho', 'Continuar a editar'], defaultId: 1, cancelId: 1, noLink: true });
@@ -140,8 +123,6 @@ function ligarTeste() { // verificação (desktop/testar-app.mjs): arranque, ses
 }
 
 app.whenReady().then(async () => {
-  menu();
   try { await abrirJanela(); } catch (err) { dialog.showErrorBox('PS Lisboa - Repositório da Cidade', 'Não foi possível arrancar: ' + (err && err.message)); app.quit(); return; }
-  if (!TESTE) setTimeout(() => procurarAtualizacoes(false), 5000);
 });
 app.on('window-all-closed', () => app.quit());

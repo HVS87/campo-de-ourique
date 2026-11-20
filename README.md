@@ -82,10 +82,25 @@ Transfere-se em [Releases](https://github.com/HVS87/campo-de-ourique/releases):
 
 | Ficheiro | Sistema | Notas |
 |---|---|---|
-| `PS-Lisboa-<versão>-instalador.exe` | Windows | Instala e atualiza-se sozinho a partir das releases |
-| `PS-Lisboa-<versão>-portatil.exe` | Windows | Não instala nada; abre logo, mas não se atualiza sozinho |
-| `PS-Lisboa-<versão>.dmg` | macOS | |
-| `PS-Lisboa-<versão>.AppImage` | Linux | |
+| `PS-Lisboa-<versão>-instalador.exe` | Windows | Instala; atualiza-se sozinho |
+| `PS-Lisboa-<versão>-portatil.exe` | Windows | Não instala nada, abre logo; atualiza-se sozinho (o .exe novo fica na mesma pasta) |
+| `PS-Lisboa-<versão>.dmg` | macOS | Arrastar para Aplicações; atualiza-se sozinho |
+| `PS-Lisboa-<versão>.zip` | macOS | O mesmo que o .dmg, em .zip: é o que as atualizações transferem |
+| `PS-Lisboa-<versão>.AppImage` | Linux | Atualiza-se sozinho |
+
+- **Atualizações:** a aplicação procura versões novas nas releases ao abrir, de 4 em 4 horas e quando o computador
+  acorda. Com **🔄 Atualizações automáticas** ligadas (de origem; no painel ☰ ou em «Ajuda → Instalar as atualizações
+  automaticamente»), a versão nova transfere-se por trás, confere-se (sha512 da release) e instala-se quando se fecha
+  a aplicação, sem desinstalar nada; a barra no topo deixa «Reiniciar agora». Desligadas, a barra só avisa, e
+  «Instalar agora» transfere, instala e reabre. Os dados ficam sempre onde estão. Como funciona em cada sistema
+  (`desktop/atualizacoes.mjs`):
+  - **Windows, instalador** e **Linux, AppImage:** `electron-updater` (o instalador corre em silêncio; o AppImage troca de ficheiro).
+  - **Windows, portátil:** transfere o .exe novo (`latest-portatil.yml`) para a mesma pasta, com o nome da versão nova;
+    o antigo muda de nome e apaga-se na abertura seguinte.
+  - **macOS:** transfere o .zip, prepara-o ao lado da aplicação e troca-a depois de ela fechar (sem a assinatura paga da
+    Apple, o atualizador do próprio macOS recusaria a versão nova). Precisa de poder escrever na pasta da aplicação
+    (em Aplicações, uma conta de administrador pode); sem isso, avisa e leva à página das versões.
+  - **Linux, outro formato** (sem ser AppImage): avisa e leva à página das versões.
 
 - **Sem internet:** traz todos os dados das 24 freguesias e funciona sem internet. O satélite em direto passa para
   as imagens guardadas, que dão menos zoom. O «Mapa da cidade», o satélite em direto e o servidor central precisam
@@ -110,6 +125,14 @@ o der (depois de recusado, o Chrome deixa de o dar durante um tempo), explica o 
 no iPhone e no iPad, explica o caminho: Safari → Partilhar → Adicionar ao ecrã principal; no computador, leva à página
 das versões, para transferir a aplicação de computador (e lembra que o Chrome e o Edge também instalam a página). Abre em
 ecrã inteiro, com ícone próprio.
+
+**Atualizações no telemóvel (Android e iPhone):** a app instalada é a própria página, por isso não há nada para instalar:
+a página traz a sua versão (`<meta name="versao">`, escrita por `tools/preparar-site.mjs`) e compara-a com `versao.json`
+do site ao abrir, de 30 em 30 minutos e quando se volta a ela. Com **🔄 Atualizações automáticas** ligadas (de origem, no
+painel ☰), a versão nova entra sozinha: a página recarrega-se quando não está à vista, ou logo que se volta a ela, mas
+nunca com alterações por guardar, um registo ou um diálogo a meio, ou envios só em memória. Desligadas, a barra no
+topo avisa e «Atualizar» recarrega. A versão nova chega aos telemóveis quando o Worker é publicado
+(`npm run central:publicar`, ou a compilação automática, se o repositório tiver o segredo `CLOUDFLARE_API_TOKEN`).
 
 O service worker (`sw.js`) guarda o que já se abriu, para abrir depressa e sem internet: as imagens e as bibliotecas vêm
 logo do guardado, os dados vêm da rede, com o guardado como reserva. Contas, sessões e evento nunca se guardam. A
@@ -163,8 +186,9 @@ Para publicar uma versão nova das duas:
 1. Subir `version` no `package.json`.
 2. Fazer commit e criar a tag `v<versão>` (`git tag v1.2.0 && git push --tags`).
 3. A compilação automática (`.github/workflows/aplicacao.yml`) testa, gera os executáveis para Windows, macOS e
-   Linux e junta-os à release dessa tag. As aplicações instaladas atualizam-se a partir daí. Se o repositório tiver
-   o segredo `CLOUDFLARE_API_TOKEN`, republica também o servidor central.
+   Linux e junta-os à release dessa tag, com os `latest*.yml` (`latest-portatil.yml` vem de `tools/latest-portatil.mjs`).
+   As aplicações instaladas atualizam-se a partir daí. Se o repositório tiver os segredos `CLOUDFLARE_API_TOKEN` e
+   `CLOUDFLARE_ACCOUNT_ID`, republica também o servidor central e o site, e as apps dos telemóveis atualizam-se também.
 
 ## Contas e histórico
 
@@ -545,7 +569,11 @@ mostra só as ferramentas; «⋯ Mais» abre o título, o subtítulo e os preset
   pela aplicação de computador; pode ler de uma pasta e gravar noutra. `tools/testar-servidor.mjs` testa-o nos dois
   modos.
 - `desktop/main.mjs` — a aplicação de computador (Electron): arranca o mesmo servidor só neste computador e abre a
-  apresentação numa janela; atualizações pelas releases do GitHub. `desktop/testar-app.mjs` verifica o arranque.
+  apresentação numa janela. `desktop/atualizacoes.mjs` — as atualizações pelas releases do GitHub nos três sistemas
+  (a parte sem Electron, com os guiões que trocam os ficheiros, em `desktop/atualizacoes-comum.mjs`);
+  `desktop/preload.cjs` dá-as à página (☰ → 🔄). `desktop/testar-app.mjs` verifica o arranque e
+  `desktop/testar-atualizacoes.mjs` os ficheiros das atualizações e as trocas (a compilação automática corre-o em cada
+  sistema; no macOS abre o .zip e troca uma .app de teste).
 - `config.js` — configuração comum (endereço do servidor central).
 - `servidor-central/` — servidor central de referência, página de consulta e testes.
 - `servidor-central/contas.mjs` — contas, sessões e histórico de alterações, o mesmo código nos dois servidores;

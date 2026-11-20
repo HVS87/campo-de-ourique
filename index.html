@@ -11,6 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="PS Lisboa">
+<meta name="versao" content="">
 <link rel="apple-touch-icon" href="assets/icones/icone-apple-180.png">
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <script src="vendor/leaflet/leaflet.js"></script>
@@ -56,6 +57,10 @@
   .tema { display: flex; align-items: center; gap: 8px; padding: 8px 14px 10px; font-size: 12.5px; color: var(--ink-dim); border-bottom: 1px solid var(--panel-border); }
   .tema input { width: 54px; margin: 0; accent-color: var(--accent-texto); cursor: pointer; }
   .tema.geo span:first-child { flex: 1; } .tema.geo #geo-estado { min-width: 66px; }
+  .tema.atualizar { border-bottom: 0; padding-bottom: 2px; } .tema.atualizar span:first-child { flex: 1; } .tema.atualizar #atualizar-estado { min-width: 66px; }
+  .atualizar-info { padding: 0 14px 9px; font-size: 11.5px; line-height: 1.4; color: var(--ink-dim); border-bottom: 1px solid var(--panel-border); }
+  .atualizar-info button { background: none; border: 0; padding: 0; font: inherit; color: var(--accent-texto); text-decoration: underline; cursor: pointer; }
+  .tema.atualizar[hidden], .atualizar-info[hidden], .atualizar-info button[hidden] { display: none; }
   .nome-ferramenta { font-size: 11px; font-weight: 600; letter-spacing: .4px; color: var(--ink-dim); margin-bottom: 6px; }
   .sugestoes-cat { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 10px; }
   .sugestoes-cat small { color: var(--ink-dim); font-weight: 400; }
@@ -479,6 +484,9 @@
   #sem-dados p { margin: 0 0 14px; line-height: 1.45; }
   #sem-dados a { display: inline-block; text-decoration: none; }
   #convite-instalar span { flex: 1 1 180px; }
+  #barra-atualizar { position: absolute; left: 50%; top: 66px; transform: translateX(-50%); z-index: 1100; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; width: min(440px, calc(100vw - 16px)); border-radius: 14px; padding: 8px 10px; font-size: 13.5px; }
+  #barra-atualizar[hidden], body.cartao-aberto #barra-atualizar, body:has(#painel.aberto) #barra-atualizar { display: none; }
+  #barra-atualizar span { flex: 1 1 200px; }
 
   /* ---- avisos ---- */
   #aviso { position: absolute; left: 50%; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 1250; color: var(--ink); padding: 8px 14px; border-radius: 999px; font-size: 12.5px; display: none; max-width: 90vw; text-align: center; }
@@ -770,6 +778,8 @@
   </div>
   <label class="tema"><span aria-hidden="true">☀️ Claro</span><input type="range" id="tema" min="0" max="1" step="1" value="1" aria-label="Modo de visualização: claro ou escuro"><span aria-hidden="true">🌙 Escuro</span></label>
   <label class="tema geo" title="Ligada, os registos começam onde estás. Desligada, fazem-se tocando no mapa (para registar à distância)."><span aria-hidden="true">📍 Geolocalização</span><input type="range" id="geo" min="0" max="1" step="1" value="1" aria-label="Geolocalização: desligada ou ligada"><span id="geo-estado">ligada</span></label>
+  <label class="tema atualizar" id="atualizar-linha" hidden title="Ligadas, as versões novas instalam-se sozinhas, sem desinstalar nem perder dados. Desligadas, só se avisa que há uma."><span aria-hidden="true">🔄 Atualizações automáticas</span><input type="range" id="atualizar-auto" min="0" max="1" step="1" value="1" aria-label="Atualizações automáticas: desligadas ou ligadas"><span id="atualizar-estado">ligadas</span></label>
+  <div class="atualizar-info" id="atualizar-info" hidden><span id="atualizar-txt"></span> <button type="button" id="atualizar-procurar">Procurar agora</button></div>
   <nav id="indice" aria-label="Índice"></nav>
   <div class="preset-vista" id="preset-vista" hidden><label>Preset <select id="sel-preset-vista" class="seletor" aria-label="Preset"></select></label></div>
   <div class="rodape" id="rodape"></div>
@@ -785,6 +795,7 @@
     <div class="botoes"><button type="button" class="btn ligacao" id="visita-inicio" hidden>↺ Do início</button><span class="esp"></span><button type="button" class="btn" id="visita-prev">‹ Anterior</button><button type="button" class="btn on" id="visita-next">Seguinte ›</button></div>
     <div class="barra" aria-hidden="true"><i id="visita-barra"></i></div></div></div>
 <div id="convite-instalar" class="vidro" hidden><span>📲 Instalar como aplicação neste telemóvel?</span><button type="button" class="btn" id="convite-nao">Agora não</button><button type="button" class="btn on" id="convite-sim">Instalar</button></div>
+<div id="barra-atualizar" class="vidro" hidden role="status"><span id="barra-atualizar-txt"></span><button type="button" class="btn" id="barra-atualizar-nao">Mais tarde</button><button type="button" class="btn on" id="barra-atualizar-sim"></button></div>
 <div id="aviso" class="vidro"></div>
 <div id="dialogo" role="dialog" aria-modal="true" aria-labelledby="dialogo-titulo"><div class="caixa vidro"></div></div>
 <div id="cidade-barra" class="vidro"><span id="cidade-txt"></span><button class="btn" id="btn-evento-cidade" type="button" hidden title="Quantos registos há em cada freguesia"></button><button class="btn" id="btn-conjuntos-cidade" type="button" title="Os conjuntos de pontos de todas as freguesias">⁘ Conjuntos</button><button class="btn on" id="btn-cidade-voltar" type="button"></button></div>
@@ -5294,6 +5305,90 @@ ambientePronto.then(() => { // a app guarda-se para abrir sem internet (a aplica
   }).catch(() => { /* funciona na mesma, só sem guardar */ });
   $('#btn-instalar').hidden = !botaoInstalar(); setTimeout(atualizarInstalar, 4000); // o convite só ao fim de uns segundos; o botão do painel já
 });
+// ---------- atualizações: a aplicação de computador (desktop/atualizacoes.mjs, pela ponte window.aplicacaoPC) e a app
+// instalada no telemóvel ou no browser (o site alojado diz a versão em versao.json; a página traz a sua em <meta name="versao">).
+// Ligadas (de origem), instalam-se sozinhas: no computador ao fechar a aplicação; no telemóvel a página recarrega-se quando
+// não está à vista ou quando se volta a ela, nunca com alterações por guardar, um registo a meio ou envios só em memória.
+const CHAVE_ATUALIZAR = 'co-atualizacoes', PC = window.aplicacaoPC && window.aplicacaoPC.atualizacoes;
+const VERSAO_PAGINA = ($('meta[name=versao]') || {}).content || '';
+let ATUALIZACAO = null, barraDispensada = '', ultimaProcura = 0;
+const versaoMaisNova = (a, b) => { const p = v => String(v || '').split('.').map(n => parseInt(n, 10) || 0); const x = p(a), y = p(b); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); return false; };
+const atualizacoesWeb = () => { try { return localStorage.getItem(CHAVE_ATUALIZAR) !== 'desligadas'; } catch (err) { return true; } };
+const podeRecarregar = () => !alterado && !edicao && !aEnviar && !filaMemoria && !dialogoEl.classList.contains('aberto') && !$('#levantamento').classList.contains('aberto') && !visitaAberta();
+const horaCurta = q => q ? new Date(q).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : '';
+function mostrarAtualizacao(e) {
+  ATUALIZACAO = e; if (!e) return;
+  $('#atualizar-linha').hidden = $('#atualizar-info').hidden = false;
+  $('#atualizar-auto').value = e.auto ? '1' : '0'; $('#atualizar-estado').textContent = e.auto ? 'ligadas' : 'desligadas';
+  const v = e.versao ? 'Versão ' + e.versao : 'Esta versão';
+  const txt = { 'a-procurar': v + ' · a procurar…', atual: v + ' · é a mais recente' + (e.quando ? ' (vista às ' + horaCurta(e.quando) + ')' : '') + '.', 'a-transferir': `A transferir a versão ${e.nova}: ${e.progresso || 0}%.`,
+    pronta: PC ? `A versão ${e.nova} instala-se quando fechares a aplicação.` : `A versão ${e.nova} entra quando voltares à app.`, disponivel: `Há uma versão nova: ${e.nova}.`,
+    manual: `Há uma versão nova (${e.nova}): neste sistema transfere-se à mão.`, erro: v + ' · não foi possível procurar' + (e.erro ? ' (' + e.erro + ')' : '') + '.', desligado: v + ' · em desenvolvimento, sem atualizações.' }[e.fase] || v + '.';
+  $('#atualizar-txt').textContent = txt;
+  $('#atualizar-procurar').hidden = ['a-procurar', 'a-transferir', 'desligado'].includes(e.fase);
+  $('#atualizar-procurar').textContent = e.fase === 'pronta' ? (PC ? 'Reiniciar agora' : 'Atualizar agora') : e.fase === 'disponivel' ? (PC ? 'Instalar agora' : 'Atualizar agora') : e.fase === 'manual' ? 'Transferir' : 'Procurar agora';
+  // a barra por cima do mapa: só quando há algo a fazer (no telemóvel com as automáticas ligadas, não: entra sozinha), e
+  // «Mais tarde» esconde-a até à versão seguinte
+  const barra = $('#barra-atualizar'), mostrar = ['pronta', 'disponivel', 'manual'].includes(e.fase) && barraDispensada !== e.nova && !(e.fase === 'pronta' && !PC);
+  barra.hidden = !mostrar; if (!mostrar) return;
+  $('#barra-atualizar-txt').textContent = e.fase === 'pronta' ? `🔄 A versão ${e.nova} já está transferida e instala-se quando fechares a aplicação.` : e.fase === 'manual' ? `🔄 Há uma versão nova (${e.nova}). Neste sistema instala-se à mão.` : `🔄 Há uma versão nova (${e.nova}).`;
+  $('#barra-atualizar-sim').textContent = e.fase === 'pronta' ? 'Reiniciar agora' : e.fase === 'manual' ? 'Transferir' : PC ? 'Instalar agora' : 'Atualizar';
+}
+async function instalarAtualizacao() {
+  const e = ATUALIZACAO; if (!e) return;
+  if (e.fase === 'manual') { window.open(e.pagina || URL_TRANSFERIR, '_blank', 'noopener'); return; }
+  if (alterado || aEnviar || filaMemoria) {
+    const r = await dialogo({ titulo: 'Instalar a versão ' + e.nova, texto: alterado ? 'Há alterações por guardar. Se continuares, ficam em rascunho ' + (PC ? 'neste computador' : 'neste aparelho') + ' e voltam quando a mesma conta entrar outra vez no modo de edição.' : 'Ainda há envios a caminho do servidor central. Espera que acabem (o estado diz «central: em dia»), ou continua: os que estão guardados seguem depois.',
+      botoes: [{ id: 'cancelar', texto: 'Esperar' }, { id: 'ok', texto: PC ? 'Reiniciar e instalar' : 'Atualizar', classe: 'on' }] });
+    if (r !== 'ok') return;
+    if (alterado) autoGuardarJa();
+  }
+  if (PC) { $('#barra-atualizar').hidden = true; aviso(e.fase === 'pronta' ? 'A instalar a versão ' + e.nova + '…' : 'A transferir a versão ' + e.nova + '; a aplicação reabre sozinha.', 0); mostrarAtualizacao(await PC.instalar()); return; }
+  recarregarParaVersao(e.nova);
+}
+function recarregarParaVersao(v) {
+  aviso('A atualizar para a versão ' + v + '…', 0);
+  const sw = navigator.serviceWorker && navigator.serviceWorker.getRegistration ? navigator.serviceWorker.getRegistration() : Promise.resolve(null);
+  sw.then(r => r && r.update()).catch(() => {}).finally(() => setTimeout(() => location.reload(), 400));
+}
+async function procurarAtualizacao(motivo) {
+  if (PC) { if (motivo === 'manual') mostrarAtualizacao(await PC.procurar()); return ATUALIZACAO; }
+  if (!VERSAO_PAGINA) return ATUALIZACAO;
+  ultimaProcura = Date.now();
+  if (motivo === 'manual') mostrarAtualizacao({ ...ATUALIZACAO, fase: 'a-procurar' });
+  let nova = '';
+  try { const r = await fetch('versao.json?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) throw new Error('resposta ' + r.status); nova = (await r.json()).versao || ''; }
+  catch (err) { mostrarAtualizacao({ ...ATUALIZACAO, fase: motivo === 'manual' ? 'erro' : ATUALIZACAO.fase, erro: navigator.onLine ? err.message : 'sem rede' }); return ATUALIZACAO; }
+  if (!versaoMaisNova(nova, VERSAO_PAGINA)) { mostrarAtualizacao({ ...ATUALIZACAO, fase: 'atual', nova: '', quando: Date.now() }); return ATUALIZACAO; }
+  const auto = atualizacoesWeb();
+  mostrarAtualizacao({ ...ATUALIZACAO, fase: auto ? 'pronta' : 'disponivel', nova, quando: Date.now() });
+  // automáticas: já, se a página não está à vista ou se se acabou de voltar a ela; senão, quando sair de vista
+  if (auto && podeRecarregar() && (document.hidden || motivo === 'visivel')) recarregarParaVersao(nova);
+  return ATUALIZACAO;
+}
+function ligarAtualizacoes(ligar) {
+  if (PC) PC.automaticas(ligar).then(mostrarAtualizacao);
+  else {
+    try { localStorage.setItem(CHAVE_ATUALIZAR, ligar ? 'ligadas' : 'desligadas'); } catch (err) { /* sem armazenamento local */ }
+    const f = ATUALIZACAO.fase; mostrarAtualizacao({ ...ATUALIZACAO, auto: ligar, fase: f === 'disponivel' && ligar ? 'pronta' : f === 'pronta' && !ligar ? 'disponivel' : f });
+  }
+  aviso(ligar ? 'Atualizações automáticas ligadas: as versões novas instalam-se sozinhas, sem perder dados.' : 'Atualizações automáticas desligadas: avisa-se quando houver uma versão nova.', 4500);
+}
+$('#atualizar-auto').addEventListener('input', e => ligarAtualizacoes(e.target.value === '1'));
+$('#atualizar-procurar').addEventListener('click', () => ATUALIZACAO && ['pronta', 'disponivel', 'manual'].includes(ATUALIZACAO.fase) ? instalarAtualizacao() : procurarAtualizacao('manual'));
+$('#barra-atualizar-sim').addEventListener('click', instalarAtualizacao);
+$('#barra-atualizar-nao').addEventListener('click', () => { barraDispensada = ATUALIZACAO && ATUALIZACAO.nova; $('#barra-atualizar').hidden = true; aviso('Fica em ☰ → 🔄 Atualizações automáticas.', 3000); });
+if (PC) { PC.aoMudar(mostrarAtualizacao); PC.estado().then(mostrarAtualizacao).catch(() => {}); }
+else if (VERSAO_PAGINA) {
+  mostrarAtualizacao({ versao: VERSAO_PAGINA, auto: atualizacoesWeb(), fase: 'parado' });
+  setTimeout(() => procurarAtualizacao('arranque'), 20000); setInterval(() => procurarAtualizacao('periodo'), 30 * 60000);
+  document.addEventListener('visibilitychange', () => {
+    const e = ATUALIZACAO;
+    if (document.hidden) { if (e && e.fase === 'pronta' && e.auto && podeRecarregar()) location.reload(); return; } // fora de vista: ninguém dá por isso
+    if (Date.now() - ultimaProcura > 60000) procurarAtualizacao('visivel');
+  });
+  window.addEventListener('online', () => procurarAtualizacao('rede'));
+}
 sessaoPronta.finally(() => { atualizarEstadoCentral(); enviarFilaCentral(); if (HORAS_COPIA > 0 && urlCentral() && copiaEmAtraso()) setTimeout(() => copiarCentral(false), 8000); });
 barra.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => porFerramenta(b.dataset.tool)));
 $('#ed-titulo').addEventListener('input', e => { C.titulo = e.target.value.trim(); aplicarTitulo(); marcarAlterado(); });
@@ -5317,7 +5412,7 @@ if (EDITOR || idInicial) semFreguesia = false; // ?editor e #id abrem logo a fre
 if (window.ENTRA_NA_CIDADE) map.whenReady(() => abrirCidade(true)); else quandoLivre(() => carregarCamadas());
 if (EDITOR) pedirEdicao({ criar: PARAMS.has('criar') }); // ?editor abre logo em modo de edição (depois de iniciar sessão); ?criar abre também o «+»
 sessaoPronta.then(lerEventoServidor).finally(() => map.whenReady(() => setTimeout(async () => { await pedirSessaoAoDescer(); arrancarVisitaGuiada(); }, 1400))); // depois de o mapa se acomodar (o voo até Lisboa dura 1,1 s); numa freguesia, primeiro a sessão e depois a visita
-window.__mapa = { get RUAS_CIDADE() { return window.RUAS_CIDADE; }, get levant() { return levant; }, get filaMemoria() { return filaMemoria; }, registoRapido, juntarImportado, alvoDoToque, relatorioGeral, recolherOcorrencias, ocorrenciasDe, filtroOcorrencias, ruaSobPonto, atualizarLegendaVarr, porQueNaoMarca, TOQUE_LONGO, eventoAtivo, eventoDaCidade, zonasDoEvento, dentroDoEvento, porFotografar, antesDeGuardar, fecharComFoto, get contornoZonas() { return contornoZonas; }, ligarModoEvento, modoEventoAtivo, marcarRua, estadoRua, escolherFotos, enviarPublico, get C() { return C; }, ABA, filaCentral, get FICHEIRO() { return FICHEIRO; }, get alteradoAgora() { return alterado; }, alternarVisitaInicial, visitaInicialLigada, menuConta, eventoComVisita, recolherRegistos, exportarRelatorio, EVENTOS, carregarIndiceCidade, procurar, irParaLugar, fonteRegisto, resumoConjuntos, juntarLinhasConjuntos, sincronizarConjuntos, tiposDe, aplicarTema, temaAtual, abrirSub, subPonto, agregarPonto, desagregarPonto, get subAtual() { return subAtual; }, quarteiroesDe, alternarQuarteirao, frasePedacos, paresDuplicados, perguntarDuplicado, consolidar, reverterConsolidacao, verConsolidacoes, get consolidacoes() { return consolidacoes; }, semelhancaNomes, novaCategoria, criarCategoria, gerirCategorias, categoriasConhecidas, map, C, FREG, ELEMENTOS, POR_ID, RUAS_VISTA, atualizarInstalar, instalarApp, podeInstalar, get satVisivel() { return satVisivel; }, EVENTOS, get EVENTO() { return EVENTO; }, get levant() { return levant; }, lerEventoServidor, aplicarEvento, gerirEvento, escolherRegisto, levantamento, abrirLevantamento, mostrarLevantamento, confirmarLevantamento, cancelarLevantamento, moradaSugerida, registarNoConjunto, resumoCidadeEvento, localizarPrecisa, iniciarVisita, sairVisita, terminarVisita, irPassoVisita, seguinteVisita, visitaAberta, lerEstadoVisita, get visitaPasso() { return visitaPassos[visitaI] && visitaPassos[visitaI].id; }, get visitaPassos() { return visitaPassos; }, pedirEdicao, entrarConta, lerSessao, terminarSessao, menuConta, verHistorico, gerirContas, mudarPalavraPasse, dialogoEntrar, get SESSAO() { return SESSAO; }, lerSessaoCentral, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, ligarVerdes, ligarMapa, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva, entrarEdicao, porFerramenta, serializar, guardar, carregar, lerPreset, novoPreset, apagarPreset, mudarPreset, PRESETS, importarPreset, reporDoFicheiro, largarPonto, novoPonto, criarRua, criarDeLote, painelCentral, abrirDoCentral, enviarFilaCentral, copiarCentral, estadoCopia, filaCentral, lerCentral, gravarCentral, get AMBIENTE() { return AMBIENTE; }, confirmar, perguntarTexto, abrirCidade, irParaFreguesia, sairEdicao, descartarAlteracoes, dialogo, construirDesmat, expandirDesmat, pontoDeGrupo, emConjunto, novoDesmaterializado, desmaterializar, colocarNoMapa, criarAqui, ruaMaisProxima, abrirCriar, acrescentarPresetImportado, PRESETS_LOCAIS, get cidade() { return cidade; }, get alterado() { return alterado; }, novaCategoria, definirMembro, alternarCategoria, editarVisita, mostrarCategoria, categoriasAtivas, get edicao() { return edicao; }, get ferramenta() { return ferramenta; }, get passos() { return passos; } };
+window.__mapa = { get RUAS_CIDADE() { return window.RUAS_CIDADE; }, get levant() { return levant; }, get filaMemoria() { return filaMemoria; }, registoRapido, juntarImportado, alvoDoToque, relatorioGeral, recolherOcorrencias, ocorrenciasDe, filtroOcorrencias, ruaSobPonto, atualizarLegendaVarr, porQueNaoMarca, TOQUE_LONGO, eventoAtivo, eventoDaCidade, zonasDoEvento, dentroDoEvento, porFotografar, antesDeGuardar, fecharComFoto, get contornoZonas() { return contornoZonas; }, ligarModoEvento, modoEventoAtivo, marcarRua, estadoRua, escolherFotos, enviarPublico, get C() { return C; }, ABA, filaCentral, get FICHEIRO() { return FICHEIRO; }, get alteradoAgora() { return alterado; }, get ATUALIZACAO() { return ATUALIZACAO; }, procurarAtualizacao, ligarAtualizacoes, podeRecarregar, mostrarAtualizacao, alternarVisitaInicial, visitaInicialLigada, menuConta, eventoComVisita, recolherRegistos, exportarRelatorio, EVENTOS, carregarIndiceCidade, procurar, irParaLugar, fonteRegisto, resumoConjuntos, juntarLinhasConjuntos, sincronizarConjuntos, tiposDe, aplicarTema, temaAtual, abrirSub, subPonto, agregarPonto, desagregarPonto, get subAtual() { return subAtual; }, quarteiroesDe, alternarQuarteirao, frasePedacos, paresDuplicados, perguntarDuplicado, consolidar, reverterConsolidacao, verConsolidacoes, get consolidacoes() { return consolidacoes; }, semelhancaNomes, novaCategoria, criarCategoria, gerirCategorias, categoriasConhecidas, map, C, FREG, ELEMENTOS, POR_ID, RUAS_VISTA, atualizarInstalar, instalarApp, podeInstalar, get satVisivel() { return satVisivel; }, EVENTOS, get EVENTO() { return EVENTO; }, get levant() { return levant; }, lerEventoServidor, aplicarEvento, gerirEvento, escolherRegisto, levantamento, abrirLevantamento, mostrarLevantamento, confirmarLevantamento, cancelarLevantamento, moradaSugerida, registarNoConjunto, resumoCidadeEvento, localizarPrecisa, iniciarVisita, sairVisita, terminarVisita, irPassoVisita, seguinteVisita, visitaAberta, lerEstadoVisita, get visitaPasso() { return visitaPassos[visitaI] && visitaPassos[visitaI].id; }, get visitaPassos() { return visitaPassos; }, pedirEdicao, entrarConta, lerSessao, terminarSessao, menuConta, verHistorico, gerirContas, mudarPalavraPasse, dialogoEntrar, get SESSAO() { return SESSAO; }, lerSessaoCentral, selecionar, irPasso, ligarGuiao, ligarRuas, ligarPontos, ligarNumeros, ligarLotes, ligarVerdes, ligarMapa, abrirCamadas, destacarRua, abrirPainel, vista, dgt, reserva, entrarEdicao, porFerramenta, serializar, guardar, carregar, lerPreset, novoPreset, apagarPreset, mudarPreset, PRESETS, importarPreset, reporDoFicheiro, largarPonto, novoPonto, criarRua, criarDeLote, painelCentral, abrirDoCentral, enviarFilaCentral, copiarCentral, estadoCopia, filaCentral, lerCentral, gravarCentral, get AMBIENTE() { return AMBIENTE; }, confirmar, perguntarTexto, abrirCidade, irParaFreguesia, sairEdicao, descartarAlteracoes, dialogo, construirDesmat, expandirDesmat, pontoDeGrupo, emConjunto, novoDesmaterializado, desmaterializar, colocarNoMapa, criarAqui, ruaMaisProxima, abrirCriar, acrescentarPresetImportado, PRESETS_LOCAIS, get cidade() { return cidade; }, get alterado() { return alterado; }, novaCategoria, definirMembro, alternarCategoria, editarVisita, mostrarCategoria, categoriasAtivas, get edicao() { return edicao; }, get ferramenta() { return ferramenta; }, get passos() { return passos; } };
 });
 </script>
 </body>
